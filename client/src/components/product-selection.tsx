@@ -19,6 +19,9 @@ interface ProductSelectionProps {
     customSticker: boolean;
     heartMessage?: string;
     customTopper: boolean;
+    goldPowder?: boolean;
+    customColor?: boolean;
+    specialPackaging?: boolean;
   };
   twoPackSets: {
     selectedCookies: string[];
@@ -621,6 +624,45 @@ export function ProductSelection({
                           <Label htmlFor="customTopper" className="cursor-pointer text-sm">
                             <div className="font-medium">토퍼 제작</div>
                             <div className="text-xs text-muted-foreground">문의 필요</div>
+                          </Label>
+                        </div>
+
+                        <div className="flex items-start gap-2 p-2 bg-card rounded hover:bg-accent/30 transition-colors">
+                          <Checkbox
+                            id="goldPowder"
+                            checked={brownieCookie.goldPowder}
+                            onCheckedChange={(checked) => updateBrownieCookie('goldPowder', checked)}
+                            data-testid="checkbox-gold-powder"
+                          />
+                          <Label htmlFor="goldPowder" className="cursor-pointer text-sm">
+                            <div className="font-medium">골드 파우더</div>
+                            <div className="text-xs text-muted-foreground">+1,000원</div>
+                          </Label>
+                        </div>
+
+                        <div className="flex items-start gap-2 p-2 bg-card rounded hover:bg-accent/30 transition-colors">
+                          <Checkbox
+                            id="customColor"
+                            checked={brownieCookie.customColor}
+                            onCheckedChange={(checked) => updateBrownieCookie('customColor', checked)}
+                            data-testid="checkbox-custom-color"
+                          />
+                          <Label htmlFor="customColor" className="cursor-pointer text-sm">
+                            <div className="font-medium">커스텀 컬러</div>
+                            <div className="text-xs text-muted-foreground">+2,000원</div>
+                          </Label>
+                        </div>
+
+                        <div className="flex items-start gap-2 p-2 bg-card rounded hover:bg-accent/30 transition-colors">
+                          <Checkbox
+                            id="specialPackaging"
+                            checked={brownieCookie.specialPackaging}
+                            onCheckedChange={(checked) => updateBrownieCookie('specialPackaging', checked)}
+                            data-testid="checkbox-special-packaging"
+                          />
+                          <Label htmlFor="specialPackaging" className="cursor-pointer text-sm">
+                            <div className="font-medium">특별 포장</div>
+                            <div className="text-xs text-muted-foreground">+3,000원</div>
                           </Label>
                         </div>
                       </div>

@@ -78,8 +78,8 @@ export const cookiePrices = {
   brownie: 7800, // 브라우니쿠키 기본 가격
   fortune: 17000, // 행운쿠키 (박스당)
   airplane: 22000, // 비행기샌드쿠키 (박스당)
-  twoPackSet: 9000, // 2구 패키지
-  singleWithDrink: 8500, // 1구 + 음료
+  twoPackSet: 10500, // 2구 패키지
+  singleWithDrink: 11000, // 1구 + 음료
   packaging: {
     single_box: 500, // 1구박스 (+500원)
     plastic_wrap: 500, // 비닐탭포장 (+500원) 
@@ -89,5 +89,8 @@ export const cookiePrices = {
     birthdayBear: 500,
     customSticker: 15000,
     heartMessage: 500,
+    goldPowder: 1000,
+    customColor: 2000,
+    specialPackaging: 3000,
   }
 } as const;
