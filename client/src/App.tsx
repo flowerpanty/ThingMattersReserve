@@ -7,6 +7,7 @@ import OrderForm from "@/pages/order-form";
 import { Dashboard } from "@/pages/dashboard";
 import NotFound from "@/pages/not-found";
 import { InstallAppButton } from "@/components/install-app-button";
+import { IOSQuickAccess } from "@/components/ios-quick-access";
 
 function Router() {
   return (
@@ -24,6 +25,7 @@ function App() {
       <TooltipProvider>
         <Toaster />
         <Router />
+        <IOSQuickAccess />
         <InstallAppButton />
       </TooltipProvider>
     </QueryClientProvider>
