@@ -32,23 +32,16 @@ export function DeliveryDate({ deliveryDate, onUpdate }: DeliveryDateProps) {
           </div>
           
           <div className="space-y-4">
-            <div className="relative">
-              <Input
-                id="deliveryDate"
-                type="date"
-                required
-                value={deliveryDate}
-                min={minDate}
-                onChange={(e) => onUpdate(e.target.value)}
-                className="w-full px-4 py-3 text-base rounded-lg border border-input bg-background focus:ring-2 focus:ring-ring focus:border-ring transition-colors appearance-none"
-                data-testid="input-delivery-date"
-              />
-              {!deliveryDate && (
-                <div className="absolute left-4 top-1/2 transform -translate-y-1/2 text-muted-foreground pointer-events-none">
-                  날짜
-                </div>
-              )}
-            </div>
+            <Input
+              id="deliveryDate"
+              type="date"
+              required
+              value={deliveryDate}
+              min={minDate}
+              onChange={(e) => onUpdate(e.target.value)}
+              className="w-full px-4 py-3 text-base rounded-lg border border-input bg-background focus:ring-2 focus:ring-ring focus:border-ring transition-colors date-input"
+              data-testid="input-delivery-date"
+            />
             
             {deliveryDate && (
               <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
