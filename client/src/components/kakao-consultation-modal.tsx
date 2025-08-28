@@ -7,17 +7,16 @@ interface KakaoConsultationModalProps {
   onClose: () => void;
 }
 
+// 올바른 카카오톡 채널 링크 상수
+const CORRECT_KAKAO_CHANNEL_URL = 'https://pf.kakao.com/_QdCaK/98027924';
+
 export function KakaoConsultationModal({ isOpen, onClose }: KakaoConsultationModalProps) {
   const handleKakaoTalk = () => {
-    // 카카오톡 상담 링크로 이동
-    const correctKakaoLink = 'https://pf.kakao.com/_QdCaK/98027924';
-    console.log('🔗 올바른 카카오톡 링크로 이동:', correctKakaoLink);
+    console.log('🚀 카카오톡 상담 버튼 클릭됨');
+    console.log('📍 이동할 URL:', CORRECT_KAKAO_CHANNEL_URL);
     
-    // 새 창에서 올바른 링크 열기
-    const newWindow = window.open(correctKakaoLink, '_blank', 'noopener,noreferrer');
-    if (newWindow) {
-      newWindow.focus();
-    }
+    // 직접 location.href로 이동
+    window.location.href = CORRECT_KAKAO_CHANNEL_URL;
     
     onClose();
   };
