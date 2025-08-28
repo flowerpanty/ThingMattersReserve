@@ -286,7 +286,7 @@
 
   /* 비어있을 때 placeholder 효과 */
   .date-input[type="date"]:invalid::before {
-    content: "날짜";
+    content: "날짜선택";
     color: hsl(var(--muted-foreground));
     position: absolute;
     left: 0;
@@ -295,6 +295,7 @@
     height: 100%;
     display: flex;
     align-items: center;
+    justify-content: center;
     pointer-events: none;
   }
 
