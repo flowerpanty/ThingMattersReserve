@@ -12,12 +12,12 @@ export class ExcelGenerator {
     worksheet.getColumn(3).width = 15; // 단가
     worksheet.getColumn(4).width = 15; // 합계
 
-    // 스타일 정의 (모바일 친화적)
+    // 스타일 정의 (모바일 친화적, 명확한 테두리)
     const borderStyle = {
-      top: { style: 'thin' as const },
-      left: { style: 'thin' as const },
-      bottom: { style: 'thin' as const },
-      right: { style: 'thin' as const }
+      top: { style: 'thin' as const, color: { argb: 'FF000000' } },
+      left: { style: 'thin' as const, color: { argb: 'FF000000' } },
+      bottom: { style: 'thin' as const, color: { argb: 'FF000000' } },
+      right: { style: 'thin' as const, color: { argb: 'FF000000' } }
     };
 
     const titleStyle = {
@@ -60,21 +60,31 @@ export class ExcelGenerator {
     };
 
     // 1. 헤더 - 회사명과 견적서 제목
+    // 병합할 모든 셀에 먼저 테두리 적용
+    for (let col = 1; col <= 4; col++) {
+      worksheet.getCell(1, col).style = titleStyle;
+    }
     worksheet.mergeCells('A1:D1');
     worksheet.getCell('A1').value = 'nothingmatters 견적서';
-    worksheet.getCell('A1').style = titleStyle;
     worksheet.getRow(1).height = 35;
 
     // 2. 고객 정보
+    // 병합할 모든 셀에 먼저 테두리 적용
+    for (let col = 1; col <= 4; col++) {
+      worksheet.getCell(2, col).style = leftAlignStyle;
+    }
     worksheet.mergeCells('A2:D2');
     worksheet.getCell('A2').value = `고객명: ${orderData.customerName} | 연락처: ${orderData.customerContact}`;
-    worksheet.getCell('A2').style = leftAlignStyle;
     worksheet.getRow(2).height = 28;
 
-    // 3. 수령 날짜
+    // 3. 수령 방법과 날짜
+    // 병합할 모든 셀에 먼저 테두리 적용
+    for (let col = 1; col <= 4; col++) {
+      worksheet.getCell(3, col).style = leftAlignStyle;
+    }
     worksheet.mergeCells('A3:D3');
-    worksheet.getCell('A3').value = `수령 희망일: ${orderData.deliveryDate}`;
-    worksheet.getCell('A3').style = leftAlignStyle;
+    const deliveryMethodText = orderData.deliveryMethod === 'pickup' ? '매장 픽업' : '퀵 배송';
+    worksheet.getCell('A3').value = `수령 방법: ${deliveryMethodText} | 수령 희망일: ${orderData.deliveryDate}`;
     worksheet.getRow(3).height = 28;
 
     // 4. 빈 줄
@@ -245,15 +255,19 @@ export class ExcelGenerator {
     // 7. 전체 합계
     currentRow += 1;
     
-    // 합계 선
-    worksheet.mergeCells(`A${currentRow}:C${currentRow}`);
-    worksheet.getCell(currentRow, 1).value = '총 합계';
-    worksheet.getCell(currentRow, 1).style = {
+    // 합계 선 - 병합할 모든 셀에 먼저 테두리 적용
+    const totalStyle = {
       font: { bold: true, size: 12, name: 'Arial', color: { argb: 'FFFFFFFF' } },
       alignment: { horizontal: 'center' as const, vertical: 'middle' as const },
       fill: { type: 'pattern' as const, pattern: 'solid' as const, fgColor: { argb: 'FF4F46E5' } },
       border: borderStyle
     };
+    
+    for (let col = 1; col <= 3; col++) {
+      worksheet.getCell(currentRow, col).style = totalStyle;
+    }
+    worksheet.mergeCells(`A${currentRow}:C${currentRow}`);
+    worksheet.getCell(currentRow, 1).value = '총 합계';
     
     worksheet.getCell(currentRow, 4).value = totalAmount;
     worksheet.getCell(currentRow, 4).style = {
