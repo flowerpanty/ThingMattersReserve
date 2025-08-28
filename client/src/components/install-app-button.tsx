@@ -29,14 +29,11 @@ export function InstallAppButton() {
     const checkIfIOS = () => {
       const userAgent = window.navigator.userAgent.toLowerCase();
       const isIOSDevice = /iphone|ipad|ipod/.test(userAgent);
-      const isIOSSafari = /safari/.test(userAgent) && !/chrome|crios|fxios/.test(userAgent);
+      const isSafari = /safari/.test(userAgent) && !/chrome|crios|fxios|edgios/.test(userAgent);
       
-      if (isIOSDevice) {
+      if (isIOSDevice && isSafari) {
         setIsIOS(true);
-        // iOS Safari에서만 설치 안내 표시
-        if (isIOSSafari && !window.matchMedia('(display-mode: standalone)').matches) {
-          setShowInstallButton(true);
-        }
+        console.log('iOS Safari 감지됨 - PWA 설치 가능');
       }
     };
 
@@ -63,11 +60,19 @@ export function InstallAppButton() {
         const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
         const isInWebAppiOS = (window.navigator as any).standalone;
         
+        console.log('iOS PWA 설치 상태 체크:', {
+          isStandalone,
+          isInWebAppiOS,
+          userAgent: navigator.userAgent,
+          displayMode: window.matchMedia('(display-mode: standalone)').matches
+        });
+        
         if (!isStandalone && !isInWebAppiOS) {
           setShowInstallButton(true);
+          console.log('iOS PWA 설치 버튼 표시됨');
         }
       }
-    }, 1000); // 시간을 1초로 단축
+    }, 500); // 시간을 0.5초로 더 단축
     
     return () => {
       clearTimeout(timer);
