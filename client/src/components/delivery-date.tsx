@@ -23,9 +23,15 @@ export function DeliveryDate({ deliveryDate, onUpdate }: DeliveryDateProps) {
         
         <div className="max-w-md mx-auto">
           <div className="text-center mb-6">
-            <Label htmlFor="deliveryDate" className="block text-lg font-semibold text-foreground mb-3">
-              📅 수령 날짜 선택
-            </Label>
+            {!deliveryDate ? (
+              <Label htmlFor="deliveryDate" className="block text-lg font-semibold text-foreground mb-3">
+                📅 수령 날짜 선택
+              </Label>
+            ) : (
+              <Label htmlFor="deliveryDate" className="block text-lg font-semibold text-foreground mb-3">
+                📅 선택된 수령일
+              </Label>
+            )}
             {!deliveryDate && (
               <p className="text-sm text-muted-foreground mb-4">
                 언제 받으실 건가요?

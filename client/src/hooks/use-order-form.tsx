@@ -94,9 +94,12 @@ export function useOrderForm() {
   const handleSubmit = useCallback((e: React.FormEvent) => {
     e.preventDefault();
     
+    console.log('폼 제출 시도:', formData);
+    
     try {
       // Validate form data
       const validatedData = orderDataSchema.parse(formData);
+      console.log('검증된 데이터:', validatedData);
       
       // Check if at least one product is selected
       const hasProducts = 
