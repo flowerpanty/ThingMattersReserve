@@ -22,7 +22,7 @@ export class ExcelGenerator {
     // 제목
     worksheet.mergeCells('A1:E1');
     const titleCell = worksheet.getCell('A1');
-    titleCell.value = '낫띵메터스 쿠키 견적서';
+    titleCell.value = 'nothingmatters 쿠키 견적서';
     titleCell.style = {
       font: { bold: true, size: 16 },
       fill: { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD4B8D8' } },

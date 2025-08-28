@@ -71,7 +71,7 @@ export function ProductSelection({
                   <span className="text-2xl">🍪</span>
                   <div className="text-left">
                     <div className="font-semibold">일반 쿠키</div>
-                    <div className="text-sm text-muted-foreground">개당 2,000원</div>
+                    <div className="text-sm text-muted-foreground">개당 4,500원</div>
                   </div>
                   {regularCookieTotal > 0 && (
                     <div className="bg-primary text-primary-foreground text-xs px-2 py-1 rounded-full ml-2">

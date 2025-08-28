@@ -52,7 +52,7 @@ export function PriceSummary({ pricing }: PriceSummaryProps) {
         </div>
         
         <p className="text-sm text-muted-foreground mt-4 text-center">
-          * 최종 금액은 상담 후 확정됩니다
+          * 최종 금액은 카카오톡 상담 후 확정됩니다
         </p>
       </CardContent>
     </Card>

@@ -14,8 +14,8 @@ export default function OrderForm() {
       <header className="bg-card/80 backdrop-blur-sm border-b border-border sticky top-0 z-50">
         <div className="max-w-4xl mx-auto px-4 py-6">
           <div className="text-center">
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-              낫띵메터스
+            <h1 className="text-3xl futura-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+              nothingmatters
             </h1>
             <p className="text-muted-foreground mt-2 text-sm">귀여운 수제 쿠키 예약 주문</p>
           </div>
@@ -55,7 +55,7 @@ export default function OrderForm() {
       {/* Footer */}
       <footer className="bg-card/50 mt-16 py-8 border-t border-border">
         <div className="max-w-4xl mx-auto px-4 text-center">
-          <div className="text-lg font-semibold text-primary mb-2">낫띵메터스</div>
+          <div className="text-lg futura-bold text-primary mb-2">nothingmatters</div>
           <p className="text-sm text-muted-foreground">수제 쿠키로 특별한 순간을 더욱 달콤하게</p>
           <div className="mt-4 flex justify-center gap-4 text-sm">
             <span className="text-muted-foreground">예약 문의: 카카오톡 채널</span>

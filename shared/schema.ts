@@ -59,7 +59,7 @@ export const cookieTypes = [
 ] as const;
 
 export const cookiePrices = {
-  regular: 2000, // 일반 쿠키 기본 가격
+  regular: 4500, // 일반 쿠키 기본 가격
   brownie: 7800, // 브라우니쿠키 기본 가격
   fortune: 1500, // 행운쿠키
   airplane: 3000, // 비행기샌드쿠키

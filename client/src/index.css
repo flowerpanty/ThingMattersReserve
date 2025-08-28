@@ -1,4 +1,5 @@
 @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.cdnfonts.com/css/futura-pt');
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -39,6 +40,7 @@
   --font-sans: 'Noto Sans KR', -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   --font-serif: Georgia, serif;
   --font-mono: Menlo, monospace;
+  --font-futura: 'Futura PT', 'Futura', 'Arial', sans-serif;
   --radius: 16px;
   --shadow-2xs: 0px 2px 0px 0px hsl(330, 60%, 70%, 0.00);
   --shadow-xs: 0px 2px 0px 0px hsl(330, 60%, 70%, 0.00);
@@ -102,6 +104,12 @@
 @layer utilities {
   .card-shadow {
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  }
+
+  .futura-bold {
+    font-family: var(--font-futura);
+    font-weight: 800;
+    letter-spacing: -0.02em;
   }
 
   .price-highlight {
