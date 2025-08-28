@@ -9,55 +9,60 @@ export async function registerRoutes(app: Express): Promise<Server> {
   const excelGenerator = new ExcelGenerator();
   const emailService = new EmailService();
 
+  // Calculate price function
+  const calculatePrice = (orderData: any) => {
+    let totalPrice = 0;
+    let breakdown = {
+      regularCookies: 0,
+      packaging: 0,
+      brownie: 0,
+      other: 0,
+    };
+
+    // Regular cookies
+    const regularCookieQuantity = Object.values(orderData.regularCookies).reduce((sum: number, qty: any) => sum + qty, 0);
+    breakdown.regularCookies = regularCookieQuantity * cookiePrices.regular;
+    totalPrice += breakdown.regularCookies;
+
+    // Packaging
+    if (orderData.packaging) {
+      breakdown.packaging = cookiePrices.packaging[orderData.packaging];
+      totalPrice += breakdown.packaging;
+    }
+
+    // Brownie cookies
+    if (orderData.brownieCookie.quantity > 0) {
+      breakdown.brownie = orderData.brownieCookie.quantity * cookiePrices.brownie;
+      
+      if (orderData.brownieCookie.shape === 'birthdayBear') {
+        breakdown.brownie += orderData.brownieCookie.quantity * cookiePrices.brownieOptions.birthdayBear;
+      }
+      
+      if (orderData.brownieCookie.customSticker) {
+        breakdown.brownie += cookiePrices.brownieOptions.customSticker;
+      }
+      
+      if (orderData.brownieCookie.heartMessage) {
+        breakdown.brownie += cookiePrices.brownieOptions.heartMessage;
+      }
+      
+      totalPrice += breakdown.brownie;
+    }
+
+    // Other products
+    breakdown.other += orderData.fortuneCookie * cookiePrices.fortune;
+    breakdown.other += orderData.airplaneSandwich * cookiePrices.airplane;
+    totalPrice += breakdown.other;
+
+    return { totalPrice, breakdown };
+  };
+
   // Calculate price endpoint
   app.post("/api/calculate-price", async (req, res) => {
     try {
       const orderData = orderDataSchema.parse(req.body);
-      
-      let totalPrice = 0;
-      let breakdown = {
-        regularCookies: 0,
-        packaging: 0,
-        brownie: 0,
-        other: 0,
-      };
-
-      // Regular cookies
-      const regularCookieQuantity = Object.values(orderData.regularCookies).reduce((sum, qty) => sum + qty, 0);
-      breakdown.regularCookies = regularCookieQuantity * cookiePrices.regular;
-      totalPrice += breakdown.regularCookies;
-
-      // Packaging
-      if (orderData.packaging) {
-        breakdown.packaging = cookiePrices.packaging[orderData.packaging];
-        totalPrice += breakdown.packaging;
-      }
-
-      // Brownie cookies
-      if (orderData.brownieCookie.quantity > 0) {
-        breakdown.brownie = orderData.brownieCookie.quantity * cookiePrices.brownie;
-        
-        if (orderData.brownieCookie.shape === 'birthdayBear') {
-          breakdown.brownie += orderData.brownieCookie.quantity * cookiePrices.brownieOptions.birthdayBear;
-        }
-        
-        if (orderData.brownieCookie.customSticker) {
-          breakdown.brownie += cookiePrices.brownieOptions.customSticker;
-        }
-        
-        if (orderData.brownieCookie.heartMessage) {
-          breakdown.brownie += cookiePrices.brownieOptions.heartMessage;
-        }
-        
-        totalPrice += breakdown.brownie;
-      }
-
-      // Other products
-      breakdown.other += orderData.fortuneCookie * cookiePrices.fortune;
-      breakdown.other += orderData.airplaneSandwich * cookiePrices.airplane;
-      totalPrice += breakdown.other;
-
-      res.json({ totalPrice, breakdown });
+      const result = calculatePrice(orderData);
+      res.json(result);
     } catch (error) {
       res.status(400).json({ message: "잘못된 요청입니다.", error: error instanceof Error ? error.message : String(error) });
     }
@@ -77,13 +82,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Calculate total price
-      const priceResponse = await fetch(`${req.protocol}://${req.get('host')}/api/calculate-price`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(orderData),
-      });
-      
-      const { totalPrice } = await priceResponse.json();
+      const { totalPrice } = calculatePrice(orderData);
 
       // Generate Excel quote
       const quoteBuffer = await excelGenerator.generateQuote(orderData);
