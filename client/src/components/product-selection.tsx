@@ -94,19 +94,26 @@ export function ProductSelection({
     onUpdate('singleWithDrinkSets', newSets);
   };
 
-  const toggleCookieInTwoPackSet = useCallback((setIndex: number, cookieType: string) => {
+  const toggleCookieInTwoPackSet = (setIndex: number, cookieType: string) => {
     const currentSet = twoPackSets[setIndex];
     const currentCookies = currentSet?.selectedCookies || [];
+    
     let newCookies;
     if (currentCookies.includes(cookieType)) {
+      // 이미 선택된 쿠키면 제거
       newCookies = currentCookies.filter(c => c !== cookieType);
     } else if (currentCookies.length < 2) {
+      // 2개 미만이면 추가
       newCookies = [...currentCookies, cookieType];
     } else {
-      return; // 최대 2개까지만
+      // 2개 이상이면 추가하지 않음
+      return;
     }
-    updateTwoPackSet(setIndex, 'selectedCookies', newCookies);
-  }, [twoPackSets]);
+    
+    const newSets = [...twoPackSets];
+    newSets[setIndex] = { ...newSets[setIndex], selectedCookies: newCookies };
+    onUpdate('twoPackSets', newSets);
+  };
 
   const hasRegularCookies = Object.values(regularCookies).some(qty => qty > 0);
   const regularCookieTotal = Object.values(regularCookies).reduce((sum, qty) => sum + qty, 0);
