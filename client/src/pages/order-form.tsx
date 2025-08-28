@@ -19,7 +19,7 @@ export default function OrderForm() {
         <div className="max-w-4xl mx-auto px-4 py-6">
           <div className="flex items-center justify-between">
             <div className="text-center flex-1">
-              <h1 className="text-3xl futura-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-[#1100ff]">
+              <h1 className="text-3xl futura-bold text-blue-600">
                 NOTHINGMATTERS
               </h1>
             </div>
