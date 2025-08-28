@@ -8,6 +8,12 @@ interface KakaoConsultationModalProps {
 }
 
 export function KakaoConsultationModal({ isOpen, onClose }: KakaoConsultationModalProps) {
+  const handleKakaoClick = () => {
+    console.log('🎯 NEW: 새로운 카카오톡 버튼 클릭됨');
+    window.location.href = 'https://pf.kakao.com/_QdCaK';
+    onClose();
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[425px]">
@@ -22,20 +28,14 @@ export function KakaoConsultationModal({ isOpen, onClose }: KakaoConsultationMod
         </DialogHeader>
         
         <div className="flex flex-col gap-3 mt-6">
-          <a
-            href="https://pf.kakao.com/_QdCaK"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="w-full bg-yellow-400 hover:bg-yellow-500 text-black font-semibold py-3 px-4 rounded-lg flex items-center justify-center gap-2 no-underline"
-            data-testid="button-kakao-consultation"
-            onClick={() => {
-              console.log('🎯 A태그 직접 카카오톡 링크: https://pf.kakao.com/_QdCaK');
-              onClose();
-            }}
+          <Button
+            onClick={handleKakaoClick}
+            className="w-full bg-yellow-400 hover:bg-yellow-500 text-black font-semibold py-3 px-4 rounded-lg flex items-center justify-center gap-2"
+            data-testid="button-new-kakao-consultation"
           >
             <MessageCircle className="w-5 h-5" />
-            카카오톡 상담하기
-          </a>
+            💬 카카오톡 상담하기
+          </Button>
           
           <Button
             onClick={onClose}
