@@ -21,23 +21,48 @@ export function DeliveryDate({ deliveryDate, onUpdate }: DeliveryDateProps) {
           수령 희망일
         </h2>
         
-        <div className="max-w-md">
-          <Label htmlFor="deliveryDate" className="block text-sm font-medium text-foreground mb-2">
-            날짜 선택 *
+        <div className="max-w-lg">
+          <Label htmlFor="deliveryDate" className="block text-lg font-semibold text-foreground mb-4">
+            📅 수령하실 날짜를 선택해주세요 *
           </Label>
-          <Input
-            id="deliveryDate"
-            type="date"
-            required
-            value={deliveryDate}
-            min={minDate}
-            onChange={(e) => onUpdate(e.target.value)}
-            className="w-full px-4 py-3 rounded-lg border border-input bg-background focus:ring-2 focus:ring-ring focus:border-ring transition-colors"
-            data-testid="input-delivery-date"
-          />
-          <p className="text-xs text-muted-foreground mt-2">
-            ⚠️ 당일 예약은 불가능합니다. 최소 1일 전 주문해주세요.
-          </p>
+          
+          <div className="relative">
+            <Input
+              id="deliveryDate"
+              type="date"
+              required
+              value={deliveryDate}
+              min={minDate}
+              onChange={(e) => onUpdate(e.target.value)}
+              className="w-full px-6 py-4 text-lg rounded-lg border-2 border-input bg-background focus:ring-2 focus:ring-ring focus:border-ring transition-colors text-center font-medium"
+              data-testid="input-delivery-date"
+              style={{ fontSize: '18px' }}
+            />
+            {!deliveryDate && (
+              <div className="absolute inset-0 flex items-center justify-center pointer-events-none text-muted-foreground">
+                <span className="text-base">날짜를 터치하여 선택하세요</span>
+              </div>
+            )}
+          </div>
+          
+          {deliveryDate && (
+            <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg">
+              <p className="text-green-800 font-medium text-center">
+                ✅ {new Date(deliveryDate + 'T00:00:00').toLocaleDateString('ko-KR', { 
+                  year: 'numeric', 
+                  month: 'long', 
+                  day: 'numeric',
+                  weekday: 'long'
+                })} 선택됨
+              </p>
+            </div>
+          )}
+          
+          <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+            <p className="text-yellow-800 text-sm text-center">
+              ⚠️ 당일 예약은 불가능합니다. 최소 1일 전 주문해주세요.
+            </p>
+          </div>
         </div>
       </CardContent>
     </Card>
