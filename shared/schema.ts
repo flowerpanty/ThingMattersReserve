@@ -36,10 +36,12 @@ export const orderDataSchema = z.object({
   }).default({ quantity: 0, customSticker: false, customTopper: false }),
   twoPackSets: z.array(z.object({
     selectedCookies: z.array(z.string()).length(2),
+    quantity: z.number().min(1).default(1),
   })).default([]),
   singleWithDrinkSets: z.array(z.object({
     selectedCookie: z.string(),
     selectedDrink: z.string(),
+    quantity: z.number().min(1).default(1),
   })).default([]),
   fortuneCookie: z.number().min(0).default(0), // 박스당
   airplaneSandwich: z.number().min(0).default(0), // 박스당

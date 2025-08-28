@@ -27,15 +27,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     breakdown.regularCookies = regularCookieQuantity * cookiePrices.regular;
     totalPrice += breakdown.regularCookies;
 
-    // 2구 패키지 (다중 세트)
+    // 2구 패키지 (다중 세트 및 수량)
     if (orderData.twoPackSets?.length > 0) {
-      breakdown.twoPackSet = orderData.twoPackSets.length * cookiePrices.twoPackSet;
+      const totalTwoPackQuantity = orderData.twoPackSets.reduce((sum: number, set: any) => sum + (set.quantity || 1), 0);
+      breakdown.twoPackSet = totalTwoPackQuantity * cookiePrices.twoPackSet;
       totalPrice += breakdown.twoPackSet;
     }
 
-    // 1구 + 음료 (다중 세트)
+    // 1구 + 음료 (다중 세트 및 수량)
     if (orderData.singleWithDrinkSets?.length > 0) {
-      breakdown.singleWithDrink = orderData.singleWithDrinkSets.length * cookiePrices.singleWithDrink;
+      const totalSingleWithDrinkQuantity = orderData.singleWithDrinkSets.reduce((sum: number, set: any) => sum + (set.quantity || 1), 0);
+      breakdown.singleWithDrink = totalSingleWithDrinkQuantity * cookiePrices.singleWithDrink;
       totalPrice += breakdown.singleWithDrink;
     }
 
@@ -43,11 +45,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (orderData.packaging && orderData.packaging in cookiePrices.packaging) {
       const packagingPricePerItem = cookiePrices.packaging[orderData.packaging as keyof typeof cookiePrices.packaging];
       
-      // 1구박스의 경우 일반 쿠키 개수만큼 계산 (2구패키지와 1구+음료는 별도 포장)
-      if (orderData.packaging === 'single_box') {
+      // 1구박스와 비닐탭포장은 일반 쿠키 개수만큼 계산 (2구패키지와 1구+음료는 별도 포장)
+      if (orderData.packaging === 'single_box' || orderData.packaging === 'plastic_wrap') {
         breakdown.packaging = regularCookieQuantity * packagingPricePerItem;
       } else {
-        // 비닐탭포장, 유산지는 전체 주문당 1번만
+        // 유산지는 전체 주문당 1번만
         breakdown.packaging = packagingPricePerItem;
       }
       
@@ -156,7 +158,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           orderItems.push({
             type: 'twopack' as const,
             name: `2구 패키지 세트 ${index + 1}`,
-            quantity: 1,
+            quantity: set.quantity || 1,
             price: cookiePrices.twoPackSet,
             options: {
               selectedCookies: set.selectedCookies,
@@ -171,7 +173,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           orderItems.push({
             type: 'singledrink' as const,
             name: `1구 + 음료 세트 ${index + 1}`,
-            quantity: 1,
+            quantity: set.quantity || 1,
             price: cookiePrices.singleWithDrink,
             options: {
               selectedCookie: set.selectedCookie,

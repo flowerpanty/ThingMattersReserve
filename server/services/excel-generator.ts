@@ -105,14 +105,15 @@ export class ExcelGenerator {
       currentRow++;
     }
     
-    // 2구 패키지 (다중 세트)
+    // 2구 패키지 (다중 세트 및 수량)
     if (orderData.twoPackSets?.length > 0) {
-      const amount = orderData.twoPackSets.length * cookiePrices.twoPackSet;
+      const totalTwoPackQuantity = orderData.twoPackSets.reduce((sum: number, set: any) => sum + (set.quantity || 1), 0);
+      const amount = totalTwoPackQuantity * cookiePrices.twoPackSet;
       totalAmount += amount;
       
       worksheet.getCell(currentRow, 1).value = '2구 패키지';
       worksheet.getCell(currentRow, 1).style = cellStyle;
-      worksheet.getCell(currentRow, 2).value = orderData.twoPackSets.length;
+      worksheet.getCell(currentRow, 2).value = totalTwoPackQuantity;
       worksheet.getCell(currentRow, 2).style = cellStyle;
       worksheet.getCell(currentRow, 3).value = cookiePrices.twoPackSet;
       worksheet.getCell(currentRow, 3).style = priceStyle;
@@ -122,14 +123,15 @@ export class ExcelGenerator {
       currentRow++;
     }
     
-    // 1구 + 음료 (다중 세트)
+    // 1구 + 음료 (다중 세트 및 수량)
     if (orderData.singleWithDrinkSets?.length > 0) {
-      const amount = orderData.singleWithDrinkSets.length * cookiePrices.singleWithDrink;
+      const totalSingleWithDrinkQuantity = orderData.singleWithDrinkSets.reduce((sum: number, set: any) => sum + (set.quantity || 1), 0);
+      const amount = totalSingleWithDrinkQuantity * cookiePrices.singleWithDrink;
       totalAmount += amount;
       
       worksheet.getCell(currentRow, 1).value = '1구 + 음료';
       worksheet.getCell(currentRow, 1).style = cellStyle;
-      worksheet.getCell(currentRow, 2).value = orderData.singleWithDrinkSets.length;
+      worksheet.getCell(currentRow, 2).value = totalSingleWithDrinkQuantity;
       worksheet.getCell(currentRow, 2).style = cellStyle;
       worksheet.getCell(currentRow, 3).value = cookiePrices.singleWithDrink;
       worksheet.getCell(currentRow, 3).style = priceStyle;
@@ -280,7 +282,7 @@ export class ExcelGenerator {
       orderData.twoPackSets.forEach((set, index) => {
         if (set.selectedCookies?.length > 0) {
           worksheet.mergeCells(`A${currentRow}:D${currentRow}`);
-          worksheet.getCell(currentRow, 1).value = `• 2구 패키지 세트 ${index + 1}: ${set.selectedCookies.join(', ')}`;
+          worksheet.getCell(currentRow, 1).value = `• 2구 패키지 세트 ${index + 1} (${set.quantity || 1}개): ${set.selectedCookies.join(', ')}`;
           worksheet.getCell(currentRow, 1).style = leftAlignStyle;
           worksheet.getRow(currentRow).height = 18;
           currentRow++;
@@ -291,7 +293,7 @@ export class ExcelGenerator {
     // 1구 + 음료 상세 (다중 세트)
     if (orderData.singleWithDrinkSets?.length > 0) {
       orderData.singleWithDrinkSets.forEach((set, index) => {
-        let detailText = `• 1구 + 음료 세트 ${index + 1}`;
+        let detailText = `• 1구 + 음료 세트 ${index + 1} (${set.quantity || 1}개)`;
         if (set.selectedCookie || set.selectedDrink) {
           detailText += ': ';
           if (set.selectedCookie) {

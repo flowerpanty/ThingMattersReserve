@@ -22,10 +22,12 @@ interface ProductSelectionProps {
   };
   twoPackSets: {
     selectedCookies: string[];
+    quantity: number;
   }[];
   singleWithDrinkSets: {
     selectedCookie: string;
     selectedDrink: string;
+    quantity: number;
   }[];
   fortuneCookie: number;
   airplaneSandwich: number;
@@ -62,7 +64,7 @@ export function ProductSelection({
 
   // 2구패키지 세트 관리
   const addTwoPackSet = () => {
-    onUpdate('twoPackSets', [...twoPackSets, { selectedCookies: [] }]);
+    onUpdate('twoPackSets', [...twoPackSets, { selectedCookies: [], quantity: 1 }]);
   };
 
   const removeTwoPackSet = (index: number) => {
@@ -70,15 +72,15 @@ export function ProductSelection({
     onUpdate('twoPackSets', newSets);
   };
 
-  const updateTwoPackSet = (index: number, cookies: string[]) => {
+  const updateTwoPackSet = (index: number, field: 'selectedCookies' | 'quantity', value: string[] | number) => {
     const newSets = [...twoPackSets];
-    newSets[index] = { selectedCookies: cookies };
+    newSets[index] = { ...newSets[index], [field]: value };
     onUpdate('twoPackSets', newSets);
   };
 
   // 1구+음료 세트 관리
   const addSingleWithDrinkSet = () => {
-    onUpdate('singleWithDrinkSets', [...singleWithDrinkSets, { selectedCookie: '', selectedDrink: '' }]);
+    onUpdate('singleWithDrinkSets', [...singleWithDrinkSets, { selectedCookie: '', selectedDrink: '', quantity: 1 }]);
   };
 
   const removeSingleWithDrinkSet = (index: number) => {
@@ -86,7 +88,7 @@ export function ProductSelection({
     onUpdate('singleWithDrinkSets', newSets);
   };
 
-  const updateSingleWithDrinkSet = (index: number, field: 'selectedCookie' | 'selectedDrink', value: string) => {
+  const updateSingleWithDrinkSet = (index: number, field: 'selectedCookie' | 'selectedDrink' | 'quantity', value: string | number) => {
     const newSets = [...singleWithDrinkSets];
     newSets[index] = { ...newSets[index], [field]: value };
     onUpdate('singleWithDrinkSets', newSets);
@@ -103,7 +105,7 @@ export function ProductSelection({
     } else {
       return; // 최대 2개까지만
     }
-    updateTwoPackSet(setIndex, newCookies);
+    updateTwoPackSet(setIndex, 'selectedCookies', newCookies);
   };
 
   const hasRegularCookies = Object.values(regularCookies).some(qty => qty > 0);
@@ -249,15 +251,42 @@ export function ProductSelection({
                     <div key={index} className="bg-accent/20 rounded-lg p-3">
                       <div className="flex items-center justify-between mb-3">
                         <h4 className="font-medium text-sm">세트 {index + 1} - 쿠키 2개 선택</h4>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={() => removeTwoPackSet(index)}
-                          data-testid={`button-remove-twopack-${index}`}
-                        >
-                          삭제
-                        </Button>
+                        <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-1">
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              className="w-7 h-7 rounded-full p-0 text-xs"
+                              onClick={() => updateTwoPackSet(index, 'quantity', Math.max(1, (set.quantity || 1) - 1))}
+                              data-testid={`button-decrease-twopack-${index}`}
+                            >
+                              -
+                            </Button>
+                            <span className="w-8 text-center text-sm font-medium" data-testid={`quantity-twopack-${index}`}>
+                              {set.quantity || 1}
+                            </span>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              className="w-7 h-7 rounded-full p-0 text-xs"
+                              onClick={() => updateTwoPackSet(index, 'quantity', (set.quantity || 1) + 1)}
+                              data-testid={`button-increase-twopack-${index}`}
+                            >
+                              +
+                            </Button>
+                          </div>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => removeTwoPackSet(index)}
+                            data-testid={`button-remove-twopack-${index}`}
+                          >
+                            삭제
+                          </Button>
+                        </div>
                       </div>
                       
                       <div className="grid grid-cols-2 lg:grid-cols-3 gap-2 mb-2">
@@ -334,15 +363,42 @@ export function ProductSelection({
                     <div key={index} className="bg-accent/20 rounded-lg p-3">
                       <div className="flex items-center justify-between mb-3">
                         <h4 className="font-medium text-sm">세트 {index + 1} - 쿠키 + 음료</h4>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={() => removeSingleWithDrinkSet(index)}
-                          data-testid={`button-remove-single-drink-${index}`}
-                        >
-                          삭제
-                        </Button>
+                        <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-1">
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              className="w-7 h-7 rounded-full p-0 text-xs"
+                              onClick={() => updateSingleWithDrinkSet(index, 'quantity', Math.max(1, (set.quantity || 1) - 1))}
+                              data-testid={`button-decrease-single-drink-${index}`}
+                            >
+                              -
+                            </Button>
+                            <span className="w-8 text-center text-sm font-medium" data-testid={`quantity-single-drink-${index}`}>
+                              {set.quantity || 1}
+                            </span>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              className="w-7 h-7 rounded-full p-0 text-xs"
+                              onClick={() => updateSingleWithDrinkSet(index, 'quantity', (set.quantity || 1) + 1)}
+                              data-testid={`button-increase-single-drink-${index}`}
+                            >
+                              +
+                            </Button>
+                          </div>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => removeSingleWithDrinkSet(index)}
+                            data-testid={`button-remove-single-drink-${index}`}
+                          >
+                            삭제
+                          </Button>
+                        </div>
                       </div>
                       
                       <div className="space-y-3">
