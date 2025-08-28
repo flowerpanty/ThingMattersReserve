@@ -12,11 +12,19 @@ const CORRECT_KAKAO_CHANNEL_URL = 'https://pf.kakao.com/_QdCaK';
 
 export function KakaoConsultationModal({ isOpen, onClose }: KakaoConsultationModalProps) {
   const handleKakaoTalk = () => {
-    console.log('🚀 카카오톡 상담 버튼 클릭됨');
-    console.log('📍 이동할 URL:', CORRECT_KAKAO_CHANNEL_URL);
+    // 강제로 올바른 링크 설정
+    const FINAL_KAKAO_URL = 'https://pf.kakao.com/_QdCaK';
     
-    // 직접 location.href로 이동
-    window.location.href = CORRECT_KAKAO_CHANNEL_URL;
+    console.log('🔥 FIXED: 강제 카카오톡 링크:', FINAL_KAKAO_URL);
+    
+    // 새 탭에서 강제로 올바른 링크 열기
+    const newTab = window.open(FINAL_KAKAO_URL, '_blank');
+    if (newTab) {
+      newTab.focus();
+    } else {
+      // 팝업이 차단된 경우 현재 창에서 이동
+      window.location.href = FINAL_KAKAO_URL;
+    }
     
     onClose();
   };
