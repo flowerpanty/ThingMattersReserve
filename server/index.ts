@@ -3,6 +3,10 @@ import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 
 const app = express();
+
+// server/index.ts (초반 아무 데나)
+app.get('/healthz', (_req, res) => res.status(200).send('ok'))
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
