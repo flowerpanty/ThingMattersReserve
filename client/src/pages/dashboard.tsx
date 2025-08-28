@@ -62,17 +62,12 @@ export function Dashboard() {
   const generateKakaoMessage = async (orderId: string, type: 'order_confirm' | 'payment_confirm' | 'ready_for_pickup') => {
     setIsGeneratingMessage(true);
     try {
-      const result = await apiRequest('/api/generate-kakao-message', {
-        method: 'POST',
-        body: JSON.stringify({
-          orderId,
-          messageType: type
-        }),
-        headers: {
-          'Content-Type': 'application/json'
-        }
+      const response = await apiRequest('POST', '/api/generate-kakao-message', {
+        orderId,
+        messageType: type
       });
       
+      const result = await response.json();
       setGeneratedMessage(result.message);
       toast({
         title: "카카오톡 메시지 생성 완료",
