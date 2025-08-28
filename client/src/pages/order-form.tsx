@@ -22,27 +22,6 @@ export default function OrderForm() {
               <p className="text-yellow-800 text-sm font-medium">⚠️ 주문 최종확정은 상담후 가능합니다</p>
             </div>
             
-            <div className="flex flex-col sm:flex-row gap-3 mt-4 justify-center">
-              <a
-                href="http://pf.kakao.com/_QdCaK"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-yellow-400 hover:bg-yellow-500 text-yellow-900 font-semibold rounded-lg transition-colors"
-                data-testid="button-kakao-consult"
-              >
-                💬 카카오톡 상담하기
-              </a>
-              
-              <a
-                href="https://nothingmatters.kr"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold rounded-lg transition-colors"
-                data-testid="button-main-website"
-              >
-                🌐 메인 웹사이트
-              </a>
-            </div>
           </div>
         </div>
       </header>
@@ -80,11 +59,43 @@ export default function OrderForm() {
       {/* Footer */}
       <footer className="bg-card/50 mt-16 py-8 border-t border-border">
         <div className="max-w-4xl mx-auto px-4 text-center">
-          <div className="text-lg futura-bold text-primary mb-2">nothingmatters</div>
+          <div className="text-lg futura-bold text-primary mb-4">nothingmatters</div>
+          
+          <div className="flex flex-col sm:flex-row justify-center gap-4 mb-6">
+            <button
+              type="submit"
+              form="order-form"
+              className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold rounded-lg transition-colors"
+              data-testid="button-get-quote-footer"
+            >
+              📄 견적서 받기
+            </button>
+            
+            <a
+              href="http://pf.kakao.com/_QdCaK"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-yellow-400 hover:bg-yellow-500 text-yellow-900 font-semibold rounded-lg transition-colors"
+              data-testid="button-kakao-consult-footer"
+            >
+              💬 카카오톡 상담하기
+            </a>
+            
+            <a
+              href="https://nothingmatters.kr"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-secondary hover:bg-secondary/90 text-secondary-foreground font-semibold rounded-lg transition-colors"
+              data-testid="button-home-footer"
+            >
+              🏠 nothingmatters
+            </a>
+          </div>
+          
           <p className="text-sm text-muted-foreground">수제 쿠키로 특별한 순간을 더욱 달콤하게</p>
-          <div className="mt-4 flex justify-center gap-4 text-sm">
-            <span className="text-muted-foreground">예약 문의: 카카오톡 채널</span>
-            <span className="text-muted-foreground">최소 1일 전 주문</span>
+          <div className="mt-2 flex justify-center gap-4 text-xs text-muted-foreground">
+            <span>예약 문의: 카카오톡 채널</span>
+            <span>최소 1일 전 주문</span>
           </div>
         </div>
       </footer>

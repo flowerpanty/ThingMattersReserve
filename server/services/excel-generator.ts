@@ -181,6 +181,28 @@ export class ExcelGenerator {
 
     row++;
 
+    // 실제 주문 항목들 표시
+    
+    // 일반 쿠키
+    if (regularCookieQuantity > 0) {
+      const regularAmount = regularCookieQuantity * cookiePrices.regular;
+      worksheet.getCell(row, 1).value = '일반쿠키';
+      worksheet.getCell(row, 1).style = cellStyle;
+      worksheet.getCell(row, 2).value = regularCookieQuantity;
+      worksheet.getCell(row, 2).style = cellStyle;
+      worksheet.getCell(row, 3).value = cookiePrices.regular;
+      worksheet.getCell(row, 3).style = cellStyle;
+      worksheet.getCell(row, 4).value = regularAmount;
+      worksheet.getCell(row, 4).style = cellStyle;
+      worksheet.getCell(row, 5).value = '';
+      worksheet.getCell(row, 5).style = cellStyle;
+      worksheet.getCell(row, 6).value = '';
+      worksheet.getCell(row, 6).style = cellStyle;
+      worksheet.getCell(row, 7).value = '';
+      worksheet.getCell(row, 7).style = cellStyle;
+      row++;
+    }
+
     // 브라우니쿠키 항목
     if (orderData.brownieCookie.quantity > 0) {
       let brownieAmount = orderData.brownieCookie.quantity * cookiePrices.brownie;
@@ -196,13 +218,13 @@ export class ExcelGenerator {
 
       worksheet.getCell(row, 1).value = '브라우니쿠키';
       worksheet.getCell(row, 1).style = cellStyle;
-      worksheet.getCell(row, 2).value = '50';
+      worksheet.getCell(row, 2).value = orderData.brownieCookie.quantity;
       worksheet.getCell(row, 2).style = cellStyle;
-      worksheet.getCell(row, 3).value = orderData.brownieCookie.quantity;
+      worksheet.getCell(row, 3).value = Math.floor(brownieAmount / orderData.brownieCookie.quantity);
       worksheet.getCell(row, 3).style = cellStyle;
-      worksheet.getCell(row, 4).value = cookiePrices.brownie;
+      worksheet.getCell(row, 4).value = brownieAmount;
       worksheet.getCell(row, 4).style = cellStyle;
-      worksheet.getCell(row, 5).value = brownieAmount;
+      worksheet.getCell(row, 5).value = '';
       worksheet.getCell(row, 5).style = cellStyle;
       worksheet.getCell(row, 6).value = '';
       worksheet.getCell(row, 6).style = cellStyle;
@@ -211,39 +233,67 @@ export class ExcelGenerator {
       row++;
     }
 
-    // 레터링 항목 (예시)
-    worksheet.getCell(row, 1).value = '레터링';
-    worksheet.getCell(row, 1).style = cellStyle;
-    worksheet.getCell(row, 2).value = '50';
-    worksheet.getCell(row, 2).style = cellStyle;
-    worksheet.getCell(row, 3).value = '500';
-    worksheet.getCell(row, 3).style = cellStyle;
-    worksheet.getCell(row, 4).value = '25,000';
-    worksheet.getCell(row, 4).style = cellStyle;
-    worksheet.getCell(row, 5).value = '';
-    worksheet.getCell(row, 5).style = cellStyle;
-    worksheet.getCell(row, 6).value = '';
-    worksheet.getCell(row, 6).style = cellStyle;
-    worksheet.getCell(row, 7).value = '';
-    worksheet.getCell(row, 7).style = cellStyle;
-    row++;
+    // 행운쿠키
+    if (orderData.fortuneCookie > 0) {
+      const fortuneAmount = orderData.fortuneCookie * cookiePrices.fortune;
+      worksheet.getCell(row, 1).value = '행운쿠키';
+      worksheet.getCell(row, 1).style = cellStyle;
+      worksheet.getCell(row, 2).value = orderData.fortuneCookie;
+      worksheet.getCell(row, 2).style = cellStyle;
+      worksheet.getCell(row, 3).value = cookiePrices.fortune;
+      worksheet.getCell(row, 3).style = cellStyle;
+      worksheet.getCell(row, 4).value = fortuneAmount;
+      worksheet.getCell(row, 4).style = cellStyle;
+      worksheet.getCell(row, 5).value = '';
+      worksheet.getCell(row, 5).style = cellStyle;
+      worksheet.getCell(row, 6).value = '';
+      worksheet.getCell(row, 6).style = cellStyle;
+      worksheet.getCell(row, 7).value = '';
+      worksheet.getCell(row, 7).style = cellStyle;
+      row++;
+    }
 
-    // 스티커제작 항목 (예시)
-    worksheet.getCell(row, 1).value = '스티커제작';
-    worksheet.getCell(row, 1).style = cellStyle;
-    worksheet.getCell(row, 2).value = '1';
-    worksheet.getCell(row, 2).style = cellStyle;
-    worksheet.getCell(row, 3).value = '15,000';
-    worksheet.getCell(row, 3).style = cellStyle;
-    worksheet.getCell(row, 4).value = '15,000';
-    worksheet.getCell(row, 4).style = cellStyle;
-    worksheet.getCell(row, 5).value = '';
-    worksheet.getCell(row, 5).style = cellStyle;
-    worksheet.getCell(row, 6).value = '';
-    worksheet.getCell(row, 6).style = cellStyle;
-    worksheet.getCell(row, 7).value = '';
-    worksheet.getCell(row, 7).style = cellStyle;
-    row++;
+    // 비행기샌드쿠키
+    if (orderData.airplaneSandwich > 0) {
+      const airplaneAmount = orderData.airplaneSandwich * cookiePrices.airplane;
+      worksheet.getCell(row, 1).value = '비행기샌드쿠키';
+      worksheet.getCell(row, 1).style = cellStyle;
+      worksheet.getCell(row, 2).value = orderData.airplaneSandwich;
+      worksheet.getCell(row, 2).style = cellStyle;
+      worksheet.getCell(row, 3).value = cookiePrices.airplane;
+      worksheet.getCell(row, 3).style = cellStyle;
+      worksheet.getCell(row, 4).value = airplaneAmount;
+      worksheet.getCell(row, 4).style = cellStyle;
+      worksheet.getCell(row, 5).value = '';
+      worksheet.getCell(row, 5).style = cellStyle;
+      worksheet.getCell(row, 6).value = '';
+      worksheet.getCell(row, 6).style = cellStyle;
+      worksheet.getCell(row, 7).value = '';
+      worksheet.getCell(row, 7).style = cellStyle;
+      row++;
+    }
+
+    // 포장비
+    if (orderData.packaging) {
+      const packagingAmount = cookiePrices.packaging[orderData.packaging];
+      const packagingName = orderData.packaging === '1box' ? '1구 박스' : 
+                           orderData.packaging === '2box' ? '2구 박스' : '4구 박스';
+      worksheet.getCell(row, 1).value = packagingName;
+      worksheet.getCell(row, 1).style = cellStyle;
+      worksheet.getCell(row, 2).value = 1;
+      worksheet.getCell(row, 2).style = cellStyle;
+      worksheet.getCell(row, 3).value = packagingAmount;
+      worksheet.getCell(row, 3).style = cellStyle;
+      worksheet.getCell(row, 4).value = packagingAmount;
+      worksheet.getCell(row, 4).style = cellStyle;
+      worksheet.getCell(row, 5).value = '';
+      worksheet.getCell(row, 5).style = cellStyle;
+      worksheet.getCell(row, 6).value = '';
+      worksheet.getCell(row, 6).style = cellStyle;
+      worksheet.getCell(row, 7).value = '';
+      worksheet.getCell(row, 7).style = cellStyle;
+      row++;
+    }
 
     // 빈 행들 추가 (10개 정도)
     for (let i = 0; i < 8; i++) {
