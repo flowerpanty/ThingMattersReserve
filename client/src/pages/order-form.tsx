@@ -56,7 +56,7 @@ export default function OrderForm() {
           <ProductSelection 
             regularCookies={formData.regularCookies}
             packaging={formData.packaging}
-            brownieCookie={formData.brownieCookie}
+            brownieCookieSets={formData.brownieCookieSets}
             twoPackSets={formData.twoPackSets}
             singleWithDrinkSets={formData.singleWithDrinkSets}
             fortuneCookie={formData.fortuneCookie}

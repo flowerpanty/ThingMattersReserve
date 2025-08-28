@@ -27,13 +27,13 @@ export const orderDataSchema = z.object({
   deliveryDate: z.string().min(1, "날짜를 선택해주세요"),
   regularCookies: z.record(z.number().min(0)).default({}),
   packaging: z.enum(['single_box', 'plastic_wrap', 'oil_paper']).optional(),
-  brownieCookie: z.object({
-    quantity: z.number().min(0).default(0),
+  brownieCookieSets: z.array(z.object({
+    quantity: z.number().min(1).default(1),
     shape: z.enum(['bear', 'rabbit', 'birthdayBear']).optional(),
     customSticker: z.boolean().default(false),
     heartMessage: z.string().optional(),
     customTopper: z.boolean().default(false),
-  }).default({ quantity: 0, customSticker: false, customTopper: false }),
+  })).default([]),
   twoPackSets: z.array(z.object({
     selectedCookies: z.array(z.string()).length(2),
     quantity: z.number().min(1).default(1),
@@ -89,8 +89,5 @@ export const cookiePrices = {
     birthdayBear: 500,
     customSticker: 15000,
     heartMessage: 500,
-    goldPowder: 1000,
-    customColor: 2000,
-    specialPackaging: 3000,
   }
 } as const;

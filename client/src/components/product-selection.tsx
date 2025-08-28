@@ -13,16 +13,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 interface ProductSelectionProps {
   regularCookies: Record<string, number>;
   packaging?: string;
-  brownieCookie: {
+  brownieCookieSets: {
     quantity: number;
     shape?: string;
     customSticker: boolean;
     heartMessage?: string;
     customTopper: boolean;
-    goldPowder?: boolean;
-    customColor?: boolean;
-    specialPackaging?: boolean;
-  };
+  }[];
   twoPackSets: {
     selectedCookies: string[];
     quantity: number;
@@ -40,7 +37,7 @@ interface ProductSelectionProps {
 export function ProductSelection({ 
   regularCookies, 
   packaging, 
-  brownieCookie,
+  brownieCookieSets,
   twoPackSets,
   singleWithDrinkSets,
   fortuneCookie, 
@@ -61,8 +58,26 @@ export function ProductSelection({
     onUpdate('regularCookies', { ...regularCookies, [type]: Math.max(0, quantity) });
   };
 
-  const updateBrownieCookie = (field: string, value: any) => {
-    onUpdate('brownieCookie', { ...brownieCookie, [field]: value });
+  // 브라우니쿠키 세트 관리
+  const addBrownieCookieSet = () => {
+    onUpdate('brownieCookieSets', [...(brownieCookieSets || []), { 
+      quantity: 1, 
+      shape: 'bear', 
+      customSticker: false, 
+      heartMessage: undefined, 
+      customTopper: false 
+    }]);
+  };
+
+  const removeBrownieCookieSet = (index: number) => {
+    const newSets = (brownieCookieSets || []).filter((_, i) => i !== index);
+    onUpdate('brownieCookieSets', newSets);
+  };
+
+  const updateBrownieCookieSet = (index: number, field: string, value: any) => {
+    const newSets = [...(brownieCookieSets || [])];
+    newSets[index] = { ...newSets[index], [field]: value };
+    onUpdate('brownieCookieSets', newSets);
   };
 
   // 2구패키지 세트 관리
@@ -492,9 +507,9 @@ export function ProductSelection({
                     <div className="font-semibold">브라우니쿠키</div>
                     <div className="text-sm text-muted-foreground">개당 7,800원</div>
                   </div>
-                  {brownieCookie.quantity > 0 && (
+                  {brownieCookieSets && brownieCookieSets.length > 0 && (
                     <div className="bg-primary text-primary-foreground text-xs px-2 py-1 rounded-full ml-2">
-                      {brownieCookie.quantity}개
+                      {brownieCookieSets.reduce((sum, set) => sum + set.quantity, 0)}개
                     </div>
                   )}
                 </div>
@@ -502,173 +517,144 @@ export function ProductSelection({
               </CollapsibleTrigger>
               
               <CollapsibleContent className="px-4 pb-4">
-                <div className="flex items-center justify-between p-3 bg-muted/30 rounded-lg mb-4">
-                  <div className="flex items-center gap-2">
-                    <Checkbox
-                      id="brownie-cookie"
-                      checked={brownieCookie.quantity > 0}
-                      onCheckedChange={(checked) => {
-                        updateBrownieCookie('quantity', checked ? 1 : 0);
-                      }}
-                      data-testid="checkbox-brownie-cookie"
-                    />
-                    <Label htmlFor="brownie-cookie" className="text-sm font-medium">브라우니쿠키</Label>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      className="w-7 h-7 rounded-full p-0 text-xs"
-                      onClick={() => updateBrownieCookie('quantity', Math.max(0, brownieCookie.quantity - 1))}
-                      data-testid="button-decrease-brownie"
-                    >
-                      -
-                    </Button>
-                    <span className="w-8 text-center text-sm font-medium" data-testid="quantity-brownie">
-                      {brownieCookie.quantity}
-                    </span>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      className="w-7 h-7 rounded-full p-0 text-xs"
-                      onClick={() => updateBrownieCookie('quantity', brownieCookie.quantity + 1)}
-                      data-testid="button-increase-brownie"
-                    >
-                      +
-                    </Button>
-                  </div>
-                </div>
-                
-                {/* Brownie Cookie Options */}
-                {brownieCookie.quantity > 0 && (
-                  <div className="space-y-3">
-                    {/* Shape Selection */}
-                    <div className="bg-accent/20 rounded-lg p-3">
-                      <h5 className="font-medium mb-2 text-sm">쿠키 모양</h5>
-                      <RadioGroup 
-                        value={brownieCookie.shape} 
-                        onValueChange={(value) => updateBrownieCookie('shape', value)}
-                      >
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
-                          <div className="flex items-center space-x-2 p-2 bg-card rounded cursor-pointer hover:bg-accent/30 transition-colors">
-                            <RadioGroupItem value="bear" id="bear" data-testid="radio-shape-bear" />
-                            <Label htmlFor="bear" className="cursor-pointer text-sm">곰돌이</Label>
-                          </div>
-                          <div className="flex items-center space-x-2 p-2 bg-card rounded cursor-pointer hover:bg-accent/30 transition-colors">
-                            <RadioGroupItem value="rabbit" id="rabbit" data-testid="radio-shape-rabbit" />
-                            <Label htmlFor="rabbit" className="cursor-pointer text-sm">토끼</Label>
-                          </div>
-                          <div className="flex items-center space-x-2 p-2 bg-card rounded cursor-pointer hover:bg-accent/30 transition-colors">
-                            <RadioGroupItem value="birthdayBear" id="birthdayBear" data-testid="radio-shape-birthday-bear" />
-                            <Label htmlFor="birthdayBear" className="cursor-pointer text-sm">생일곰 (+500원)</Label>
-                          </div>
+                <div className="space-y-3">
+                  {brownieCookieSets && brownieCookieSets.map((set, index) => (
+                    <div key={index} className="border border-muted rounded-lg p-3">
+                      <div className="flex items-center justify-between mb-3">
+                        <h5 className="font-medium text-sm">브라우니 세트 {index + 1}</h5>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            className="w-7 h-7 rounded-full p-0 text-xs"
+                            onClick={() => updateBrownieCookieSet(index, 'quantity', Math.max(1, set.quantity - 1))}
+                            data-testid={`button-decrease-brownie-${index}`}
+                          >
+                            -
+                          </Button>
+                          <span className="w-8 text-center text-sm font-medium" data-testid={`quantity-brownie-${index}`}>
+                            {set.quantity}
+                          </span>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            className="w-7 h-7 rounded-full p-0 text-xs"
+                            onClick={() => updateBrownieCookieSet(index, 'quantity', set.quantity + 1)}
+                            data-testid={`button-increase-brownie-${index}`}
+                          >
+                            +
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => removeBrownieCookieSet(index)}
+                            data-testid={`button-remove-brownie-${index}`}
+                          >
+                            삭제
+                          </Button>
                         </div>
-                      </RadioGroup>
-                    </div>
-                    
-                    {/* Custom Options */}
-                    <div className="bg-accent/20 rounded-lg p-3">
-                      <h5 className="font-medium mb-2 text-sm">커스텀 옵션</h5>
-                      <div className="space-y-2">
-                        <div className="flex items-start gap-2 p-2 bg-card rounded hover:bg-accent/30 transition-colors">
-                          <Checkbox
-                            id="customSticker"
-                            checked={brownieCookie.customSticker}
-                            onCheckedChange={(checked) => updateBrownieCookie('customSticker', checked)}
-                            data-testid="checkbox-custom-sticker"
-                          />
-                          <Label htmlFor="customSticker" className="cursor-pointer text-sm">
-                            <div className="font-medium">하단 스티커 제작</div>
-                            <div className="text-xs text-muted-foreground">+15,000원</div>
-                          </Label>
-                        </div>
-                        
-                        <div className="bg-card rounded p-2">
-                          <div className="flex items-start gap-2">
-                            <Checkbox
-                              id="heartMessage"
-                              checked={!!brownieCookie.heartMessage}
-                              onCheckedChange={(checked) => {
-                                updateBrownieCookie('heartMessage', checked ? '' : undefined);
-                              }}
-                              data-testid="checkbox-heart-message"
-                            />
-                            <div className="flex-1">
-                              <Label htmlFor="heartMessage" className="font-medium mb-1 block cursor-pointer text-sm">
-                                하트 안 문구 (+500원)
-                              </Label>
-                              <Input
-                                type="text"
-                                placeholder="한글 2자 또는 영문 4자"
-                                value={brownieCookie.heartMessage || ''}
-                                onChange={(e) => updateBrownieCookie('heartMessage', e.target.value)}
-                                className="w-full text-xs h-8"
-                                maxLength={4}
-                                disabled={!brownieCookie.heartMessage && brownieCookie.heartMessage !== ''}
-                                data-testid="input-heart-message"
-                              />
-                              <div className="text-xs text-muted-foreground mt-1">예: 사랑, LOVE</div>
+                      </div>
+                      
+                      {/* Shape Selection */}
+                      <div className="bg-accent/20 rounded-lg p-3 mb-3">
+                        <h6 className="font-medium mb-2 text-xs">쿠키 모양</h6>
+                        <RadioGroup 
+                          value={set.shape} 
+                          onValueChange={(value) => updateBrownieCookieSet(index, 'shape', value)}
+                        >
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                            <div className="flex items-center space-x-2 p-2 bg-card rounded cursor-pointer hover:bg-accent/30 transition-colors">
+                              <RadioGroupItem value="bear" id={`bear-${index}`} data-testid={`radio-shape-bear-${index}`} />
+                              <Label htmlFor={`bear-${index}`} className="cursor-pointer text-xs">곰돌이</Label>
+                            </div>
+                            <div className="flex items-center space-x-2 p-2 bg-card rounded cursor-pointer hover:bg-accent/30 transition-colors">
+                              <RadioGroupItem value="rabbit" id={`rabbit-${index}`} data-testid={`radio-shape-rabbit-${index}`} />
+                              <Label htmlFor={`rabbit-${index}`} className="cursor-pointer text-xs">토끼</Label>
+                            </div>
+                            <div className="flex items-center space-x-2 p-2 bg-card rounded cursor-pointer hover:bg-accent/30 transition-colors">
+                              <RadioGroupItem value="birthdayBear" id={`birthdayBear-${index}`} data-testid={`radio-shape-birthday-bear-${index}`} />
+                              <Label htmlFor={`birthdayBear-${index}`} className="cursor-pointer text-xs">생일곰 (+500원)</Label>
                             </div>
                           </div>
-                        </div>
-                        
-                        <div className="flex items-start gap-2 p-2 bg-card rounded hover:bg-accent/30 transition-colors">
-                          <Checkbox
-                            id="customTopper"
-                            checked={brownieCookie.customTopper}
-                            onCheckedChange={(checked) => updateBrownieCookie('customTopper', checked)}
-                            data-testid="checkbox-custom-topper"
-                          />
-                          <Label htmlFor="customTopper" className="cursor-pointer text-sm">
-                            <div className="font-medium">토퍼 제작</div>
-                            <div className="text-xs text-muted-foreground">문의 필요</div>
-                          </Label>
-                        </div>
-
-                        <div className="flex items-start gap-2 p-2 bg-card rounded hover:bg-accent/30 transition-colors">
-                          <Checkbox
-                            id="goldPowder"
-                            checked={brownieCookie.goldPowder}
-                            onCheckedChange={(checked) => updateBrownieCookie('goldPowder', checked)}
-                            data-testid="checkbox-gold-powder"
-                          />
-                          <Label htmlFor="goldPowder" className="cursor-pointer text-sm">
-                            <div className="font-medium">골드 파우더</div>
-                            <div className="text-xs text-muted-foreground">+1,000원</div>
-                          </Label>
-                        </div>
-
-                        <div className="flex items-start gap-2 p-2 bg-card rounded hover:bg-accent/30 transition-colors">
-                          <Checkbox
-                            id="customColor"
-                            checked={brownieCookie.customColor}
-                            onCheckedChange={(checked) => updateBrownieCookie('customColor', checked)}
-                            data-testid="checkbox-custom-color"
-                          />
-                          <Label htmlFor="customColor" className="cursor-pointer text-sm">
-                            <div className="font-medium">커스텀 컬러</div>
-                            <div className="text-xs text-muted-foreground">+2,000원</div>
-                          </Label>
-                        </div>
-
-                        <div className="flex items-start gap-2 p-2 bg-card rounded hover:bg-accent/30 transition-colors">
-                          <Checkbox
-                            id="specialPackaging"
-                            checked={brownieCookie.specialPackaging}
-                            onCheckedChange={(checked) => updateBrownieCookie('specialPackaging', checked)}
-                            data-testid="checkbox-special-packaging"
-                          />
-                          <Label htmlFor="specialPackaging" className="cursor-pointer text-sm">
-                            <div className="font-medium">특별 포장</div>
-                            <div className="text-xs text-muted-foreground">+3,000원</div>
-                          </Label>
+                        </RadioGroup>
+                      </div>
+                      
+                      {/* Custom Options */}
+                      <div className="bg-accent/20 rounded-lg p-3">
+                        <h6 className="font-medium mb-2 text-xs">커스텀 옵션</h6>
+                        <div className="space-y-2">
+                          <div className="flex items-start gap-2 p-2 bg-card rounded hover:bg-accent/30 transition-colors">
+                            <Checkbox
+                              id={`customSticker-${index}`}
+                              checked={set.customSticker}
+                              onCheckedChange={(checked) => updateBrownieCookieSet(index, 'customSticker', checked)}
+                              data-testid={`checkbox-custom-sticker-${index}`}
+                            />
+                            <Label htmlFor={`customSticker-${index}`} className="cursor-pointer text-xs">
+                              <div className="font-medium">하단 스티커 제작</div>
+                              <div className="text-xs text-muted-foreground">+15,000원</div>
+                            </Label>
+                          </div>
+                          
+                          <div className="bg-card rounded p-2">
+                            <div className="flex items-start gap-2">
+                              <Checkbox
+                                id={`heartMessage-${index}`}
+                                checked={!!set.heartMessage}
+                                onCheckedChange={(checked) => {
+                                  updateBrownieCookieSet(index, 'heartMessage', checked ? '' : undefined);
+                                }}
+                                data-testid={`checkbox-heart-message-${index}`}
+                              />
+                              <div className="flex-1">
+                                <Label htmlFor={`heartMessage-${index}`} className="font-medium mb-1 block cursor-pointer text-xs">
+                                  하트 안 문구 (+500원)
+                                </Label>
+                                <Input
+                                  type="text"
+                                  placeholder="한글 2자 또는 영문 4자"
+                                  value={set.heartMessage || ''}
+                                  onChange={(e) => updateBrownieCookieSet(index, 'heartMessage', e.target.value)}
+                                  className="w-full text-xs h-7"
+                                  maxLength={4}
+                                  disabled={!set.heartMessage && set.heartMessage !== ''}
+                                  data-testid={`input-heart-message-${index}`}
+                                />
+                                <div className="text-xs text-muted-foreground mt-1">예: 사랑, LOVE</div>
+                              </div>
+                            </div>
+                          </div>
+                          
+                          <div className="flex items-start gap-2 p-2 bg-card rounded hover:bg-accent/30 transition-colors">
+                            <Checkbox
+                              id={`customTopper-${index}`}
+                              checked={set.customTopper}
+                              onCheckedChange={(checked) => updateBrownieCookieSet(index, 'customTopper', checked)}
+                              data-testid={`checkbox-custom-topper-${index}`}
+                            />
+                            <Label htmlFor={`customTopper-${index}`} className="cursor-pointer text-xs">
+                              <div className="font-medium">토퍼 제작</div>
+                              <div className="text-xs text-muted-foreground">문의 필요</div>
+                            </Label>
+                          </div>
                         </div>
                       </div>
                     </div>
-                  </div>
-                )}
+                  ))}
+                  
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={addBrownieCookieSet}
+                    className="w-full"
+                    data-testid="button-add-brownie-set"
+                  >
+                    + 브라우니쿠키 세트 추가
+                  </Button>
+                </div>
               </CollapsibleContent>
             </div>
           </Collapsible>

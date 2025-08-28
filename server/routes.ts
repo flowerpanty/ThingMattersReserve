@@ -59,20 +59,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
       totalPrice += breakdown.packaging;
     }
 
-    // Brownie cookies
-    if (orderData.brownieCookie?.quantity > 0) {
-      breakdown.brownie = orderData.brownieCookie.quantity * cookiePrices.brownie;
+    // Brownie cookies (다중 세트)
+    if (orderData.brownieCookieSets?.length > 0) {
+      breakdown.brownie = 0;
       
-      if (orderData.brownieCookie.shape === 'birthdayBear') {
-        breakdown.brownie += orderData.brownieCookie.quantity * cookiePrices.brownieOptions.birthdayBear;
-      }
-      
-      if (orderData.brownieCookie.customSticker) {
-        breakdown.brownie += cookiePrices.brownieOptions.customSticker;
-      }
-      
-      if (orderData.brownieCookie.heartMessage) {
-        breakdown.brownie += cookiePrices.brownieOptions.heartMessage;
+      for (const set of orderData.brownieCookieSets) {
+        // 기본 가격 (수량 * 개당 가격)
+        breakdown.brownie += set.quantity * cookiePrices.brownie;
+        
+        // 생일곰 추가 비용
+        if (set.shape === 'birthdayBear') {
+          breakdown.brownie += set.quantity * cookiePrices.brownieOptions.birthdayBear;
+        }
+        
+        // 커스텀 스티커 (세트당)
+        if (set.customSticker) {
+          breakdown.brownie += cookiePrices.brownieOptions.customSticker;
+        }
+        
+        // 하트 메시지 (세트당)
+        if (set.heartMessage) {
+          breakdown.brownie += cookiePrices.brownieOptions.heartMessage;
+        }
       }
       
       totalPrice += breakdown.brownie;
