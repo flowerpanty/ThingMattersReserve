@@ -1,13 +1,23 @@
 import nodemailer from 'nodemailer';
 import { type OrderData } from '@shared/schema';
 
+
+import dns from 'node:dns/promises';
+
+// 원래 호스트명과 IPv4 주소를 준비(Top-level await 사용)
+const SMTP_ORIG_HOST = process.env.SMTP_HOST || 'smtp.gmail.com';
+const SMTP_IPV4_HOST =
+  await dns.resolve4(SMTP_ORIG_HOST).then(a => a[0]).catch(() => SMTP_ORIG_HOST);
+
+
 export class EmailService {
   private transporter: nodemailer.Transporter;
 
   constructor() {
     console.log('이메일 서비스 초기화 중...');
     
-    const host = process.env.SMTP_HOST || 'smtp.gmail.com';
+   const host = SMTP_IPV4_HOST;             // ← IPv4로 접속
+const origHost = SMTP_ORIG_HOST;         // ← SNI용 원래 호스트명
     const port = Number(process.env.SMTP_PORT || 587);
     const user = process.env.SMTP_USER!;
     const pass = process.env.SMTP_PASS!;
@@ -26,7 +36,7 @@ export class EmailService {
       greetingTimeout: 20000,
       socketTimeout: 20000,
       tls: {
-        servername: 'smtp.gmail.com', // SNI 명시
+        servername: origHost, // ← 'smtp.gmail.com'
         minVersion: 'TLSv1.2',
       },
     });
