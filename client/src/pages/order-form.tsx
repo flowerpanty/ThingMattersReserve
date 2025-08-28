@@ -4,7 +4,7 @@ import { DeliveryMethod } from "@/components/delivery-method";
 import { ProductSelection } from "@/components/product-selection";
 import { PriceSummary } from "@/components/price-summary";
 import { OrderActions } from "@/components/order-actions";
-import { KakaoConsultationModal } from "@/components/kakao-consultation-modal";
+import { FinalKakaoModal } from "@/components/final-kakao-modal";
 import { InstallAppButton } from "@/components/install-app-button";
 import { useOrderForm } from "@/hooks/use-order-form";
 import { Link } from "wouter";
@@ -91,7 +91,7 @@ export default function OrderForm() {
       </footer>
       
       {/* Kakao Consultation Modal */}
-      <KakaoConsultationModal 
+      <FinalKakaoModal 
         isOpen={showKakaoModal}
         onClose={() => setShowKakaoModal(false)}
       />
