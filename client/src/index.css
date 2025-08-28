@@ -237,4 +237,31 @@
       padding-top: calc(env(safe-area-inset-top) + 1rem);
     }
   }
+
+  /* Date input 스타일링 */
+  input[type="date"] {
+    color-scheme: light;
+  }
+
+  input[type="date"]::-webkit-calendar-picker-indicator {
+    background: transparent;
+    bottom: 0;
+    color: transparent;
+    cursor: pointer;
+    height: auto;
+    left: 0;
+    position: absolute;
+    right: 0;
+    top: 0;
+    width: auto;
+  }
+
+  /* Date input placeholder 스타일 */
+  input[type="date"]:invalid {
+    color: hsl(var(--muted-foreground));
+  }
+
+  input[type="date"]:focus:invalid {
+    color: hsl(var(--foreground));
+  }
 }
