@@ -25,7 +25,7 @@ export function PriceSummary({ pricing }: PriceSummaryProps) {
     <Card className="card-shadow price-highlight">
       <CardContent className="p-6">
         <h2 className="text-xl font-semibold mb-6 flex items-center gap-2">
-          <span className="w-8 h-8 bg-primary rounded-full flex items-center justify-center text-primary-foreground text-sm font-bold">4</span>
+          <span className="w-8 h-8 bg-primary rounded-full flex items-center justify-center text-primary-foreground text-sm font-bold">5</span>
           견적 요약
         </h2>
         

@@ -101,7 +101,7 @@ export function useOrderForm() {
       // Check if at least one product is selected
       const hasProducts = 
         Object.values(validatedData.regularCookies).some(qty => qty > 0) ||
-        validatedData.brownieCookie.quantity > 0 ||
+        validatedData.brownieCookieSets.length > 0 ||
         validatedData.twoPackSets.length > 0 ||
         validatedData.singleWithDrinkSets.length > 0 ||
         validatedData.fortuneCookie > 0 ||

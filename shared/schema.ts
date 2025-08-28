@@ -8,6 +8,7 @@ export const orders = pgTable("orders", {
   customerName: text("customer_name").notNull(),
   customerContact: text("customer_contact").notNull(),
   deliveryDate: text("delivery_date").notNull(),
+  deliveryMethod: text("delivery_method").notNull().default('pickup'),
   orderItems: json("order_items").notNull(),
   totalPrice: integer("total_price").notNull(),
   createdAt: timestamp("created_at").defaultNow(),

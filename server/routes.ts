@@ -194,19 +194,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // Add brownie cookie if selected
-      if (orderData.brownieCookie.quantity > 0) {
-        orderItems.push({
-          type: 'brownie' as const,
-          name: '브라우니쿠키',
-          quantity: orderData.brownieCookie.quantity,
-          price: cookiePrices.brownie,
-          options: {
-            shape: orderData.brownieCookie.shape,
-            customSticker: orderData.brownieCookie.customSticker,
-            heartMessage: orderData.brownieCookie.heartMessage,
-            customTopper: orderData.brownieCookie.customTopper,
-          },
+      // Add brownie cookie sets (multiple sets)
+      if (orderData.brownieCookieSets?.length > 0) {
+        orderData.brownieCookieSets.forEach((set, index) => {
+          orderItems.push({
+            type: 'brownie' as const,
+            name: `브라우니쿠키 세트 ${index + 1}`,
+            quantity: set.quantity || 1,
+            price: cookiePrices.brownie,
+            options: {
+              shape: set.shape,
+              customSticker: set.customSticker,
+              heartMessage: set.heartMessage,
+              customTopper: set.customTopper,
+            },
+          });
         });
       }
 
@@ -233,6 +235,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         customerName: orderData.customerName,
         customerContact: orderData.customerContact,
         deliveryDate: orderData.deliveryDate,
+        deliveryMethod: orderData.deliveryMethod,
         orderItems,
         totalPrice,
       });
@@ -283,15 +286,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         customerName: order.customerName,
         customerContact: order.customerContact,
         deliveryDate: order.deliveryDate,
+        deliveryMethod: (order as any).deliveryMethod || 'pickup',
         regularCookies: {} as Record<string, number>,
         packaging: undefined as string | undefined,
-        brownieCookie: { 
-          quantity: 0, 
-          customSticker: false, 
-          customTopper: false,
-          shape: undefined as string | undefined,
-          heartMessage: undefined as string | undefined
-        },
+        brownieCookieSets: [] as Array<{ quantity: number, shape?: 'bear' | 'rabbit' | 'birthdayBear', customSticker: boolean, heartMessage?: string, customTopper: boolean }>,
         twoPackSets: [] as Array<{ selectedCookies: string[], quantity: number }>,
         singleWithDrinkSets: [] as Array<{ selectedCookie: string, selectedDrink: string, quantity: number }>,
         fortuneCookie: 0,
@@ -318,13 +316,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
             });
             break;
           case 'brownie':
-            orderData.brownieCookie.quantity = item.quantity;
-            if (item.options) {
-              orderData.brownieCookie.shape = item.options.shape;
-              orderData.brownieCookie.customSticker = item.options.customSticker;
-              orderData.brownieCookie.heartMessage = item.options.heartMessage;
-              orderData.brownieCookie.customTopper = item.options.customTopper;
-            }
+            orderData.brownieCookieSets.push({
+              quantity: item.quantity,
+              shape: item.options?.shape as 'bear' | 'rabbit' | 'birthdayBear' | undefined,
+              customSticker: item.options?.customSticker || false,
+              heartMessage: item.options?.heartMessage,
+              customTopper: item.options?.customTopper || false,
+            });
             break;
           case 'fortune':
             orderData.fortuneCookie = item.quantity;
