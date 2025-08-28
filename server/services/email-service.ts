@@ -7,18 +7,30 @@ export class EmailService {
   constructor() {
     console.log('이메일 서비스 초기화 중...');
     
-    // Gmail 설정으로 직접 설정
-    const gmailUser = 'flowerpanty@gmail.com';
-    const gmailPass = 'hplp dyyi cvsr bwma';
-    
-    console.log('Gmail 설정으로 이메일 서비스 초기화...');
+    const host = process.env.SMTP_HOST || 'smtp.gmail.com';
+    const port = Number(process.env.SMTP_PORT || 587);
+    const user = process.env.SMTP_USER!;
+    const pass = process.env.SMTP_PASS!;
+    const from = process.env.MAIL_FROM || user;
+
+    console.log('Gmail(STARTTLS) 설정으로 이메일 서비스 초기화...');
     this.transporter = nodemailer.createTransport({
-      service: 'gmail',
-      auth: {
-        user: gmailUser,
-        pass: gmailPass,
+      host,
+      port,                // 587
+      secure: false,       // 587이면 false
+      requireTLS: true,    // STARTTLS 강제
+      auth: { user, pass },
+      pool: true,          // 연결 재사용(안정성↑)
+      maxConnections: 1,
+      connectionTimeout: 20000,
+      greetingTimeout: 20000,
+      socketTimeout: 20000,
+      tls: {
+        servername: 'smtp.gmail.com', // SNI 명시
+        minVersion: 'TLSv1.2',
       },
     });
+
   }
 
   async sendQuote(orderData: OrderData, quoteBuffer: Buffer): Promise<void> {
