@@ -32,7 +32,7 @@ export function FinalKakaoModal({ isOpen, onClose }: FinalKakaoModalProps) {
             className="w-full bg-yellow-400 hover:bg-yellow-500 text-black font-semibold py-3 px-4 rounded-lg flex items-center justify-center gap-2"
             data-testid="button-final-kakao"
           >
-            💬 올바른 카카오톡 링크
+            🔥 최종 카카오톡 상담
           </button>
           
           <Button
