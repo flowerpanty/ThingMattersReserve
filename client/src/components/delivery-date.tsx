@@ -21,12 +21,17 @@ export function DeliveryDate({ deliveryDate, onUpdate }: DeliveryDateProps) {
           수령 희망일
         </h2>
         
-        <div className="max-w-lg">
-          <Label htmlFor="deliveryDate" className="block text-lg font-semibold text-foreground mb-4">
-            📅 수령하실 날짜를 선택해주세요 *
-          </Label>
+        <div className="max-w-md mx-auto">
+          <div className="text-center mb-6">
+            <Label htmlFor="deliveryDate" className="block text-lg font-semibold text-foreground mb-3">
+              📅 수령 날짜 선택
+            </Label>
+            <p className="text-sm text-muted-foreground mb-4">
+              언제 받으실 건가요?
+            </p>
+          </div>
           
-          <div className="relative">
+          <div className="space-y-4">
             <Input
               id="deliveryDate"
               type="date"
@@ -34,34 +39,27 @@ export function DeliveryDate({ deliveryDate, onUpdate }: DeliveryDateProps) {
               value={deliveryDate}
               min={minDate}
               onChange={(e) => onUpdate(e.target.value)}
-              className="w-full px-6 py-4 text-lg rounded-lg border-2 border-input bg-background focus:ring-2 focus:ring-ring focus:border-ring transition-colors text-center font-medium"
+              className="w-full px-4 py-3 text-base rounded-lg border border-input bg-background focus:ring-2 focus:ring-ring focus:border-ring transition-colors"
               data-testid="input-delivery-date"
-              style={{ fontSize: '18px' }}
             />
-            {!deliveryDate && (
-              <div className="absolute inset-0 flex items-center justify-center pointer-events-none text-muted-foreground">
-                <span className="text-base">날짜를 터치하여 선택하세요</span>
+            
+            {deliveryDate && (
+              <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                <p className="text-blue-800 font-medium text-center text-sm">
+                  ✅ {new Date(deliveryDate + 'T00:00:00').toLocaleDateString('ko-KR', { 
+                    month: 'long', 
+                    day: 'numeric',
+                    weekday: 'short'
+                  })} 선택완료
+                </p>
               </div>
             )}
-          </div>
-          
-          {deliveryDate && (
-            <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg">
-              <p className="text-green-800 font-medium text-center">
-                ✅ {new Date(deliveryDate + 'T00:00:00').toLocaleDateString('ko-KR', { 
-                  year: 'numeric', 
-                  month: 'long', 
-                  day: 'numeric',
-                  weekday: 'long'
-                })} 선택됨
+            
+            <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+              <p className="text-yellow-800 text-xs text-center">
+                ⚠️ 최소 1일 전 주문 필요
               </p>
             </div>
-          )}
-          
-          <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-            <p className="text-yellow-800 text-sm text-center">
-              ⚠️ 당일 예약은 불가능합니다. 최소 1일 전 주문해주세요.
-            </p>
           </div>
         </div>
       </CardContent>

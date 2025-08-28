@@ -6,45 +6,51 @@ interface OrderActionsProps {
 }
 
 export function OrderActions({ isSubmitting }: OrderActionsProps) {
-  const handleKakaoConsultation = () => {
-    // Open KakaoTalk channel for consultation
-    window.open('https://pf.kakao.com/_your_channel', '_blank');
-  };
-
   return (
-    <div className="space-y-4">
-      <Button
-        type="submit"
-        disabled={isSubmitting}
-        className="w-full py-4 px-6 btn-primary text-primary-foreground font-semibold rounded-lg card-shadow"
-        data-testid="button-generate-quote"
-      >
-        {isSubmitting ? (
-          <>
-            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-            견적서 생성 중...
-          </>
-        ) : (
-          <>
-            <Mail className="w-4 h-4 mr-2" />
-            📧 견적서 받기
-          </>
-        )}
-      </Button>
-      
-      <Button
-        type="button"
-        onClick={handleKakaoConsultation}
-        className="w-full py-4 px-6 kakao-btn text-black font-semibold rounded-lg card-shadow flex items-center justify-center gap-2"
-        data-testid="button-kakao-consultation"
-      >
-        <MessageCircle className="w-4 h-4" />
-        💬 카카오톡 상담하기
-      </Button>
-      
-      <p className="text-center text-sm text-muted-foreground">
+    <div className="mt-8 p-6 bg-card/30 rounded-lg border">
+      <p className="text-center text-sm text-muted-foreground mb-4">
         견적서 확인 후 카카오톡으로 최종 상담을 진행해주세요
       </p>
+      
+      <div className="flex flex-col gap-3">
+        <Button
+          type="submit"
+          disabled={isSubmitting}
+          className="w-full py-4 px-6 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold rounded-lg transition-colors"
+          data-testid="button-generate-quote"
+        >
+          {isSubmitting ? (
+            <>
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              견적서 생성 중...
+            </>
+          ) : (
+            <>
+              📄 견적서 받기
+            </>
+          )}
+        </Button>
+        
+        <a
+          href="http://pf.kakao.com/_QdCaK"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center justify-center gap-2 w-full py-4 px-6 bg-yellow-400 hover:bg-yellow-500 text-yellow-900 font-semibold rounded-lg transition-colors"
+          data-testid="button-kakao-consultation"
+        >
+          💬 카카오톡 상담하기
+        </a>
+        
+        <a
+          href="https://nothingmatters.kr"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center justify-center gap-2 w-full py-4 px-6 bg-secondary hover:bg-secondary/90 text-secondary-foreground font-semibold rounded-lg transition-colors"
+          data-testid="button-home"
+        >
+          🏠 nothingmatters
+        </a>
+      </div>
     </div>
   );
 }

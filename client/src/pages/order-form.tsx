@@ -22,18 +22,6 @@ export default function OrderForm() {
               <p className="text-yellow-800 text-sm font-medium">⚠️ 카카오톡 상담 후 확정</p>
             </div>
             
-            <div className="mt-4">
-              <a
-                href="https://nothingmatters.kr"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-secondary hover:bg-secondary/90 text-secondary-foreground font-semibold rounded-lg transition-colors"
-                data-testid="button-home-header"
-              >
-                🏠 nothingmatters
-              </a>
-            </div>
-            
           </div>
         </div>
       </header>
