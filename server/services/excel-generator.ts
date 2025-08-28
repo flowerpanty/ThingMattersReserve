@@ -105,14 +105,14 @@ export class ExcelGenerator {
       currentRow++;
     }
     
-    // 2구 패키지
-    if (orderData.twoPackSet?.quantity > 0) {
-      const amount = orderData.twoPackSet.quantity * cookiePrices.twoPackSet;
+    // 2구 패키지 (다중 세트)
+    if (orderData.twoPackSets?.length > 0) {
+      const amount = orderData.twoPackSets.length * cookiePrices.twoPackSet;
       totalAmount += amount;
       
       worksheet.getCell(currentRow, 1).value = '2구 패키지';
       worksheet.getCell(currentRow, 1).style = cellStyle;
-      worksheet.getCell(currentRow, 2).value = orderData.twoPackSet.quantity;
+      worksheet.getCell(currentRow, 2).value = orderData.twoPackSets.length;
       worksheet.getCell(currentRow, 2).style = cellStyle;
       worksheet.getCell(currentRow, 3).value = cookiePrices.twoPackSet;
       worksheet.getCell(currentRow, 3).style = priceStyle;
@@ -122,14 +122,14 @@ export class ExcelGenerator {
       currentRow++;
     }
     
-    // 1구 + 음료
-    if (orderData.singleWithDrink?.quantity > 0) {
-      const amount = orderData.singleWithDrink.quantity * cookiePrices.singleWithDrink;
+    // 1구 + 음료 (다중 세트)
+    if (orderData.singleWithDrinkSets?.length > 0) {
+      const amount = orderData.singleWithDrinkSets.length * cookiePrices.singleWithDrink;
       totalAmount += amount;
       
       worksheet.getCell(currentRow, 1).value = '1구 + 음료';
       worksheet.getCell(currentRow, 1).style = cellStyle;
-      worksheet.getCell(currentRow, 2).value = orderData.singleWithDrink.quantity;
+      worksheet.getCell(currentRow, 2).value = orderData.singleWithDrinkSets.length;
       worksheet.getCell(currentRow, 2).style = cellStyle;
       worksheet.getCell(currentRow, 3).value = cookiePrices.singleWithDrink;
       worksheet.getCell(currentRow, 3).style = priceStyle;
@@ -275,30 +275,40 @@ export class ExcelGenerator {
       currentRow++;
     }
 
-    // 2구 패키지 상세
-    if (orderData.twoPackSet?.quantity > 0 && orderData.twoPackSet.selectedCookies?.length > 0) {
-      worksheet.mergeCells(`A${currentRow}:D${currentRow}`);
-      worksheet.getCell(currentRow, 1).value = `• 2구 패키지: ${orderData.twoPackSet.selectedCookies.join(', ')}`;
-      worksheet.getCell(currentRow, 1).style = leftAlignStyle;
-      worksheet.getRow(currentRow).height = 18;
-      currentRow++;
+    // 2구 패키지 상세 (다중 세트)
+    if (orderData.twoPackSets?.length > 0) {
+      orderData.twoPackSets.forEach((set, index) => {
+        if (set.selectedCookies?.length > 0) {
+          worksheet.mergeCells(`A${currentRow}:D${currentRow}`);
+          worksheet.getCell(currentRow, 1).value = `• 2구 패키지 세트 ${index + 1}: ${set.selectedCookies.join(', ')}`;
+          worksheet.getCell(currentRow, 1).style = leftAlignStyle;
+          worksheet.getRow(currentRow).height = 18;
+          currentRow++;
+        }
+      });
     }
     
-    // 1구 + 음료 상세
-    if (orderData.singleWithDrink?.quantity > 0) {
-      let detailText = '• 1구 + 음료';
-      if (orderData.singleWithDrink.selectedCookie) {
-        detailText += `: 쿠키(${orderData.singleWithDrink.selectedCookie})`;
-      }
-      if (orderData.singleWithDrink.selectedDrink) {
-        detailText += `, 음료(${orderData.singleWithDrink.selectedDrink})`;
-      }
-      
-      worksheet.mergeCells(`A${currentRow}:D${currentRow}`);
-      worksheet.getCell(currentRow, 1).value = detailText;
-      worksheet.getCell(currentRow, 1).style = leftAlignStyle;
-      worksheet.getRow(currentRow).height = 18;
-      currentRow++;
+    // 1구 + 음료 상세 (다중 세트)
+    if (orderData.singleWithDrinkSets?.length > 0) {
+      orderData.singleWithDrinkSets.forEach((set, index) => {
+        let detailText = `• 1구 + 음료 세트 ${index + 1}`;
+        if (set.selectedCookie || set.selectedDrink) {
+          detailText += ': ';
+          if (set.selectedCookie) {
+            detailText += `쿠키(${set.selectedCookie})`;
+          }
+          if (set.selectedDrink) {
+            if (set.selectedCookie) detailText += ', ';
+            detailText += `음료(${set.selectedDrink})`;
+          }
+        }
+        
+        worksheet.mergeCells(`A${currentRow}:D${currentRow}`);
+        worksheet.getCell(currentRow, 1).value = detailText;
+        worksheet.getCell(currentRow, 1).style = leftAlignStyle;
+        worksheet.getRow(currentRow).height = 18;
+        currentRow++;
+      });
     }
 
     // 브라우니쿠키 상세

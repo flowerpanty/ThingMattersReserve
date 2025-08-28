@@ -20,15 +20,13 @@ interface ProductSelectionProps {
     heartMessage?: string;
     customTopper: boolean;
   };
-  twoPackSet: {
-    quantity: number;
+  twoPackSets: {
     selectedCookies: string[];
-  };
-  singleWithDrink: {
-    quantity: number;
-    selectedCookie?: string;
-    selectedDrink?: string;
-  };
+  }[];
+  singleWithDrinkSets: {
+    selectedCookie: string;
+    selectedDrink: string;
+  }[];
   fortuneCookie: number;
   airplaneSandwich: number;
   onUpdate: (field: string, value: any) => void;
@@ -38,8 +36,8 @@ export function ProductSelection({
   regularCookies, 
   packaging, 
   brownieCookie,
-  twoPackSet,
-  singleWithDrink,
+  twoPackSets,
+  singleWithDrinkSets,
   fortuneCookie, 
   airplaneSandwich, 
   onUpdate 
@@ -62,16 +60,41 @@ export function ProductSelection({
     onUpdate('brownieCookie', { ...brownieCookie, [field]: value });
   };
 
-  const updateTwoPackSet = (field: string, value: any) => {
-    onUpdate('twoPackSet', { ...twoPackSet, [field]: value });
+  // 2구패키지 세트 관리
+  const addTwoPackSet = () => {
+    onUpdate('twoPackSets', [...twoPackSets, { selectedCookies: [] }]);
   };
 
-  const updateSingleWithDrink = (field: string, value: any) => {
-    onUpdate('singleWithDrink', { ...singleWithDrink, [field]: value });
+  const removeTwoPackSet = (index: number) => {
+    const newSets = twoPackSets.filter((_, i) => i !== index);
+    onUpdate('twoPackSets', newSets);
   };
 
-  const toggleCookieInTwoPackSet = (cookieType: string) => {
-    const currentCookies = twoPackSet.selectedCookies || [];
+  const updateTwoPackSet = (index: number, cookies: string[]) => {
+    const newSets = [...twoPackSets];
+    newSets[index] = { selectedCookies: cookies };
+    onUpdate('twoPackSets', newSets);
+  };
+
+  // 1구+음료 세트 관리
+  const addSingleWithDrinkSet = () => {
+    onUpdate('singleWithDrinkSets', [...singleWithDrinkSets, { selectedCookie: '', selectedDrink: '' }]);
+  };
+
+  const removeSingleWithDrinkSet = (index: number) => {
+    const newSets = singleWithDrinkSets.filter((_, i) => i !== index);
+    onUpdate('singleWithDrinkSets', newSets);
+  };
+
+  const updateSingleWithDrinkSet = (index: number, field: 'selectedCookie' | 'selectedDrink', value: string) => {
+    const newSets = [...singleWithDrinkSets];
+    newSets[index] = { ...newSets[index], [field]: value };
+    onUpdate('singleWithDrinkSets', newSets);
+  };
+
+  const toggleCookieInTwoPackSet = (setIndex: number, cookieType: string) => {
+    const currentSet = twoPackSets[setIndex];
+    const currentCookies = currentSet?.selectedCookies || [];
     let newCookies;
     if (currentCookies.includes(cookieType)) {
       newCookies = currentCookies.filter(c => c !== cookieType);
@@ -80,7 +103,7 @@ export function ProductSelection({
     } else {
       return; // 최대 2개까지만
     }
-    updateTwoPackSet('selectedCookies', newCookies);
+    updateTwoPackSet(setIndex, newCookies);
   };
 
   const hasRegularCookies = Object.values(regularCookies).some(qty => qty > 0);
@@ -211,9 +234,9 @@ export function ProductSelection({
                     <div className="font-semibold">2구 패키지</div>
                     <div className="text-sm text-muted-foreground">세트당 9,000원</div>
                   </div>
-                  {twoPackSet.quantity > 0 && (
+                  {twoPackSets.length > 0 && (
                     <div className="bg-primary text-primary-foreground text-xs px-2 py-1 rounded-full ml-2">
-                      {twoPackSet.quantity}세트
+                      {twoPackSets.length}세트
                     </div>
                   )}
                 </div>
@@ -221,77 +244,64 @@ export function ProductSelection({
               </CollapsibleTrigger>
               
               <CollapsibleContent className="px-4 pb-4">
-                <div className="flex items-center justify-between p-3 bg-muted/30 rounded-lg mb-4">
-                  <div className="flex items-center gap-2">
-                    <Checkbox
-                      id="twopack-set"
-                      checked={twoPackSet.quantity > 0}
-                      onCheckedChange={(checked) => {
-                        updateTwoPackSet('quantity', checked ? 1 : 0);
-                        if (!checked) updateTwoPackSet('selectedCookies', []);
-                      }}
-                      data-testid="checkbox-twopack-set"
-                    />
-                    <Label htmlFor="twopack-set" className="text-sm font-medium">2구 패키지</Label>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      className="w-7 h-7 rounded-full p-0 text-xs"
-                      onClick={() => {
-                        updateTwoPackSet('quantity', Math.max(0, twoPackSet.quantity - 1));
-                        if (twoPackSet.quantity <= 1) updateTwoPackSet('selectedCookies', []);
-                      }}
-                      data-testid="button-decrease-twopack"
-                    >
-                      -
-                    </Button>
-                    <span className="w-8 text-center text-sm font-medium" data-testid="quantity-twopack">
-                      {twoPackSet.quantity}
-                    </span>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      className="w-7 h-7 rounded-full p-0 text-xs"
-                      onClick={() => updateTwoPackSet('quantity', twoPackSet.quantity + 1)}
-                      data-testid="button-increase-twopack"
-                    >
-                      +
-                    </Button>
-                  </div>
-                </div>
-
-                {twoPackSet.quantity > 0 && (
-                  <div className="bg-accent/20 rounded-lg p-3">
-                    <h4 className="font-medium mb-3 text-sm">쿠키 선택 (2개)</h4>
-                    <div className="grid grid-cols-2 lg:grid-cols-3 gap-2">
-                      {cookieTypes.map((type) => (
-                        <div 
-                          key={type} 
-                          className={`flex items-center space-x-2 p-2 rounded cursor-pointer transition-colors ${
-                            twoPackSet.selectedCookies?.includes(type) 
-                              ? 'bg-primary text-primary-foreground' 
-                              : 'bg-card hover:bg-muted/50'
-                          }`}
-                          onClick={() => toggleCookieInTwoPackSet(type)}
-                          data-testid={`cookie-option-${type}`}
+                <div className="space-y-4">
+                  {twoPackSets.map((set, index) => (
+                    <div key={index} className="bg-accent/20 rounded-lg p-3">
+                      <div className="flex items-center justify-between mb-3">
+                        <h4 className="font-medium text-sm">세트 {index + 1} - 쿠키 2개 선택</h4>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => removeTwoPackSet(index)}
+                          data-testid={`button-remove-twopack-${index}`}
                         >
-                          <Checkbox
-                            checked={twoPackSet.selectedCookies?.includes(type) || false}
-                            className="pointer-events-none"
-                          />
-                          <span className="text-xs">{type}</span>
-                        </div>
-                      ))}
+                          삭제
+                        </Button>
+                      </div>
+                      
+                      <div className="grid grid-cols-2 lg:grid-cols-3 gap-2 mb-2">
+                        {cookieTypes.map((type) => (
+                          <div 
+                            key={type} 
+                            className={`flex items-center space-x-2 p-2 rounded cursor-pointer transition-colors ${
+                              set.selectedCookies.includes(type) 
+                                ? 'bg-primary text-primary-foreground' 
+                                : 'bg-card hover:bg-muted/50'
+                            }`}
+                            onClick={() => toggleCookieInTwoPackSet(index, type)}
+                            data-testid={`twopack-${index}-cookie-${type}`}
+                          >
+                            <Checkbox
+                              checked={set.selectedCookies.includes(type)}
+                              className="pointer-events-none"
+                            />
+                            <span className="text-xs">{type}</span>
+                          </div>
+                        ))}
+                      </div>
+                      
+                      <div className="flex justify-between text-xs text-muted-foreground">
+                        <span>선택됨: {set.selectedCookies.length}/2개</span>
+                        {set.selectedCookies.length > 0 && (
+                          <span className="text-primary font-medium">
+                            {set.selectedCookies.join(', ')}
+                          </span>
+                        )}
+                      </div>
                     </div>
-                    <p className="text-xs text-muted-foreground mt-2">
-                      선택됨: {twoPackSet.selectedCookies?.length || 0}/2개
-                    </p>
-                  </div>
-                )}
+                  ))}
+                  
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={addTwoPackSet}
+                    className="w-full"
+                    data-testid="button-add-twopack-set"
+                  >
+                    + 2구 패키지 세트 추가
+                  </Button>
+                </div>
               </CollapsibleContent>
             </div>
           </Collapsible>
@@ -309,9 +319,9 @@ export function ProductSelection({
                     <div className="font-semibold">1구 + 음료</div>
                     <div className="text-sm text-muted-foreground">세트당 8,500원</div>
                   </div>
-                  {singleWithDrink.quantity > 0 && (
+                  {singleWithDrinkSets.length > 0 && (
                     <div className="bg-primary text-primary-foreground text-xs px-2 py-1 rounded-full ml-2">
-                      {singleWithDrink.quantity}세트
+                      {singleWithDrinkSets.length}세트
                     </div>
                   )}
                 </div>
@@ -319,92 +329,76 @@ export function ProductSelection({
               </CollapsibleTrigger>
               
               <CollapsibleContent className="px-4 pb-4">
-                <div className="flex items-center justify-between p-3 bg-muted/30 rounded-lg mb-4">
-                  <div className="flex items-center gap-2">
-                    <Checkbox
-                      id="single-with-drink"
-                      checked={singleWithDrink.quantity > 0}
-                      onCheckedChange={(checked) => {
-                        updateSingleWithDrink('quantity', checked ? 1 : 0);
-                        if (!checked) {
-                          updateSingleWithDrink('selectedCookie', undefined);
-                          updateSingleWithDrink('selectedDrink', undefined);
-                        }
-                      }}
-                      data-testid="checkbox-single-with-drink"
-                    />
-                    <Label htmlFor="single-with-drink" className="text-sm font-medium">1구 + 음료</Label>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      className="w-7 h-7 rounded-full p-0 text-xs"
-                      onClick={() => {
-                        updateSingleWithDrink('quantity', Math.max(0, singleWithDrink.quantity - 1));
-                        if (singleWithDrink.quantity <= 1) {
-                          updateSingleWithDrink('selectedCookie', undefined);
-                          updateSingleWithDrink('selectedDrink', undefined);
-                        }
-                      }}
-                      data-testid="button-decrease-single-with-drink"
-                    >
-                      -
-                    </Button>
-                    <span className="w-8 text-center text-sm font-medium" data-testid="quantity-single-with-drink">
-                      {singleWithDrink.quantity}
-                    </span>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      className="w-7 h-7 rounded-full p-0 text-xs"
-                      onClick={() => updateSingleWithDrink('quantity', singleWithDrink.quantity + 1)}
-                      data-testid="button-increase-single-with-drink"
-                    >
-                      +
-                    </Button>
-                  </div>
+                <div className="space-y-4">
+                  {singleWithDrinkSets.map((set, index) => (
+                    <div key={index} className="bg-accent/20 rounded-lg p-3">
+                      <div className="flex items-center justify-between mb-3">
+                        <h4 className="font-medium text-sm">세트 {index + 1} - 쿠키 + 음료</h4>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => removeSingleWithDrinkSet(index)}
+                          data-testid={`button-remove-single-drink-${index}`}
+                        >
+                          삭제
+                        </Button>
+                      </div>
+                      
+                      <div className="space-y-3">
+                        <div>
+                          <h4 className="font-medium mb-2 text-sm">쿠키 선택</h4>
+                          <Select 
+                            value={set.selectedCookie} 
+                            onValueChange={(value) => updateSingleWithDrinkSet(index, 'selectedCookie', value)}
+                          >
+                            <SelectTrigger data-testid={`select-cookie-${index}`}>
+                              <SelectValue placeholder="쿠키를 선택하세요" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {cookieTypes.map((type) => (
+                                <SelectItem key={type} value={type}>{type}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        
+                        <div>
+                          <h4 className="font-medium mb-2 text-sm">음료 선택</h4>
+                          <Select 
+                            value={set.selectedDrink} 
+                            onValueChange={(value) => updateSingleWithDrinkSet(index, 'selectedDrink', value)}
+                          >
+                            <SelectTrigger data-testid={`select-drink-${index}`}>
+                              <SelectValue placeholder="음료를 선택하세요" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {drinkTypes.map((type) => (
+                                <SelectItem key={type} value={type}>{type}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        
+                        {(set.selectedCookie || set.selectedDrink) && (
+                          <div className="text-xs text-primary font-medium">
+                            선택됨: {set.selectedCookie || '미선택'} + {set.selectedDrink || '미선택'}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                  
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={addSingleWithDrinkSet}
+                    className="w-full"
+                    data-testid="button-add-single-drink-set"
+                  >
+                    + 1구 + 음료 세트 추가
+                  </Button>
                 </div>
-
-                {singleWithDrink.quantity > 0 && (
-                  <div className="bg-accent/20 rounded-lg p-3 space-y-3">
-                    <div>
-                      <h4 className="font-medium mb-2 text-sm">쿠키 선택</h4>
-                      <Select 
-                        value={singleWithDrink.selectedCookie} 
-                        onValueChange={(value) => updateSingleWithDrink('selectedCookie', value)}
-                      >
-                        <SelectTrigger data-testid="select-cookie">
-                          <SelectValue placeholder="쿠키를 선택하세요" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {cookieTypes.map((type) => (
-                            <SelectItem key={type} value={type}>{type}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    
-                    <div>
-                      <h4 className="font-medium mb-2 text-sm">음료 선택</h4>
-                      <Select 
-                        value={singleWithDrink.selectedDrink} 
-                        onValueChange={(value) => updateSingleWithDrink('selectedDrink', value)}
-                      >
-                        <SelectTrigger data-testid="select-drink">
-                          <SelectValue placeholder="음료를 선택하세요" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {drinkTypes.map((type) => (
-                            <SelectItem key={type} value={type}>{type}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-                )}
               </CollapsibleContent>
             </div>
           </Collapsible>

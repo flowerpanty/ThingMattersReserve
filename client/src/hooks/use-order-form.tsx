@@ -17,15 +17,8 @@ const initialFormData: OrderData = {
     heartMessage: undefined,
     customTopper: false,
   },
-  twoPackSet: {
-    quantity: 0,
-    selectedCookies: [],
-  },
-  singleWithDrink: {
-    quantity: 0,
-    selectedCookie: undefined,
-    selectedDrink: undefined,
-  },
+  twoPackSets: [],
+  singleWithDrinkSets: [],
   fortuneCookie: 0,
   airplaneSandwich: 0,
 };
@@ -111,6 +104,8 @@ export function useOrderForm() {
       const hasProducts = 
         Object.values(validatedData.regularCookies).some(qty => qty > 0) ||
         validatedData.brownieCookie.quantity > 0 ||
+        validatedData.twoPackSets.length > 0 ||
+        validatedData.singleWithDrinkSets.length > 0 ||
         validatedData.fortuneCookie > 0 ||
         validatedData.airplaneSandwich > 0;
       

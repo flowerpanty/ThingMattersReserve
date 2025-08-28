@@ -34,15 +34,13 @@ export const orderDataSchema = z.object({
     heartMessage: z.string().optional(),
     customTopper: z.boolean().default(false),
   }).default({ quantity: 0, customSticker: false, customTopper: false }),
-  twoPackSet: z.object({
-    quantity: z.number().min(0).default(0),
-    selectedCookies: z.array(z.string()).default([]),
-  }).default({ quantity: 0, selectedCookies: [] }),
-  singleWithDrink: z.object({
-    quantity: z.number().min(0).default(0),
-    selectedCookie: z.string().optional(),
-    selectedDrink: z.string().optional(),
-  }).default({ quantity: 0 }),
+  twoPackSets: z.array(z.object({
+    selectedCookies: z.array(z.string()).length(2),
+  })).default([]),
+  singleWithDrinkSets: z.array(z.object({
+    selectedCookie: z.string(),
+    selectedDrink: z.string(),
+  })).default([]),
   fortuneCookie: z.number().min(0).default(0), // 박스당
   airplaneSandwich: z.number().min(0).default(0), // 박스당
 });

@@ -27,21 +27,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
     breakdown.regularCookies = regularCookieQuantity * cookiePrices.regular;
     totalPrice += breakdown.regularCookies;
 
-    // 2구 패키지
-    if (orderData.twoPackSet?.quantity > 0) {
-      breakdown.twoPackSet = orderData.twoPackSet.quantity * cookiePrices.twoPackSet;
+    // 2구 패키지 (다중 세트)
+    if (orderData.twoPackSets?.length > 0) {
+      breakdown.twoPackSet = orderData.twoPackSets.length * cookiePrices.twoPackSet;
       totalPrice += breakdown.twoPackSet;
     }
 
-    // 1구 + 음료
-    if (orderData.singleWithDrink?.quantity > 0) {
-      breakdown.singleWithDrink = orderData.singleWithDrink.quantity * cookiePrices.singleWithDrink;
+    // 1구 + 음료 (다중 세트)
+    if (orderData.singleWithDrinkSets?.length > 0) {
+      breakdown.singleWithDrink = orderData.singleWithDrinkSets.length * cookiePrices.singleWithDrink;
       totalPrice += breakdown.singleWithDrink;
     }
 
-    // Packaging
+    // Packaging (개당 계산)
     if (orderData.packaging && orderData.packaging in cookiePrices.packaging) {
-      breakdown.packaging = cookiePrices.packaging[orderData.packaging as keyof typeof cookiePrices.packaging];
+      const packagingPricePerItem = cookiePrices.packaging[orderData.packaging as keyof typeof cookiePrices.packaging];
+      
+      // 1구박스의 경우 일반 쿠키 개수만큼 계산 (2구패키지와 1구+음료는 별도 포장)
+      if (orderData.packaging === 'single_box') {
+        breakdown.packaging = regularCookieQuantity * packagingPricePerItem;
+      } else {
+        // 비닐탭포장, 유산지는 전체 주문당 1번만
+        breakdown.packaging = packagingPricePerItem;
+      }
+      
       totalPrice += breakdown.packaging;
     }
 
@@ -127,30 +136,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       });
 
-      // Add 2구 패키지
-      if (orderData.twoPackSet?.quantity > 0) {
-        orderItems.push({
-          type: 'twopack' as const,
-          name: '2구 패키지',
-          quantity: orderData.twoPackSet.quantity,
-          price: cookiePrices.twoPackSet,
-          options: {
-            selectedCookies: orderData.twoPackSet.selectedCookies,
-          },
+      // Add 2구 패키지 (다중 세트)
+      if (orderData.twoPackSets?.length > 0) {
+        orderData.twoPackSets.forEach((set, index) => {
+          orderItems.push({
+            type: 'twopack' as const,
+            name: `2구 패키지 세트 ${index + 1}`,
+            quantity: 1,
+            price: cookiePrices.twoPackSet,
+            options: {
+              selectedCookies: set.selectedCookies,
+            },
+          });
         });
       }
 
-      // Add 1구 + 음료
-      if (orderData.singleWithDrink?.quantity > 0) {
-        orderItems.push({
-          type: 'singledrink' as const,
-          name: '1구 + 음료',
-          quantity: orderData.singleWithDrink.quantity,
-          price: cookiePrices.singleWithDrink,
-          options: {
-            selectedCookie: orderData.singleWithDrink.selectedCookie,
-            selectedDrink: orderData.singleWithDrink.selectedDrink,
-          },
+      // Add 1구 + 음료 (다중 세트)
+      if (orderData.singleWithDrinkSets?.length > 0) {
+        orderData.singleWithDrinkSets.forEach((set, index) => {
+          orderItems.push({
+            type: 'singledrink' as const,
+            name: `1구 + 음료 세트 ${index + 1}`,
+            quantity: 1,
+            price: cookiePrices.singleWithDrink,
+            options: {
+              selectedCookie: set.selectedCookie,
+              selectedDrink: set.selectedDrink,
+            },
+          });
         });
       }
 
