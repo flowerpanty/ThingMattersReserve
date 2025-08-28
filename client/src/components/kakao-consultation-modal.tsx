@@ -7,28 +7,7 @@ interface KakaoConsultationModalProps {
   onClose: () => void;
 }
 
-// 올바른 카카오톡 채널 링크 상수
-const CORRECT_KAKAO_CHANNEL_URL = 'https://pf.kakao.com/_QdCaK';
-
 export function KakaoConsultationModal({ isOpen, onClose }: KakaoConsultationModalProps) {
-  const handleKakaoTalk = () => {
-    // 강제로 올바른 링크 설정
-    const FINAL_KAKAO_URL = 'https://pf.kakao.com/_QdCaK';
-    
-    console.log('🔥 FIXED: 강제 카카오톡 링크:', FINAL_KAKAO_URL);
-    
-    // 새 탭에서 강제로 올바른 링크 열기
-    const newTab = window.open(FINAL_KAKAO_URL, '_blank');
-    if (newTab) {
-      newTab.focus();
-    } else {
-      // 팝업이 차단된 경우 현재 창에서 이동
-      window.location.href = FINAL_KAKAO_URL;
-    }
-    
-    onClose();
-  };
-
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[425px]">
@@ -43,14 +22,20 @@ export function KakaoConsultationModal({ isOpen, onClose }: KakaoConsultationMod
         </DialogHeader>
         
         <div className="flex flex-col gap-3 mt-6">
-          <Button
-            onClick={handleKakaoTalk}
-            className="w-full bg-yellow-400 hover:bg-yellow-500 text-black font-semibold py-3 px-4 rounded-lg flex items-center justify-center gap-2"
+          <a
+            href="https://pf.kakao.com/_QdCaK"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="w-full bg-yellow-400 hover:bg-yellow-500 text-black font-semibold py-3 px-4 rounded-lg flex items-center justify-center gap-2 no-underline"
             data-testid="button-kakao-consultation"
+            onClick={() => {
+              console.log('🎯 A태그 직접 카카오톡 링크: https://pf.kakao.com/_QdCaK');
+              onClose();
+            }}
           >
             <MessageCircle className="w-5 h-5" />
             카카오톡 상담하기
-          </Button>
+          </a>
           
           <Button
             onClick={onClose}
