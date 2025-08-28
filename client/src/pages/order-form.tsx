@@ -1,5 +1,6 @@
 import { CustomerInfo } from "@/components/customer-info";
 import { DeliveryDate } from "@/components/delivery-date";
+import { DeliveryMethod } from "@/components/delivery-method";
 import { ProductSelection } from "@/components/product-selection";
 import { PriceSummary } from "@/components/price-summary";
 import { OrderActions } from "@/components/order-actions";
@@ -51,6 +52,11 @@ export default function OrderForm() {
           <DeliveryDate 
             deliveryDate={formData.deliveryDate}
             onUpdate={(value) => updateFormData('deliveryDate', value)}
+          />
+
+          <DeliveryMethod 
+            deliveryMethod={formData.deliveryMethod}
+            onUpdate={(value) => updateFormData('deliveryMethod', value)}
           />
 
           <ProductSelection 

@@ -36,15 +36,15 @@ export function CustomerInfo({ customerName, customerContact, onUpdate }: Custom
           
           <div>
             <Label htmlFor="customerContact" className="block text-sm font-medium text-foreground mb-2">
-              연락처 *
+              이메일 주소 *
             </Label>
             <Input
               id="customerContact"
-              type="text"
+              type="email"
               required
               value={customerContact}
               onChange={(e) => onUpdate('customerContact', e.target.value)}
-              placeholder="전화번호 또는 이메일"
+              placeholder="example@email.com"
               className="w-full px-4 py-3 rounded-lg border border-input bg-background focus:ring-2 focus:ring-ring focus:border-ring transition-colors"
               data-testid="input-customer-contact"
             />

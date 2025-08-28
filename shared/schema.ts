@@ -23,8 +23,9 @@ export const orderItemSchema = z.object({
 
 export const orderDataSchema = z.object({
   customerName: z.string().min(1, "이름을 입력해주세요"),
-  customerContact: z.string().min(1, "연락처를 입력해주세요"),
+  customerContact: z.string().email("올바른 이메일 주소를 입력해주세요"),
   deliveryDate: z.string().min(1, "날짜를 선택해주세요"),
+  deliveryMethod: z.enum(['pickup', 'quick']).default('pickup'),
   regularCookies: z.record(z.number().min(0)).default({}),
   packaging: z.enum(['single_box', 'plastic_wrap', 'oil_paper']).optional(),
   brownieCookieSets: z.array(z.object({
