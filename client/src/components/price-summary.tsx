@@ -2,9 +2,12 @@ import { Card, CardContent } from "@/components/ui/card";
 
 interface PricingSummary {
   regularCookies: number;
+  twoPackSet: number;
+  singleWithDrink: number;
   packaging: number;
   brownie: number;
-  other: number;
+  fortune: number;
+  airplane: number;
   total: number;
 }
 
@@ -14,7 +17,8 @@ interface PriceSummaryProps {
 
 export function PriceSummary({ pricing }: PriceSummaryProps) {
   const formatPrice = (price: number) => {
-    return price.toLocaleString('ko-KR') + '원';
+    const validPrice = price || 0;
+    return validPrice.toLocaleString('ko-KR') + '원';
   };
 
   return (
@@ -26,22 +30,48 @@ export function PriceSummary({ pricing }: PriceSummaryProps) {
         </h2>
         
         <div className="space-y-3 mb-6">
-          <div className="flex justify-between items-center py-2 border-b border-border/50">
-            <span>일반 쿠키</span>
-            <span data-testid="price-regular-cookies">{formatPrice(pricing.regularCookies)}</span>
-          </div>
-          <div className="flex justify-between items-center py-2 border-b border-border/50">
-            <span>포장비</span>
-            <span data-testid="price-packaging">{formatPrice(pricing.packaging)}</span>
-          </div>
-          <div className="flex justify-between items-center py-2 border-b border-border/50">
-            <span>브라우니쿠키</span>
-            <span data-testid="price-brownie">{formatPrice(pricing.brownie)}</span>
-          </div>
-          <div className="flex justify-between items-center py-2 border-b border-border/50">
-            <span>기타 제품</span>
-            <span data-testid="price-other">{formatPrice(pricing.other)}</span>
-          </div>
+          {pricing.regularCookies > 0 && (
+            <div className="flex justify-between items-center py-2 border-b border-border/50">
+              <span>일반 쿠키</span>
+              <span data-testid="price-regular-cookies">{formatPrice(pricing.regularCookies)}</span>
+            </div>
+          )}
+          {pricing.twoPackSet > 0 && (
+            <div className="flex justify-between items-center py-2 border-b border-border/50">
+              <span>2구 패키지</span>
+              <span data-testid="price-twopack-set">{formatPrice(pricing.twoPackSet)}</span>
+            </div>
+          )}
+          {pricing.singleWithDrink > 0 && (
+            <div className="flex justify-between items-center py-2 border-b border-border/50">
+              <span>1구 + 음료</span>
+              <span data-testid="price-single-with-drink">{formatPrice(pricing.singleWithDrink)}</span>
+            </div>
+          )}
+          {pricing.brownie > 0 && (
+            <div className="flex justify-between items-center py-2 border-b border-border/50">
+              <span>브라우니쿠키</span>
+              <span data-testid="price-brownie">{formatPrice(pricing.brownie)}</span>
+            </div>
+          )}
+          {pricing.fortune > 0 && (
+            <div className="flex justify-between items-center py-2 border-b border-border/50">
+              <span>행운쿠키</span>
+              <span data-testid="price-fortune">{formatPrice(pricing.fortune)}</span>
+            </div>
+          )}
+          {pricing.airplane > 0 && (
+            <div className="flex justify-between items-center py-2 border-b border-border/50">
+              <span>비행기샌드쿠키</span>
+              <span data-testid="price-airplane">{formatPrice(pricing.airplane)}</span>
+            </div>
+          )}
+          {pricing.packaging > 0 && (
+            <div className="flex justify-between items-center py-2 border-b border-border/50">
+              <span>포장비</span>
+              <span data-testid="price-packaging">{formatPrice(pricing.packaging)}</span>
+            </div>
+          )}
         </div>
         
         <div className="flex justify-between items-center text-lg font-bold py-3 border-t-2 border-primary/20 bg-primary/10 rounded-lg px-4">

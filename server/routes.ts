@@ -14,24 +14,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
     let totalPrice = 0;
     let breakdown = {
       regularCookies: 0,
+      twoPackSet: 0,
+      singleWithDrink: 0,
       packaging: 0,
       brownie: 0,
-      other: 0,
+      fortune: 0,
+      airplane: 0,
     };
 
     // Regular cookies
-    const regularCookieQuantity = Object.values(orderData.regularCookies).reduce((sum: number, qty: any) => sum + qty, 0);
+    const regularCookieQuantity = Object.values(orderData.regularCookies || {}).reduce((sum: number, qty: any) => sum + qty, 0);
     breakdown.regularCookies = regularCookieQuantity * cookiePrices.regular;
     totalPrice += breakdown.regularCookies;
 
+    // 2구 패키지
+    if (orderData.twoPackSet?.quantity > 0) {
+      breakdown.twoPackSet = orderData.twoPackSet.quantity * cookiePrices.twoPackSet;
+      totalPrice += breakdown.twoPackSet;
+    }
+
+    // 1구 + 음료
+    if (orderData.singleWithDrink?.quantity > 0) {
+      breakdown.singleWithDrink = orderData.singleWithDrink.quantity * cookiePrices.singleWithDrink;
+      totalPrice += breakdown.singleWithDrink;
+    }
+
     // Packaging
-    if (orderData.packaging) {
-      breakdown.packaging = cookiePrices.packaging[orderData.packaging];
+    if (orderData.packaging && orderData.packaging in cookiePrices.packaging) {
+      breakdown.packaging = cookiePrices.packaging[orderData.packaging as keyof typeof cookiePrices.packaging];
       totalPrice += breakdown.packaging;
     }
 
     // Brownie cookies
-    if (orderData.brownieCookie.quantity > 0) {
+    if (orderData.brownieCookie?.quantity > 0) {
       breakdown.brownie = orderData.brownieCookie.quantity * cookiePrices.brownie;
       
       if (orderData.brownieCookie.shape === 'birthdayBear') {
@@ -49,10 +64,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       totalPrice += breakdown.brownie;
     }
 
-    // Other products
-    breakdown.other += orderData.fortuneCookie * cookiePrices.fortune;
-    breakdown.other += orderData.airplaneSandwich * cookiePrices.airplane;
-    totalPrice += breakdown.other;
+    // Fortune cookies (박스당)
+    if (orderData.fortuneCookie > 0) {
+      breakdown.fortune = orderData.fortuneCookie * cookiePrices.fortune;
+      totalPrice += breakdown.fortune;
+    }
+
+    // Airplane sandwich cookies (박스당)
+    if (orderData.airplaneSandwich > 0) {
+      breakdown.airplane = orderData.airplaneSandwich * cookiePrices.airplane;
+      totalPrice += breakdown.airplane;
+    }
 
     return { totalPrice, breakdown };
   };
@@ -94,7 +116,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const orderItems = [];
       
       // Add regular cookies
-      Object.entries(orderData.regularCookies).forEach(([type, quantity]) => {
+      Object.entries(orderData.regularCookies || {}).forEach(([type, quantity]) => {
         if (quantity > 0) {
           orderItems.push({
             type: 'regular' as const,
@@ -104,6 +126,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
           });
         }
       });
+
+      // Add 2구 패키지
+      if (orderData.twoPackSet?.quantity > 0) {
+        orderItems.push({
+          type: 'twopack' as const,
+          name: '2구 패키지',
+          quantity: orderData.twoPackSet.quantity,
+          price: cookiePrices.twoPackSet,
+          options: {
+            selectedCookies: orderData.twoPackSet.selectedCookies,
+          },
+        });
+      }
+
+      // Add 1구 + 음료
+      if (orderData.singleWithDrink?.quantity > 0) {
+        orderItems.push({
+          type: 'singledrink' as const,
+          name: '1구 + 음료',
+          quantity: orderData.singleWithDrink.quantity,
+          price: cookiePrices.singleWithDrink,
+          options: {
+            selectedCookie: orderData.singleWithDrink.selectedCookie,
+            selectedDrink: orderData.singleWithDrink.selectedDrink,
+          },
+        });
+      }
 
       // Add brownie cookie if selected
       if (orderData.brownieCookie.quantity > 0) {

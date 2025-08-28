@@ -26,7 +26,7 @@ export const orderDataSchema = z.object({
   customerContact: z.string().min(1, "연락처를 입력해주세요"),
   deliveryDate: z.string().min(1, "날짜를 선택해주세요"),
   regularCookies: z.record(z.number().min(0)).default({}),
-  packaging: z.enum(['1box', '2box', '4box']).optional(),
+  packaging: z.enum(['single_box', 'plastic_wrap', 'oil_paper']).optional(),
   brownieCookie: z.object({
     quantity: z.number().min(0).default(0),
     shape: z.enum(['bear', 'rabbit', 'birthdayBear']).optional(),
@@ -34,8 +34,17 @@ export const orderDataSchema = z.object({
     heartMessage: z.string().optional(),
     customTopper: z.boolean().default(false),
   }).default({ quantity: 0, customSticker: false, customTopper: false }),
-  fortuneCookie: z.number().min(0).default(0),
-  airplaneSandwich: z.number().min(0).default(0),
+  twoPackSet: z.object({
+    quantity: z.number().min(0).default(0),
+    selectedCookies: z.array(z.string()).default([]),
+  }).default({ quantity: 0, selectedCookies: [] }),
+  singleWithDrink: z.object({
+    quantity: z.number().min(0).default(0),
+    selectedCookie: z.string().optional(),
+    selectedDrink: z.string().optional(),
+  }).default({ quantity: 0 }),
+  fortuneCookie: z.number().min(0).default(0), // 박스당
+  airplaneSandwich: z.number().min(0).default(0), // 박스당
 });
 
 export const insertOrderSchema = createInsertSchema(orders).omit({
@@ -58,15 +67,23 @@ export const cookieTypes = [
   '말차마카다미아'
 ] as const;
 
+export const drinkTypes = [
+  '콜드브루',
+  '수제초코우유',
+  '밀크티'
+] as const;
+
 export const cookiePrices = {
   regular: 4500, // 일반 쿠키 기본 가격
   brownie: 7800, // 브라우니쿠키 기본 가격
-  fortune: 1500, // 행운쿠키
-  airplane: 3000, // 비행기샌드쿠키
+  fortune: 17000, // 행운쿠키 (박스당)
+  airplane: 22000, // 비행기샌드쿠키 (박스당)
+  twoPackSet: 9000, // 2구 패키지
+  singleWithDrink: 8500, // 1구 + 음료
   packaging: {
-    '1box': 500,
-    '2box': 1500,
-    '4box': 1000,
+    single_box: 500, // 1구박스 (+500원)
+    plastic_wrap: 500, // 비닐탭포장 (+500원) 
+    oil_paper: 0, // 유산지 (무료)
   },
   brownieOptions: {
     birthdayBear: 500,

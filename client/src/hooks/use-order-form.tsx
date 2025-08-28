@@ -17,15 +17,27 @@ const initialFormData: OrderData = {
     heartMessage: undefined,
     customTopper: false,
   },
+  twoPackSet: {
+    quantity: 0,
+    selectedCookies: [],
+  },
+  singleWithDrink: {
+    quantity: 0,
+    selectedCookie: undefined,
+    selectedDrink: undefined,
+  },
   fortuneCookie: 0,
   airplaneSandwich: 0,
 };
 
 const initialPricing = {
   regularCookies: 0,
+  twoPackSet: 0,
+  singleWithDrink: 0,
   packaging: 0,
   brownie: 0,
-  other: 0,
+  fortune: 0,
+  airplane: 0,
   total: 0,
 };
 
@@ -42,10 +54,13 @@ export function useOrderForm() {
     },
     onSuccess: (data) => {
       setPricing({
-        regularCookies: data.breakdown.regularCookies,
-        packaging: data.breakdown.packaging,
-        brownie: data.breakdown.brownie,
-        other: data.breakdown.other,
+        regularCookies: data.breakdown.regularCookies || 0,
+        twoPackSet: data.breakdown.twoPackSet || 0,
+        singleWithDrink: data.breakdown.singleWithDrink || 0,
+        packaging: data.breakdown.packaging || 0,
+        brownie: data.breakdown.brownie || 0,
+        fortune: data.breakdown.fortune || 0,
+        airplane: data.breakdown.airplane || 0,
         total: data.totalPrice,
       });
     },

@@ -7,7 +7,8 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { ChevronDown, ChevronRight } from "lucide-react";
 import { useState } from "react";
-import { cookieTypes } from "@shared/schema";
+import { cookieTypes, drinkTypes } from "@shared/schema";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface ProductSelectionProps {
   regularCookies: Record<string, number>;
@@ -19,6 +20,15 @@ interface ProductSelectionProps {
     heartMessage?: string;
     customTopper: boolean;
   };
+  twoPackSet: {
+    quantity: number;
+    selectedCookies: string[];
+  };
+  singleWithDrink: {
+    quantity: number;
+    selectedCookie?: string;
+    selectedDrink?: string;
+  };
   fortuneCookie: number;
   airplaneSandwich: number;
   onUpdate: (field: string, value: any) => void;
@@ -27,7 +37,9 @@ interface ProductSelectionProps {
 export function ProductSelection({ 
   regularCookies, 
   packaging, 
-  brownieCookie, 
+  brownieCookie,
+  twoPackSet,
+  singleWithDrink,
   fortuneCookie, 
   airplaneSandwich, 
   onUpdate 
@@ -35,6 +47,8 @@ export function ProductSelection({
   
   const [openSections, setOpenSections] = useState({
     regular: false,
+    twopack: false,
+    singledrink: false,
     brownie: false,
     fortune: false,
     airplane: false
@@ -46,6 +60,27 @@ export function ProductSelection({
 
   const updateBrownieCookie = (field: string, value: any) => {
     onUpdate('brownieCookie', { ...brownieCookie, [field]: value });
+  };
+
+  const updateTwoPackSet = (field: string, value: any) => {
+    onUpdate('twoPackSet', { ...twoPackSet, [field]: value });
+  };
+
+  const updateSingleWithDrink = (field: string, value: any) => {
+    onUpdate('singleWithDrink', { ...singleWithDrink, [field]: value });
+  };
+
+  const toggleCookieInTwoPackSet = (cookieType: string) => {
+    const currentCookies = twoPackSet.selectedCookies || [];
+    let newCookies;
+    if (currentCookies.includes(cookieType)) {
+      newCookies = currentCookies.filter(c => c !== cookieType);
+    } else if (currentCookies.length < 2) {
+      newCookies = [...currentCookies, cookieType];
+    } else {
+      return; // 최대 2개까지만
+    }
+    updateTwoPackSet('selectedCookies', newCookies);
   };
 
   const hasRegularCookies = Object.values(regularCookies).some(qty => qty > 0);
@@ -133,30 +168,241 @@ export function ProductSelection({
                     <RadioGroup value={packaging} onValueChange={(value) => onUpdate('packaging', value)}>
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
                         <div className="flex items-center space-x-2 p-2 bg-card rounded hover:bg-muted/50 transition-colors">
-                          <RadioGroupItem value="1box" id="1box" data-testid="radio-packaging-1box" />
-                          <Label htmlFor="1box" className="cursor-pointer text-sm">
-                            <div className="font-medium">1구 박스</div>
+                          <RadioGroupItem value="single_box" id="single_box" data-testid="radio-packaging-single-box" />
+                          <Label htmlFor="single_box" className="cursor-pointer text-sm">
+                            <div className="font-medium">1구박스</div>
                             <div className="text-xs text-muted-foreground">+500원</div>
                           </Label>
                         </div>
                         
                         <div className="flex items-center space-x-2 p-2 bg-card rounded hover:bg-muted/50 transition-colors">
-                          <RadioGroupItem value="2box" id="2box" data-testid="radio-packaging-2box" />
-                          <Label htmlFor="2box" className="cursor-pointer text-sm">
-                            <div className="font-medium">2구 박스</div>
-                            <div className="text-xs text-muted-foreground">+1,500원</div>
+                          <RadioGroupItem value="plastic_wrap" id="plastic_wrap" data-testid="radio-packaging-plastic-wrap" />
+                          <Label htmlFor="plastic_wrap" className="cursor-pointer text-sm">
+                            <div className="font-medium">비닐탭포장</div>
+                            <div className="text-xs text-muted-foreground">+500원</div>
                           </Label>
                         </div>
                         
                         <div className="flex items-center space-x-2 p-2 bg-card rounded hover:bg-muted/50 transition-colors">
-                          <RadioGroupItem value="4box" id="4box" data-testid="radio-packaging-4box" />
-                          <Label htmlFor="4box" className="cursor-pointer text-sm">
-                            <div className="font-medium">4구 박스</div>
-                            <div className="text-xs text-muted-foreground">+1,000원</div>
+                          <RadioGroupItem value="oil_paper" id="oil_paper" data-testid="radio-packaging-oil-paper" />
+                          <Label htmlFor="oil_paper" className="cursor-pointer text-sm">
+                            <div className="font-medium">유산지</div>
+                            <div className="text-xs text-muted-foreground">무료</div>
                           </Label>
                         </div>
                       </div>
                     </RadioGroup>
+                  </div>
+                )}
+              </CollapsibleContent>
+            </div>
+          </Collapsible>
+
+          {/* 2구 패키지 */}
+          <Collapsible 
+            open={openSections.twopack} 
+            onOpenChange={(open) => setOpenSections({...openSections, twopack: open})}
+          >
+            <div className="border border-border rounded-lg bg-card">
+              <CollapsibleTrigger className="w-full p-4 flex items-center justify-between hover:bg-muted/50 transition-colors">
+                <div className="flex items-center gap-3">
+                  <span className="text-2xl">📦</span>
+                  <div className="text-left">
+                    <div className="font-semibold">2구 패키지</div>
+                    <div className="text-sm text-muted-foreground">세트당 9,000원</div>
+                  </div>
+                  {twoPackSet.quantity > 0 && (
+                    <div className="bg-primary text-primary-foreground text-xs px-2 py-1 rounded-full ml-2">
+                      {twoPackSet.quantity}세트
+                    </div>
+                  )}
+                </div>
+                {openSections.twopack ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+              </CollapsibleTrigger>
+              
+              <CollapsibleContent className="px-4 pb-4">
+                <div className="flex items-center justify-between p-3 bg-muted/30 rounded-lg mb-4">
+                  <div className="flex items-center gap-2">
+                    <Checkbox
+                      id="twopack-set"
+                      checked={twoPackSet.quantity > 0}
+                      onCheckedChange={(checked) => {
+                        updateTwoPackSet('quantity', checked ? 1 : 0);
+                        if (!checked) updateTwoPackSet('selectedCookies', []);
+                      }}
+                      data-testid="checkbox-twopack-set"
+                    />
+                    <Label htmlFor="twopack-set" className="text-sm font-medium">2구 패키지</Label>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="w-7 h-7 rounded-full p-0 text-xs"
+                      onClick={() => {
+                        updateTwoPackSet('quantity', Math.max(0, twoPackSet.quantity - 1));
+                        if (twoPackSet.quantity <= 1) updateTwoPackSet('selectedCookies', []);
+                      }}
+                      data-testid="button-decrease-twopack"
+                    >
+                      -
+                    </Button>
+                    <span className="w-8 text-center text-sm font-medium" data-testid="quantity-twopack">
+                      {twoPackSet.quantity}
+                    </span>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="w-7 h-7 rounded-full p-0 text-xs"
+                      onClick={() => updateTwoPackSet('quantity', twoPackSet.quantity + 1)}
+                      data-testid="button-increase-twopack"
+                    >
+                      +
+                    </Button>
+                  </div>
+                </div>
+
+                {twoPackSet.quantity > 0 && (
+                  <div className="bg-accent/20 rounded-lg p-3">
+                    <h4 className="font-medium mb-3 text-sm">쿠키 선택 (2개)</h4>
+                    <div className="grid grid-cols-2 lg:grid-cols-3 gap-2">
+                      {cookieTypes.map((type) => (
+                        <div 
+                          key={type} 
+                          className={`flex items-center space-x-2 p-2 rounded cursor-pointer transition-colors ${
+                            twoPackSet.selectedCookies?.includes(type) 
+                              ? 'bg-primary text-primary-foreground' 
+                              : 'bg-card hover:bg-muted/50'
+                          }`}
+                          onClick={() => toggleCookieInTwoPackSet(type)}
+                          data-testid={`cookie-option-${type}`}
+                        >
+                          <Checkbox
+                            checked={twoPackSet.selectedCookies?.includes(type) || false}
+                            className="pointer-events-none"
+                          />
+                          <span className="text-xs">{type}</span>
+                        </div>
+                      ))}
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-2">
+                      선택됨: {twoPackSet.selectedCookies?.length || 0}/2개
+                    </p>
+                  </div>
+                )}
+              </CollapsibleContent>
+            </div>
+          </Collapsible>
+
+          {/* 1구 + 음료 */}
+          <Collapsible 
+            open={openSections.singledrink} 
+            onOpenChange={(open) => setOpenSections({...openSections, singledrink: open})}
+          >
+            <div className="border border-border rounded-lg bg-card">
+              <CollapsibleTrigger className="w-full p-4 flex items-center justify-between hover:bg-muted/50 transition-colors">
+                <div className="flex items-center gap-3">
+                  <span className="text-2xl">🍪☕</span>
+                  <div className="text-left">
+                    <div className="font-semibold">1구 + 음료</div>
+                    <div className="text-sm text-muted-foreground">세트당 8,500원</div>
+                  </div>
+                  {singleWithDrink.quantity > 0 && (
+                    <div className="bg-primary text-primary-foreground text-xs px-2 py-1 rounded-full ml-2">
+                      {singleWithDrink.quantity}세트
+                    </div>
+                  )}
+                </div>
+                {openSections.singledrink ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+              </CollapsibleTrigger>
+              
+              <CollapsibleContent className="px-4 pb-4">
+                <div className="flex items-center justify-between p-3 bg-muted/30 rounded-lg mb-4">
+                  <div className="flex items-center gap-2">
+                    <Checkbox
+                      id="single-with-drink"
+                      checked={singleWithDrink.quantity > 0}
+                      onCheckedChange={(checked) => {
+                        updateSingleWithDrink('quantity', checked ? 1 : 0);
+                        if (!checked) {
+                          updateSingleWithDrink('selectedCookie', undefined);
+                          updateSingleWithDrink('selectedDrink', undefined);
+                        }
+                      }}
+                      data-testid="checkbox-single-with-drink"
+                    />
+                    <Label htmlFor="single-with-drink" className="text-sm font-medium">1구 + 음료</Label>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="w-7 h-7 rounded-full p-0 text-xs"
+                      onClick={() => {
+                        updateSingleWithDrink('quantity', Math.max(0, singleWithDrink.quantity - 1));
+                        if (singleWithDrink.quantity <= 1) {
+                          updateSingleWithDrink('selectedCookie', undefined);
+                          updateSingleWithDrink('selectedDrink', undefined);
+                        }
+                      }}
+                      data-testid="button-decrease-single-with-drink"
+                    >
+                      -
+                    </Button>
+                    <span className="w-8 text-center text-sm font-medium" data-testid="quantity-single-with-drink">
+                      {singleWithDrink.quantity}
+                    </span>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="w-7 h-7 rounded-full p-0 text-xs"
+                      onClick={() => updateSingleWithDrink('quantity', singleWithDrink.quantity + 1)}
+                      data-testid="button-increase-single-with-drink"
+                    >
+                      +
+                    </Button>
+                  </div>
+                </div>
+
+                {singleWithDrink.quantity > 0 && (
+                  <div className="bg-accent/20 rounded-lg p-3 space-y-3">
+                    <div>
+                      <h4 className="font-medium mb-2 text-sm">쿠키 선택</h4>
+                      <Select 
+                        value={singleWithDrink.selectedCookie} 
+                        onValueChange={(value) => updateSingleWithDrink('selectedCookie', value)}
+                      >
+                        <SelectTrigger data-testid="select-cookie">
+                          <SelectValue placeholder="쿠키를 선택하세요" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {cookieTypes.map((type) => (
+                            <SelectItem key={type} value={type}>{type}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    
+                    <div>
+                      <h4 className="font-medium mb-2 text-sm">음료 선택</h4>
+                      <Select 
+                        value={singleWithDrink.selectedDrink} 
+                        onValueChange={(value) => updateSingleWithDrink('selectedDrink', value)}
+                      >
+                        <SelectTrigger data-testid="select-drink">
+                          <SelectValue placeholder="음료를 선택하세요" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {drinkTypes.map((type) => (
+                            <SelectItem key={type} value={type}>{type}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
                 )}
               </CollapsibleContent>
@@ -329,11 +575,11 @@ export function ProductSelection({
                   <span className="text-2xl">🥠</span>
                   <div className="text-left">
                     <div className="font-semibold">행운쿠키</div>
-                    <div className="text-sm text-muted-foreground">개당 1,500원</div>
+                    <div className="text-sm text-muted-foreground">박스당 17,000원</div>
                   </div>
                   {fortuneCookie > 0 && (
                     <div className="bg-primary text-primary-foreground text-xs px-2 py-1 rounded-full ml-2">
-                      {fortuneCookie}개
+                      {fortuneCookie}박스
                     </div>
                   )}
                 </div>
@@ -351,7 +597,7 @@ export function ProductSelection({
                       }}
                       data-testid="checkbox-fortune-cookie"
                     />
-                    <Label htmlFor="fortune-cookie" className="text-sm font-medium">행운쿠키</Label>
+                    <Label htmlFor="fortune-cookie" className="text-sm font-medium">행운쿠키 (박스)</Label>
                   </div>
                   <div className="flex items-center gap-2">
                     <Button
@@ -394,11 +640,11 @@ export function ProductSelection({
                   <span className="text-2xl">✈️</span>
                   <div className="text-left">
                     <div className="font-semibold">비행기샌드쿠키</div>
-                    <div className="text-sm text-muted-foreground">개당 3,000원</div>
+                    <div className="text-sm text-muted-foreground">박스당 22,000원</div>
                   </div>
                   {airplaneSandwich > 0 && (
                     <div className="bg-primary text-primary-foreground text-xs px-2 py-1 rounded-full ml-2">
-                      {airplaneSandwich}개
+                      {airplaneSandwich}박스
                     </div>
                   )}
                 </div>
@@ -416,7 +662,7 @@ export function ProductSelection({
                       }}
                       data-testid="checkbox-airplane-sandwich"
                     />
-                    <Label htmlFor="airplane-sandwich" className="text-sm font-medium">비행기샌드쿠키</Label>
+                    <Label htmlFor="airplane-sandwich" className="text-sm font-medium">비행기샌드쿠키 (박스)</Label>
                   </div>
                   <div className="flex items-center gap-2">
                     <Button
