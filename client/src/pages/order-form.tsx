@@ -18,6 +18,31 @@ export default function OrderForm() {
               nothingmatters
             </h1>
             <p className="text-muted-foreground mt-2 text-sm">귀여운 수제 쿠키 예약 주문</p>
+            <div className="mt-3 p-2 bg-yellow-50 border border-yellow-200 rounded-lg">
+              <p className="text-yellow-800 text-sm font-medium">⚠️ 주문 최종확정은 상담후 가능합니다</p>
+            </div>
+            
+            <div className="flex flex-col sm:flex-row gap-3 mt-4 justify-center">
+              <a
+                href="http://pf.kakao.com/_QdCaK"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-yellow-400 hover:bg-yellow-500 text-yellow-900 font-semibold rounded-lg transition-colors"
+                data-testid="button-kakao-consult"
+              >
+                💬 카카오톡 상담하기
+              </a>
+              
+              <a
+                href="https://nothingmatters.kr"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold rounded-lg transition-colors"
+                data-testid="button-main-website"
+              >
+                🌐 메인 웹사이트
+              </a>
+            </div>
           </div>
         </div>
       </header>
