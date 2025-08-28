@@ -19,8 +19,8 @@ export default function OrderForm() {
         <div className="max-w-4xl mx-auto px-4 py-6">
           <div className="flex items-center justify-between">
             <div className="text-center flex-1">
-              <h1 className="text-3xl futura-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-                nothingmatters
+              <h1 className="text-3xl futura-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-[#1100ff]">
+                NOTHINGMATTERS
               </h1>
               <p className="text-muted-foreground mt-2 text-sm">귀여운 수제 쿠키 예약 주문</p>
               <div className="mt-3 p-2 bg-yellow-50 border border-yellow-200 rounded-lg">
