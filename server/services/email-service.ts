@@ -22,6 +22,12 @@ export class EmailService {
   }
 
   async sendQuote(orderData: OrderData, quoteBuffer: Buffer): Promise<void> {
+    console.log('이메일 서비스 sendQuote 호출됨:', {
+      customerName: orderData.customerName,
+      customerContact: orderData.customerContact,
+      deliveryDate: orderData.deliveryDate,
+      bufferSize: quoteBuffer.length
+    });
     // 고객용 견적서 이메일
     const customerMailOptions = {
       from: 'flowerpanty@gmail.com',

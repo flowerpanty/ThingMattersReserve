@@ -129,6 +129,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Generate and send quote
   app.post("/api/generate-quote", async (req, res) => {
     try {
+      console.log('견적서 생성 요청 받음:', JSON.stringify(req.body, null, 2));
       const orderData = orderDataSchema.parse(req.body);
       
       // Validate email for sending quote
@@ -139,14 +140,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
+      console.log('주문 데이터 파싱 성공:', orderData);
+
       // Calculate total price
       const { totalPrice } = calculatePrice(orderData);
+      console.log('총 금액 계산 완료:', totalPrice);
 
       // Generate Excel quote
+      console.log('Excel 견적서 생성 시작...');
       const quoteBuffer = await excelGenerator.generateQuote(orderData);
+      console.log('Excel 견적서 생성 완료, 크기:', quoteBuffer.length, 'bytes');
 
       // Send email
+      console.log('이메일 전송 시작...');
       await emailService.sendQuote(orderData, quoteBuffer);
+      console.log('이메일 전송 완료');
 
       // Save order to storage
       const orderItems = [];

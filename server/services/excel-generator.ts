@@ -148,29 +148,39 @@ export class ExcelGenerator {
     }
 
     // 브라우니쿠키
-    if (orderData.brownieCookie?.quantity > 0) {
-      let brownieAmount = orderData.brownieCookie.quantity * cookiePrices.brownie;
+    // 브라우니 쿠키 세트들 (다중 세트 및 수량)
+    if (orderData.brownieCookieSets?.length > 0) {
+      let totalBrownieAmount = 0;
+      let totalBrownieQuantity = 0;
       
-      // 옵션 추가 비용 계산
-      if (orderData.brownieCookie.shape === 'birthdayBear') {
-        brownieAmount += orderData.brownieCookie.quantity * cookiePrices.brownieOptions.birthdayBear;
-      }
-      if (orderData.brownieCookie.customSticker) {
-        brownieAmount += cookiePrices.brownieOptions.customSticker;
-      }
-      if (orderData.brownieCookie.heartMessage) {
-        brownieAmount += cookiePrices.brownieOptions.heartMessage;
-      }
+      orderData.brownieCookieSets.forEach((set: any) => {
+        const quantity = set.quantity || 1;
+        let brownieAmount = quantity * cookiePrices.brownie;
+        
+        // 옵션 추가 비용 계산
+        if (set.shape === 'birthdayBear') {
+          brownieAmount += quantity * cookiePrices.brownieOptions.birthdayBear;
+        }
+        if (set.customSticker) {
+          brownieAmount += cookiePrices.brownieOptions.customSticker;
+        }
+        if (set.heartMessage) {
+          brownieAmount += cookiePrices.brownieOptions.heartMessage;
+        }
+        
+        totalBrownieAmount += brownieAmount;
+        totalBrownieQuantity += quantity;
+      });
       
-      totalAmount += brownieAmount;
+      totalAmount += totalBrownieAmount;
       
       worksheet.getCell(currentRow, 1).value = '브라우니쿠키';
       worksheet.getCell(currentRow, 1).style = cellStyle;
-      worksheet.getCell(currentRow, 2).value = orderData.brownieCookie.quantity;
+      worksheet.getCell(currentRow, 2).value = totalBrownieQuantity;
       worksheet.getCell(currentRow, 2).style = cellStyle;
-      worksheet.getCell(currentRow, 3).value = Math.floor(brownieAmount / orderData.brownieCookie.quantity);
+      worksheet.getCell(currentRow, 3).value = Math.floor(totalBrownieAmount / totalBrownieQuantity);
       worksheet.getCell(currentRow, 3).style = priceStyle;
-      worksheet.getCell(currentRow, 4).value = brownieAmount;
+      worksheet.getCell(currentRow, 4).value = totalBrownieAmount;
       worksheet.getCell(currentRow, 4).style = priceStyle;
       worksheet.getRow(currentRow).height = 35;
       currentRow++;
@@ -320,28 +330,30 @@ export class ExcelGenerator {
     }
 
     // 브라우니쿠키 상세
-    if (orderData.brownieCookie?.quantity > 0) {
-      let detailText = '• 브라우니쿠키';
-      if (orderData.brownieCookie.shape) {
-        const shapeText = orderData.brownieCookie.shape === 'bear' ? '곰' :
-                         orderData.brownieCookie.shape === 'rabbit' ? '토끼' : '생일곰';
-        detailText += `: ${shapeText} 모양`;
-      }
-      if (orderData.brownieCookie.customSticker) {
-        detailText += ', 커스텀스티커';
-      }
-      if (orderData.brownieCookie.heartMessage) {
-        detailText += ', 하트메시지';
-      }
-      if (orderData.brownieCookie.customTopper) {
-        detailText += ', 커스텀토퍼';
-      }
-      
-      worksheet.mergeCells(`A${currentRow}:D${currentRow}`);
-      worksheet.getCell(currentRow, 1).value = detailText;
-      worksheet.getCell(currentRow, 1).style = leftAlignStyle;
-      worksheet.getRow(currentRow).height = 35;
-      currentRow++;
+    if (orderData.brownieCookieSets?.length > 0) {
+      orderData.brownieCookieSets.forEach((set: any, index: number) => {
+        let detailText = `• 브라우니쿠키 세트 ${index + 1} (${set.quantity || 1}개)`;
+        if (set.shape) {
+          const shapeText = set.shape === 'bear' ? '곰' :
+                           set.shape === 'rabbit' ? '토끼' : '생일곰';
+          detailText += `: ${shapeText} 모양`;
+        }
+        if (set.customSticker) {
+          detailText += ', 커스텀스티커';
+        }
+        if (set.heartMessage) {
+          detailText += `, 하트메시지: ${set.heartMessage}`;
+        }
+        if (set.customTopper) {
+          detailText += ', 커스텀토퍼';
+        }
+        
+        worksheet.mergeCells(`A${currentRow}:D${currentRow}`);
+        worksheet.getCell(currentRow, 1).value = detailText;
+        worksheet.getCell(currentRow, 1).style = leftAlignStyle;
+        worksheet.getRow(currentRow).height = 35;
+        currentRow++;
+      });
     }
     
     // 포장 옵션 상세
