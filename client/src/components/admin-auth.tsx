@@ -26,7 +26,9 @@ export function AdminAuth({ onAuthenticated }: AdminAuthProps) {
     setTimeout(() => {
       if (password === ADMIN_PASSWORD) {
         // 세션 스토리지에 인증 상태 저장
+        console.log('Authentication successful, setting sessionStorage...');
         sessionStorage.setItem('admin_authenticated', 'true');
+        console.log('SessionStorage set, calling onAuthenticated...');
         onAuthenticated();
       } else {
         setError('잘못된 관리자 비밀번호입니다.');

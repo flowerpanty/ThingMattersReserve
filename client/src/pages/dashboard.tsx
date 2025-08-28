@@ -40,7 +40,17 @@ interface DashboardStats {
 }
 
 export function Dashboard() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(() => {
+    try {
+      // 세션 스토리지에서 인증 상태 확인
+      const authStatus = sessionStorage.getItem('admin_authenticated');
+      console.log('Initial auth status from sessionStorage:', authStatus);
+      return authStatus === 'true';
+    } catch (error) {
+      console.log('SessionStorage access error:', error);
+      return false;
+    }
+  });
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [generatedMessage, setGeneratedMessage] = useState('');
@@ -57,9 +67,15 @@ export function Dashboard() {
     }
   }, []);
 
+  // 인증 콜백 함수
+  const handleAuthentication = () => {
+    console.log('handleAuthentication called');
+    setIsAuthenticated(true);
+  };
+
   // 인증되지 않은 경우 로그인 화면 표시
   if (!isAuthenticated) {
-    return <AdminAuth onAuthenticated={() => setIsAuthenticated(true)} />;
+    return <AdminAuth onAuthenticated={handleAuthentication} />;
   }
 
   // 주문 목록 조회
@@ -265,9 +281,12 @@ export function Dashboard() {
               </CardHeader>
               <CardContent>
                 {ordersLoading ? (
-                  <div className="text-center py-8">로딩 중...</div>
+                  <div className="text-center py-8">📦 주문 데이터를 불러오는 중...</div>
                 ) : orders.length === 0 ? (
-                  <div className="text-center py-8 text-muted-foreground">주문이 없습니다.</div>
+                  <div className="text-center py-8 text-muted-foreground">
+                    📄 아직 주문이 없습니다.<br />
+                    <span className="text-xs">새로운 주문이 들어오면 여기에 표시됩니다.</span>
+                  </div>
                 ) : (
                   <div className="space-y-3">
                     {orders.slice(0, 10).map((order) => (
@@ -513,7 +532,7 @@ export function Dashboard() {
                             <Tooltip 
                               formatter={(value, name) => {
                                 if (name === 'orders') return [`${value}건`, '주문 수'];
-                                if (name === 'revenue') return [`${formatCurrency(value)}`, '매출'];
+                                if (name === 'revenue') return [`${formatCurrency(Number(value))}`, '매출'];
                                 return [value, name];
                               }}
                             />
