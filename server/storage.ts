@@ -26,6 +26,7 @@ export class MemStorage implements IStorage {
       createdAt: new Date()
     };
     this.orders.set(id, order);
+    console.log(`주문 저장됨: ID=${id}, 고객명=${order.customerName}, 총 주문 수=${this.orders.size}`);
     return order;
   }
 
