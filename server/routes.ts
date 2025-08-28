@@ -4,10 +4,12 @@ import { storage } from "./storage";
 import { orderDataSchema, cookiePrices } from "@shared/schema";
 import { ExcelGenerator } from "./services/excel-generator";
 import { EmailService } from "./services/email-service";
+import { KakaoTemplateService } from "./services/kakao-template";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   const excelGenerator = new ExcelGenerator();
   const emailService = new EmailService();
+  const kakaoTemplateService = new KakaoTemplateService();
 
   // Calculate price function
   const calculatePrice = (orderData: any) => {
@@ -234,6 +236,106 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error('Quote generation error:', error);
       res.status(500).json({ 
         message: "견적서 생성 중 오류가 발생했습니다. 다시 시도해주세요.",
+        error: error instanceof Error ? error.message : String(error) 
+      });
+    }
+  });
+
+  // Generate KakaoTalk message template
+  app.post("/api/generate-kakao-message", async (req, res) => {
+    try {
+      const { orderId, messageType } = req.body;
+      
+      if (!orderId) {
+        return res.status(400).json({ message: "주문 ID가 필요합니다." });
+      }
+      
+      // Get order from storage
+      const orders = await storage.getAllOrders();
+      const order = orders.find(o => o.id === orderId);
+      
+      if (!order) {
+        return res.status(404).json({ message: "주문을 찾을 수 없습니다." });
+      }
+      
+      // Reconstruct order data for template generation
+      const orderData = {
+        customerName: order.customerName,
+        customerContact: order.customerContact,
+        deliveryDate: order.deliveryDate,
+        regularCookies: {} as Record<string, number>,
+        packaging: undefined as string | undefined,
+        brownieCookie: { 
+          quantity: 0, 
+          customSticker: false, 
+          customTopper: false,
+          shape: undefined as string | undefined,
+          heartMessage: undefined as string | undefined
+        },
+        twoPackSets: [] as Array<{ selectedCookies: string[], quantity: number }>,
+        singleWithDrinkSets: [] as Array<{ selectedCookie: string, selectedDrink: string, quantity: number }>,
+        fortuneCookie: 0,
+        airplaneSandwich: 0,
+      };
+      
+      // Parse order items back to order data structure
+      (order.orderItems as any[]).forEach((item: any) => {
+        switch (item.type) {
+          case 'regular':
+            orderData.regularCookies[item.name] = item.quantity;
+            break;
+          case 'twopack':
+            orderData.twoPackSets.push({
+              selectedCookies: item.options?.selectedCookies || [],
+              quantity: item.quantity
+            });
+            break;
+          case 'singledrink':
+            orderData.singleWithDrinkSets.push({
+              selectedCookie: item.options?.selectedCookie || '',
+              selectedDrink: item.options?.selectedDrink || '',
+              quantity: item.quantity
+            });
+            break;
+          case 'brownie':
+            orderData.brownieCookie.quantity = item.quantity;
+            if (item.options) {
+              orderData.brownieCookie.shape = item.options.shape;
+              orderData.brownieCookie.customSticker = item.options.customSticker;
+              orderData.brownieCookie.heartMessage = item.options.heartMessage;
+              orderData.brownieCookie.customTopper = item.options.customTopper;
+            }
+            break;
+          case 'fortune':
+            orderData.fortuneCookie = item.quantity;
+            break;
+          case 'airplane':
+            orderData.airplaneSandwich = item.quantity;
+            break;
+        }
+      });
+      
+      let message = '';
+      
+      switch (messageType) {
+        case 'order_confirm':
+          message = kakaoTemplateService.generateOrderConfirmMessage(orderData, order.totalPrice);
+          break;
+        case 'payment_confirm':
+          message = kakaoTemplateService.generatePaymentConfirmMessage(order.customerName, order.deliveryDate);
+          break;
+        case 'ready_for_pickup':
+          message = kakaoTemplateService.generateReadyForPickupMessage(order.customerName);
+          break;
+        default:
+          return res.status(400).json({ message: "올바른 메시지 타입을 선택해주세요." });
+      }
+      
+      res.json({ message, customerName: order.customerName });
+    } catch (error) {
+      console.error('Kakao message generation error:', error);
+      res.status(500).json({ 
+        message: "카카오톡 메시지 생성 중 오류가 발생했습니다.",
         error: error instanceof Error ? error.message : String(error) 
       });
     }

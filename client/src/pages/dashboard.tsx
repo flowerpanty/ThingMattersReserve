@@ -4,11 +4,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { CalendarDays, Package, TrendingUp, Users, RefreshCw, ShoppingCart } from 'lucide-react';
+import { CalendarDays, Package, TrendingUp, Users, RefreshCw, ShoppingCart, MessageCircle, Copy, Check } from 'lucide-react';
 import { format } from 'date-fns';
 import { ko } from 'date-fns/locale';
 import { Link } from 'wouter';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from 'recharts';
+import { apiRequest } from '@/lib/queryClient';
+import { useToast } from '@/hooks/use-toast';
 
 interface OrderItem {
   type: string;
@@ -37,6 +39,12 @@ interface DashboardStats {
 
 export function Dashboard() {
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const [generatedMessage, setGeneratedMessage] = useState('');
+  const [messageType, setMessageType] = useState<'order_confirm' | 'payment_confirm' | 'ready_for_pickup'>('order_confirm');
+  const [isGeneratingMessage, setIsGeneratingMessage] = useState(false);
+  const [copiedMessageId, setCopiedMessageId] = useState<string | null>(null);
+  const { toast } = useToast();
 
   // 주문 목록 조회
   const { data: orders = [], isLoading: ordersLoading, refetch: refetchOrders } = useQuery<Order[]>({
@@ -49,6 +57,56 @@ export function Dashboard() {
     },
     refetchInterval: 30000, // 30초마다 자동 새로고침
   });
+
+  // 카카오톡 메시지 생성 함수
+  const generateKakaoMessage = async (orderId: string, type: 'order_confirm' | 'payment_confirm' | 'ready_for_pickup') => {
+    setIsGeneratingMessage(true);
+    try {
+      const result = await apiRequest('/api/generate-kakao-message', {
+        method: 'POST',
+        body: JSON.stringify({
+          orderId,
+          messageType: type
+        }),
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      setGeneratedMessage(result.message);
+      toast({
+        title: "카카오톡 메시지 생성 완료",
+        description: `${result.customerName}님을 위한 메시지가 생성되었습니다.`
+      });
+    } catch (error) {
+      console.error('카카오톡 메시지 생성 오류:', error);
+      toast({
+        title: "메시지 생성 실패",
+        description: "카카오톡 메시지 생성 중 오류가 발생했습니다.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsGeneratingMessage(false);
+    }
+  };
+
+  const copyToClipboard = async (text: string, orderId: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedMessageId(orderId);
+      toast({
+        title: "복사 완료",
+        description: "카카오톡 메시지가 클립보드에 복사되었습니다."
+      });
+      setTimeout(() => setCopiedMessageId(null), 2000);
+    } catch (error) {
+      toast({
+        title: "복사 실패",
+        description: "클립보드 복사 중 오류가 발생했습니다.",
+        variant: "destructive"
+      });
+    }
+  };
 
   // 통계 계산
   const stats: DashboardStats = {
@@ -228,13 +286,48 @@ export function Dashboard() {
                             )}
                           </div>
                         </div>
-                        <div className="text-right">
+                        <div className="text-right space-y-2">
                           <div className="font-bold text-lg">
                             {formatCurrency(order.totalPrice)}
                           </div>
                           <p className="text-sm text-muted-foreground">
                             {order.customerContact}
                           </p>
+                          <div className="flex flex-col gap-1">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => generateKakaoMessage(order.id, 'order_confirm')}
+                              disabled={isGeneratingMessage}
+                              className="text-xs h-7"
+                              data-testid={`kakao-order-confirm-${order.id}`}
+                            >
+                              <MessageCircle className="h-3 w-3 mr-1" />
+                              주문확인
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => generateKakaoMessage(order.id, 'payment_confirm')}
+                              disabled={isGeneratingMessage}
+                              className="text-xs h-7"
+                              data-testid={`kakao-payment-confirm-${order.id}`}
+                            >
+                              <MessageCircle className="h-3 w-3 mr-1" />
+                              입금확인
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => generateKakaoMessage(order.id, 'ready_for_pickup')}
+                              disabled={isGeneratingMessage}
+                              className="text-xs h-7"
+                              data-testid={`kakao-ready-pickup-${order.id}`}
+                            >
+                              <MessageCircle className="h-3 w-3 mr-1" />
+                              완성알림
+                            </Button>
+                          </div>
                         </div>
                       </div>
                     ))}
@@ -242,6 +335,40 @@ export function Dashboard() {
                 )}
               </CardContent>
             </Card>
+            
+            {/* 카카오톡 메시지 미리보기 */}
+            {generatedMessage && (
+              <Card className="card-shadow">
+                <CardHeader>
+                  <CardTitle className="flex items-center justify-between">
+                    <span>카카오톡 메시지 미리보기</span>
+                    <Button
+                      size="sm"
+                      onClick={() => copyToClipboard(generatedMessage, 'preview')}
+                      className="h-8"
+                      data-testid="copy-message-button"
+                    >
+                      {copiedMessageId === 'preview' ? (
+                        <Check className="h-4 w-4 mr-1" />
+                      ) : (
+                        <Copy className="h-4 w-4 mr-1" />
+                      )}
+                      {copiedMessageId === 'preview' ? '복사됨' : '복사'}
+                    </Button>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="bg-muted/30 p-4 rounded-lg">
+                    <pre className="whitespace-pre-wrap text-sm font-mono">
+                      {generatedMessage}
+                    </pre>
+                  </div>
+                  <div className="mt-3 text-xs text-muted-foreground">
+                    💡 위 메시지를 복사해서 카카오톡으로 고객에게 전송하세요.
+                  </div>
+                </CardContent>
+              </Card>
+            )}
           </TabsContent>
 
           {/* 배송 일정 탭 */}
