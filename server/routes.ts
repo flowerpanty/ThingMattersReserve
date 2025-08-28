@@ -288,7 +288,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         deliveryDate: order.deliveryDate,
         deliveryMethod: (order as any).deliveryMethod || 'pickup',
         regularCookies: {} as Record<string, number>,
-        packaging: undefined as string | undefined,
+        packaging: undefined as 'single_box' | 'plastic_wrap' | 'oil_paper' | undefined,
         brownieCookieSets: [] as Array<{ quantity: number, shape?: 'bear' | 'rabbit' | 'birthdayBear', customSticker: boolean, heartMessage?: string, customTopper: boolean }>,
         twoPackSets: [] as Array<{ selectedCookies: string[], quantity: number }>,
         singleWithDrinkSets: [] as Array<{ selectedCookie: string, selectedDrink: string, quantity: number }>,

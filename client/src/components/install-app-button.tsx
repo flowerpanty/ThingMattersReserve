@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Download, X } from 'lucide-react';
+import { Download, X, Share } from 'lucide-react';
 
 export function InstallAppButton() {
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [showInstallButton, setShowInstallButton] = useState(false);
   const [isInstalled, setIsInstalled] = useState(false);
+  const [isIOS, setIsIOS] = useState(false);
+  const [showIOSInstructions, setShowIOSInstructions] = useState(false);
 
   useEffect(() => {
     // PWA 설치 가능 여부 체크
@@ -23,6 +25,21 @@ export function InstallAppButton() {
       console.log('PWA 앱이 설치되었습니다!');
     };
 
+    // iOS 기기인지 확인
+    const checkIfIOS = () => {
+      const userAgent = window.navigator.userAgent.toLowerCase();
+      const isIOSDevice = /iphone|ipad|ipod/.test(userAgent);
+      const isIOSSafari = /safari/.test(userAgent) && !/chrome|crios|fxios/.test(userAgent);
+      
+      if (isIOSDevice) {
+        setIsIOS(true);
+        // iOS Safari에서만 설치 안내 표시
+        if (isIOSSafari && !window.matchMedia('(display-mode: standalone)').matches) {
+          setShowInstallButton(true);
+        }
+      }
+    };
+
     // 이미 설치되어 있는지 체크
     const checkIfInstalled = () => {
       if (window.matchMedia('(display-mode: standalone)').matches) {
@@ -37,6 +54,18 @@ export function InstallAppButton() {
     
     // 초기 설치 상태 체크
     checkIfInstalled();
+    checkIfIOS();
+    
+    // iOS에서 PWA 설치 조건이 더 까다로우므로 일정 시간 후 버튼 표시
+    const timer = setTimeout(() => {
+      if (isIOS && !isInstalled) {
+        setShowInstallButton(true);
+      }
+    }, 3000);
+    
+    return () => {
+      clearTimeout(timer);
+    };
 
     return () => {
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
@@ -45,6 +74,12 @@ export function InstallAppButton() {
   }, []);
 
   const handleInstallClick = async () => {
+    if (isIOS) {
+      // iOS에서는 수동 설치 안내 표시
+      setShowIOSInstructions(true);
+      return;
+    }
+
     if (!deferredPrompt) return;
 
     try {
@@ -76,20 +111,57 @@ export function InstallAppButton() {
   if (isInstalled || !showInstallButton) {
     return null;
   }
+  
+  // iOS 설치 안내 모달
+  if (showIOSInstructions) {
+    return (
+      <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+        <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-sm w-full">
+          <h3 className="text-lg font-bold mb-4 text-center">📱 앱으로 설치하기</h3>
+          <div className="space-y-3 text-sm">
+            <div className="flex items-center gap-3">
+              <div className="w-6 h-6 bg-blue-100 rounded flex items-center justify-center flex-shrink-0">
+                <span className="text-blue-600 text-xs font-bold">1</span>
+              </div>
+              <span>화면 하단의 공유 버튼 <Share className="inline w-4 h-4 mx-1" />를 눌러주세요</span>
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="w-6 h-6 bg-blue-100 rounded flex items-center justify-center flex-shrink-0">
+                <span className="text-blue-600 text-xs font-bold">2</span>
+              </div>
+              <span>"홈 화면에 추가"를 선택해주세요</span>
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="w-6 h-6 bg-blue-100 rounded flex items-center justify-center flex-shrink-0">
+                <span className="text-blue-600 text-xs font-bold">3</span>
+              </div>
+              <span>"추가" 버튼을 눌러 완료하세요</span>
+            </div>
+          </div>
+          <Button 
+            onClick={() => setShowIOSInstructions(false)}
+            className="w-full mt-6"
+          >
+            확인
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="fixed bottom-4 left-4 right-4 z-50 md:left-auto md:right-4 md:w-auto">
       <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg p-4 flex items-center justify-between gap-3">
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 bg-indigo-100 dark:bg-indigo-900 rounded-lg flex items-center justify-center">
-            <Download className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />
+            {isIOS ? <Share className="h-4 w-4 text-indigo-600 dark:text-indigo-400" /> : <Download className="h-4 w-4 text-indigo-600 dark:text-indigo-400" />}
           </div>
           <div>
             <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
-              앱으로 설치하기
+              {isIOS ? '홈 화면에 추가하기' : '앱으로 설치하기'}
             </p>
             <p className="text-xs text-gray-500 dark:text-gray-400">
-              더 빠르고 편리하게 이용하세요
+              {isIOS ? 'Safari 공유 버튼을 이용하세요' : '더 빠르고 편리하게 이용하세요'}
             </p>
           </div>
         </div>
@@ -100,7 +172,7 @@ export function InstallAppButton() {
             className="whitespace-nowrap"
             data-testid="button-install-app"
           >
-            설치
+            {isIOS ? '방법 보기' : '설치'}
           </Button>
           <Button
             onClick={handleDismiss}
