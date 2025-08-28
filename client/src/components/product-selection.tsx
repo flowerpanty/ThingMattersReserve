@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { ChevronDown, ChevronRight } from "lucide-react";
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { cookieTypes, drinkTypes } from "@shared/schema";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
@@ -94,7 +94,7 @@ export function ProductSelection({
     onUpdate('singleWithDrinkSets', newSets);
   };
 
-  const toggleCookieInTwoPackSet = (setIndex: number, cookieType: string) => {
+  const toggleCookieInTwoPackSet = useCallback((setIndex: number, cookieType: string) => {
     const currentSet = twoPackSets[setIndex];
     const currentCookies = currentSet?.selectedCookies || [];
     let newCookies;
@@ -106,7 +106,7 @@ export function ProductSelection({
       return; // 최대 2개까지만
     }
     updateTwoPackSet(setIndex, 'selectedCookies', newCookies);
-  };
+  }, [twoPackSets]);
 
   const hasRegularCookies = Object.values(regularCookies).some(qty => qty > 0);
   const regularCookieTotal = Object.values(regularCookies).reduce((sum, qty) => sum + qty, 0);
@@ -123,7 +123,7 @@ export function ProductSelection({
           {/* Regular Cookies */}
           <Collapsible 
             open={openSections.regular} 
-            onOpenChange={(open) => setOpenSections({...openSections, regular: open})}
+            onOpenChange={(open) => setOpenSections(prev => ({...prev, regular: open}))}
           >
             <div className="border border-border rounded-lg bg-card">
               <CollapsibleTrigger className="w-full p-4 flex items-center justify-between hover:bg-muted/50 transition-colors">
@@ -226,7 +226,7 @@ export function ProductSelection({
           {/* 2구 패키지 */}
           <Collapsible 
             open={openSections.twopack} 
-            onOpenChange={(open) => setOpenSections({...openSections, twopack: open})}
+            onOpenChange={(open) => setOpenSections(prev => ({...prev, twopack: open}))}
           >
             <div className="border border-border rounded-lg bg-card">
               <CollapsibleTrigger className="w-full p-4 flex items-center justify-between hover:bg-muted/50 transition-colors">
@@ -338,7 +338,7 @@ export function ProductSelection({
           {/* 1구 + 음료 */}
           <Collapsible 
             open={openSections.singledrink} 
-            onOpenChange={(open) => setOpenSections({...openSections, singledrink: open})}
+            onOpenChange={(open) => setOpenSections(prev => ({...prev, singledrink: open}))}
           >
             <div className="border border-border rounded-lg bg-card">
               <CollapsibleTrigger className="w-full p-4 flex items-center justify-between hover:bg-muted/50 transition-colors">
@@ -462,7 +462,7 @@ export function ProductSelection({
           {/* Brownie Cookies */}
           <Collapsible 
             open={openSections.brownie} 
-            onOpenChange={(open) => setOpenSections({...openSections, brownie: open})}
+            onOpenChange={(open) => setOpenSections(prev => ({...prev, brownie: open}))}
           >
             <div className="border border-border rounded-lg bg-card">
               <CollapsibleTrigger className="w-full p-4 flex items-center justify-between hover:bg-muted/50 transition-colors">
@@ -617,7 +617,7 @@ export function ProductSelection({
           {/* Fortune Cookies */}
           <Collapsible 
             open={openSections.fortune} 
-            onOpenChange={(open) => setOpenSections({...openSections, fortune: open})}
+            onOpenChange={(open) => setOpenSections(prev => ({...prev, fortune: open}))}
           >
             <div className="border border-border rounded-lg bg-card">
               <CollapsibleTrigger className="w-full p-4 flex items-center justify-between hover:bg-muted/50 transition-colors">
@@ -682,7 +682,7 @@ export function ProductSelection({
           {/* Airplane Sandwich Cookies */}
           <Collapsible 
             open={openSections.airplane} 
-            onOpenChange={(open) => setOpenSections({...openSections, airplane: open})}
+            onOpenChange={(open) => setOpenSections(prev => ({...prev, airplane: open}))}
           >
             <div className="border border-border rounded-lg bg-card">
               <CollapsibleTrigger className="w-full p-4 flex items-center justify-between hover:bg-muted/50 transition-colors">
