@@ -381,7 +381,7 @@ export function ProductSelection({
                   <span className="text-2xl">🍪☕</span>
                   <div className="text-left">
                     <div className="font-semibold">1구 + 음료</div>
-                    <div className="text-sm text-muted-foreground">세트당 8,500원</div>
+                    <div className="text-sm text-muted-foreground">세트당 11,000원</div>
                   </div>
                   {singleWithDrinkSets.length > 0 && (
                     <div className="bg-primary text-primary-foreground text-xs px-2 py-1 rounded-full ml-2">
