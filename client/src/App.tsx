@@ -25,7 +25,6 @@ function App() {
       <TooltipProvider>
         <Toaster />
         <Router />
-        <IOSQuickAccess />
         <InstallAppButton />
       </TooltipProvider>
     </QueryClientProvider>

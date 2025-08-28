@@ -10,7 +10,7 @@ interface KakaoConsultationModalProps {
 export function KakaoConsultationModal({ isOpen, onClose }: KakaoConsultationModalProps) {
   const handleKakaoTalk = () => {
     // 카카오톡 오픈채팅방 또는 카카오톡 링크로 이동
-    window.open('https://open.kakao.com/o/your-kakao-link', '_blank');
+    window.open('https://pf.kakao.com/_QdCaK/98027924', '_blank');
     onClose();
   };
 
