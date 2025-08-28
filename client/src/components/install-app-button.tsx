@@ -58,10 +58,16 @@ export function InstallAppButton() {
     
     // iOS에서 PWA 설치 조건이 더 까다로우므로 일정 시간 후 버튼 표시
     const timer = setTimeout(() => {
-      if (isIOS && !isInstalled && !window.matchMedia('(display-mode: standalone)').matches) {
-        setShowInstallButton(true);
+      if (isIOS && !isInstalled) {
+        // iOS에서는 항상 설치 안내 표시 (standalone 모드가 아닐 때)
+        const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
+        const isInWebAppiOS = (window.navigator as any).standalone;
+        
+        if (!isStandalone && !isInWebAppiOS) {
+          setShowInstallButton(true);
+        }
       }
-    }, 2000);
+    }, 1000); // 시간을 1초로 단축
     
     return () => {
       clearTimeout(timer);
