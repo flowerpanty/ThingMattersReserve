@@ -5,29 +5,37 @@ import fs from 'fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { createServer as createViteServer, createLogger } from 'vite'
-// ❌ import viteConfig from "../vite.config";  // <- 이 라인 제거!
 
 const viteLogger = createLogger()
 
+// ✅ server/index.ts 에서 import 하는 log 함수 다시 export
+export function log(message: string, source = 'express') {
+  const formattedTime = new Date().toLocaleTimeString('en-US', {
+    hour: 'numeric',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: true,
+  })
+  console.log(`${formattedTime} [${source}] ${message}`)
+}
+
+// 개발 모드에서만 Vite 미들웨어 사용
 export async function setupVite(app: Express, server: any) {
   const vite = await createViteServer({
-    // 설정 파일을 자동으로 읽게 함 (루트의 vite.config.ts 사용)
-    configFile: true,
+    configFile: true,         // 루트의 vite.config.ts 자동 로드
     server: {
       middlewareMode: true,
       hmr: { server },
       allowedHosts: true as const,
     },
     appType: 'custom',
-    // 로그 커스터마이즈는 필요시 유지
     customLogger: viteLogger,
   })
-
   app.use(vite.middlewares)
 }
 
+// 프로덕션: dist/public 정적 서빙
 export function serveStatic(app: Express) {
-  // 빌드 후 런타임 기준은 dist/
   const __dirname = path.dirname(fileURLToPath(import.meta.url)) // => dist/
   const publicDir = path.join(__dirname, 'public')               // => dist/public
 
@@ -37,11 +45,12 @@ export function serveStatic(app: Express) {
 
   app.use(express.static(publicDir))
 
-  // 루트(/) 문서
+  // 루트 페이지
   app.get('/', (_req, res) => {
     res.sendFile(path.join(publicDir, 'index.html'))
   })
 
-  // SPA 라우팅이 필요하면 가장 마지막에:
+  // SPA 라우팅이 필요하면, API 라우트 등록 끝난 뒤 마지막에:
   // app.get('*', (_req, res) => res.sendFile(path.join(publicDir, 'index.html')))
 }
+
