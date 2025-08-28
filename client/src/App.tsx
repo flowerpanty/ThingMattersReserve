@@ -6,6 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import OrderForm from "@/pages/order-form";
 import { Dashboard } from "@/pages/dashboard";
 import NotFound from "@/pages/not-found";
+import { InstallAppButton } from "@/components/install-app-button";
 
 function Router() {
   return (
@@ -23,6 +24,7 @@ function App() {
       <TooltipProvider>
         <Toaster />
         <Router />
+        <InstallAppButton />
       </TooltipProvider>
     </QueryClientProvider>
   );
