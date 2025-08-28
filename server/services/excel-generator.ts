@@ -282,14 +282,19 @@ export class ExcelGenerator {
     currentRow += 2;
 
     // 8. 주문 상세 옵션
-    worksheet.mergeCells(`A${currentRow}:D${currentRow}`);
-    worksheet.getCell(currentRow, 1).value = '주문 상세 옵션';
-    worksheet.getCell(currentRow, 1).style = {
+    // 병합할 모든 셀에 먼저 테두리 적용
+    const detailHeaderStyle = {
       font: { bold: true, size: 11, name: 'Arial' },
       alignment: { horizontal: 'left' as const, vertical: 'middle' as const },
       fill: { type: 'pattern' as const, pattern: 'solid' as const, fgColor: { argb: 'FFF3F4F6' } },
       border: borderStyle
     };
+    
+    for (let col = 1; col <= 4; col++) {
+      worksheet.getCell(currentRow, col).style = detailHeaderStyle;
+    }
+    worksheet.mergeCells(`A${currentRow}:D${currentRow}`);
+    worksheet.getCell(currentRow, 1).value = '주문 상세 옵션';
     worksheet.getRow(currentRow).height = 30;
     currentRow++;
     
@@ -300,9 +305,12 @@ export class ExcelGenerator {
         .map(([type, qty]) => `${type} ${qty}개`)
         .join(', ');
       
+      // 병합할 모든 셀에 먼저 테두리 적용
+      for (let col = 1; col <= 4; col++) {
+        worksheet.getCell(currentRow, col).style = leftAlignStyle;
+      }
       worksheet.mergeCells(`A${currentRow}:D${currentRow}`);
       worksheet.getCell(currentRow, 1).value = `• 일반쿠키: ${selectedCookies}`;
-      worksheet.getCell(currentRow, 1).style = leftAlignStyle;
       worksheet.getRow(currentRow).height = 35;
       currentRow++;
     }
@@ -311,9 +319,12 @@ export class ExcelGenerator {
     if (orderData.twoPackSets?.length > 0) {
       orderData.twoPackSets.forEach((set, index) => {
         if (set.selectedCookies?.length > 0) {
+          // 병합할 모든 셀에 먼저 테두리 적용
+          for (let col = 1; col <= 4; col++) {
+            worksheet.getCell(currentRow, col).style = leftAlignStyle;
+          }
           worksheet.mergeCells(`A${currentRow}:D${currentRow}`);
           worksheet.getCell(currentRow, 1).value = `• 2구 패키지 세트 ${index + 1} (${set.quantity || 1}개): ${set.selectedCookies.join(', ')}`;
-          worksheet.getCell(currentRow, 1).style = leftAlignStyle;
           worksheet.getRow(currentRow).height = 35;
           currentRow++;
         }
@@ -335,9 +346,12 @@ export class ExcelGenerator {
           }
         }
         
+        // 병합할 모든 셀에 먼저 테두리 적용
+        for (let col = 1; col <= 4; col++) {
+          worksheet.getCell(currentRow, col).style = leftAlignStyle;
+        }
         worksheet.mergeCells(`A${currentRow}:D${currentRow}`);
         worksheet.getCell(currentRow, 1).value = detailText;
-        worksheet.getCell(currentRow, 1).style = leftAlignStyle;
         worksheet.getRow(currentRow).height = 35;
         currentRow++;
       });
@@ -362,9 +376,12 @@ export class ExcelGenerator {
           detailText += ', 커스텀토퍼';
         }
         
+        // 병합할 모든 셀에 먼저 테두리 적용
+        for (let col = 1; col <= 4; col++) {
+          worksheet.getCell(currentRow, col).style = leftAlignStyle;
+        }
         worksheet.mergeCells(`A${currentRow}:D${currentRow}`);
         worksheet.getCell(currentRow, 1).value = detailText;
-        worksheet.getCell(currentRow, 1).style = leftAlignStyle;
         worksheet.getRow(currentRow).height = 35;
         currentRow++;
       });
@@ -375,9 +392,12 @@ export class ExcelGenerator {
       const packagingName = orderData.packaging === 'single_box' ? '1구박스 (+500원)' : 
                            orderData.packaging === 'plastic_wrap' ? '비닐탭포장 (+500원)' : '유산지 (무료)';
       
+      // 병합할 모든 셀에 먼저 테두리 적용
+      for (let col = 1; col <= 4; col++) {
+        worksheet.getCell(currentRow, col).style = leftAlignStyle;
+      }
       worksheet.mergeCells(`A${currentRow}:D${currentRow}`);
       worksheet.getCell(currentRow, 1).value = `• 포장 옵션: ${packagingName}`;
-      worksheet.getCell(currentRow, 1).style = leftAlignStyle;
       worksheet.getRow(currentRow).height = 35;
       currentRow++;
     }
@@ -385,24 +405,34 @@ export class ExcelGenerator {
     // 9. 계좌번호 및 안내사항
     currentRow += 1;
     
-    worksheet.mergeCells(`A${currentRow}:D${currentRow}`);
-    worksheet.getCell(currentRow, 1).value = '입금 계좌: 830501042047336 국민은행 (낫띵메터스)';
-    worksheet.getCell(currentRow, 1).style = {
+    // 병합할 모든 셀에 먼저 테두리 적용
+    const accountStyle = {
       font: { bold: true, size: 11, name: 'Arial' },
       alignment: { horizontal: 'center' as const, vertical: 'middle' as const },
       fill: { type: 'pattern' as const, pattern: 'solid' as const, fgColor: { argb: 'FFFEF3C7' } },
       border: borderStyle
     };
+    
+    for (let col = 1; col <= 4; col++) {
+      worksheet.getCell(currentRow, col).style = accountStyle;
+    }
+    worksheet.mergeCells(`A${currentRow}:D${currentRow}`);
+    worksheet.getCell(currentRow, 1).value = '입금 계좌: 830501042047336 국민은행 (낫띵메터스)';
     worksheet.getRow(currentRow).height = 35;
     currentRow++;
     
-    worksheet.mergeCells(`A${currentRow}:D${currentRow}`);
-    worksheet.getCell(currentRow, 1).value = '주문 문의: 카카오톡 @nothingmatters 또는 010-2866-7976';
-    worksheet.getCell(currentRow, 1).style = {
+    // 병합할 모든 셀에 먼저 테두리 적용
+    const contactStyle = {
       font: { size: 10, name: 'Arial' },
       alignment: { horizontal: 'center' as const, vertical: 'middle' as const },
       border: borderStyle
     };
+    
+    for (let col = 1; col <= 4; col++) {
+      worksheet.getCell(currentRow, col).style = contactStyle;
+    }
+    worksheet.mergeCells(`A${currentRow}:D${currentRow}`);
+    worksheet.getCell(currentRow, 1).value = '주문 문의: 카카오톡 @nothingmatters 또는 010-2866-7976';
     worksheet.getRow(currentRow).height = 30;
 
     // 10. 모바일 친화적 사이즈 조정
