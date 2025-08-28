@@ -69,9 +69,11 @@ export function Dashboard() {
       const response = await fetch('/api/orders');
       if (!response.ok) throw new Error('Failed to fetch orders');
       const data = await response.json();
+      console.log('Dashboard orders data:', data); // 디버그용 로그
       return data as Order[];
     },
     refetchInterval: 30000, // 30초마다 자동 새로고침
+    retry: 3, // 실패시 3번 재시도
   });
 
   // 카카오톡 메시지 생성 함수
