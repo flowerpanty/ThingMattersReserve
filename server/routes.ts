@@ -88,6 +88,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     return { totalPrice, breakdown };
   };
 
+  // Get all orders endpoint
+  app.get("/api/orders", async (req, res) => {
+    try {
+      const orders = await storage.getAllOrders();
+      // Sort by creation date, newest first
+      const sortedOrders = orders.sort((a, b) => 
+        new Date(b.createdAt!).getTime() - new Date(a.createdAt!).getTime()
+      );
+      res.json(sortedOrders);
+    } catch (error) {
+      res.status(500).json({ message: "주문 목록을 불러오는 중 오류가 발생했습니다.", error: error instanceof Error ? error.message : String(error) });
+    }
+  });
+
   // Calculate price endpoint
   app.post("/api/calculate-price", async (req, res) => {
     try {

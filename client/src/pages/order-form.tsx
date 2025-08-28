@@ -4,6 +4,8 @@ import { ProductSelection } from "@/components/product-selection";
 import { PriceSummary } from "@/components/price-summary";
 import { OrderActions } from "@/components/order-actions";
 import { useOrderForm } from "@/hooks/use-order-form";
+import { Link } from "wouter";
+import { BarChart3 } from "lucide-react";
 
 export default function OrderForm() {
   const { formData, updateFormData, pricing, handleSubmit, isSubmitting } = useOrderForm();
@@ -13,15 +15,22 @@ export default function OrderForm() {
       {/* Header */}
       <header className="bg-card/80 backdrop-blur-sm border-b border-border sticky top-0 z-50">
         <div className="max-w-4xl mx-auto px-4 py-6">
-          <div className="text-center">
-            <h1 className="text-3xl futura-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-              nothingmatters
-            </h1>
-            <p className="text-muted-foreground mt-2 text-sm">귀여운 수제 쿠키 예약 주문</p>
-            <div className="mt-3 p-2 bg-yellow-50 border border-yellow-200 rounded-lg">
-              <p className="text-yellow-800 text-sm font-medium">⚠️ 카카오톡 상담 후 확정</p>
+          <div className="flex items-center justify-between">
+            <div className="text-center flex-1">
+              <h1 className="text-3xl futura-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+                nothingmatters
+              </h1>
+              <p className="text-muted-foreground mt-2 text-sm">귀여운 수제 쿠키 예약 주문</p>
+              <div className="mt-3 p-2 bg-yellow-50 border border-yellow-200 rounded-lg">
+                <p className="text-yellow-800 text-sm font-medium">⚠️ 카카오톡 상담 후 확정</p>
+              </div>
             </div>
-            
+            <Link href="/dashboard">
+              <div className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors cursor-pointer" data-testid="link-dashboard">
+                <BarChart3 className="w-4 h-4" />
+                <span className="text-sm font-medium">대시보드</span>
+              </div>
+            </Link>
           </div>
         </div>
       </header>
