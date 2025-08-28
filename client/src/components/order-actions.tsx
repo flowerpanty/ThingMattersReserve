@@ -32,7 +32,7 @@ export function OrderActions({ isSubmitting }: OrderActionsProps) {
         </Button>
         
         <a
-          href="http://pf.kakao.com/_QdCaK"
+          href="https://pf.kakao.com/_QdCaK/98027924"
           target="_blank"
           rel="noopener noreferrer"
           className="inline-flex items-center justify-center gap-2 w-full py-4 px-6 bg-yellow-400 hover:bg-yellow-500 text-yellow-900 font-semibold rounded-lg transition-colors"
