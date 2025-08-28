@@ -297,26 +297,34 @@ export function ProductSelection({
                       </div>
                       
                       <div className="grid grid-cols-2 lg:grid-cols-3 gap-2 mb-2">
-                        {cookieTypes.map((type) => (
-                          <div 
-                            key={type} 
-                            className={`flex items-center space-x-2 p-2 rounded cursor-pointer transition-colors ${
-                              set.selectedCookies.includes(type) 
-                                ? 'bg-primary text-primary-foreground' 
-                                : 'bg-card hover:bg-muted/50'
-                            }`}
-                            onClick={() => toggleCookieInTwoPackSet(index, type)}
-                            data-testid={`twopack-${index}-cookie-${type}`}
-                          >
-                            <Checkbox
-                              checked={set.selectedCookies.includes(type)}
-                              readOnly={true}
-                              onCheckedChange={() => {}}
-                              className="pointer-events-none"
-                            />
-                            <span className="text-xs">{type}</span>
-                          </div>
-                        ))}
+                        {cookieTypes.map((type) => {
+                          const isSelected = set.selectedCookies.includes(type);
+                          return (
+                            <div 
+                              key={type} 
+                              className={`flex items-center space-x-2 p-2 rounded cursor-pointer transition-colors ${
+                                isSelected 
+                                  ? 'bg-primary text-primary-foreground' 
+                                  : 'bg-card hover:bg-muted/50'
+                              }`}
+                              onClick={() => toggleCookieInTwoPackSet(index, type)}
+                              data-testid={`twopack-${index}-cookie-${type}`}
+                            >
+                              <div className={`w-4 h-4 rounded border-2 flex items-center justify-center ${
+                                isSelected 
+                                  ? 'bg-white border-white' 
+                                  : 'border-muted-foreground'
+                              }`}>
+                                {isSelected && (
+                                  <svg className="w-3 h-3 text-primary" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                  </svg>
+                                )}
+                              </div>
+                              <span className="text-xs">{type}</span>
+                            </div>
+                          );
+                        })}
                       </div>
                       
                       <div className="flex justify-between text-xs text-muted-foreground">
