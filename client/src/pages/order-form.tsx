@@ -3,12 +3,13 @@ import { DeliveryDate } from "@/components/delivery-date";
 import { ProductSelection } from "@/components/product-selection";
 import { PriceSummary } from "@/components/price-summary";
 import { OrderActions } from "@/components/order-actions";
+import { KakaoConsultationModal } from "@/components/kakao-consultation-modal";
 import { useOrderForm } from "@/hooks/use-order-form";
 import { Link } from "wouter";
 import { BarChart3 } from "lucide-react";
 
 export default function OrderForm() {
-  const { formData, updateFormData, pricing, handleSubmit, isSubmitting } = useOrderForm();
+  const { formData, updateFormData, pricing, handleSubmit, isSubmitting, showKakaoModal, setShowKakaoModal } = useOrderForm();
 
   return (
     <div className="min-h-screen">
@@ -25,12 +26,15 @@ export default function OrderForm() {
                 <p className="text-yellow-800 text-sm font-medium">⚠️ 카카오톡 상담 후 확정</p>
               </div>
             </div>
-            <Link href="/dashboard">
-              <div className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors cursor-pointer" data-testid="link-dashboard">
-                <BarChart3 className="w-4 h-4" />
-                <span className="text-sm font-medium">대시보드</span>
-              </div>
-            </Link>
+            {/* 관리자만 대시보드 링크 표시 */}
+            {sessionStorage.getItem('admin_authenticated') === 'true' && (
+              <Link href="/dashboard">
+                <div className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors cursor-pointer" data-testid="link-dashboard">
+                  <BarChart3 className="w-4 h-4" />
+                  <span className="text-sm font-medium">대시보드</span>
+                </div>
+              </Link>
+            )}
           </div>
         </div>
       </header>
@@ -78,6 +82,12 @@ export default function OrderForm() {
           </div>
         </div>
       </footer>
+      
+      {/* Kakao Consultation Modal */}
+      <KakaoConsultationModal 
+        isOpen={showKakaoModal}
+        onClose={() => setShowKakaoModal(false)}
+      />
     </div>
   );
 }

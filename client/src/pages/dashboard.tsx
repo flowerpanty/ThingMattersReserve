@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -12,6 +12,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import { apiRequest } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
 import { PushNotificationToggle } from '@/components/push-notification-toggle';
+import { AdminAuth } from '@/components/admin-auth';
 
 interface OrderItem {
   type: string;
@@ -39,6 +40,7 @@ interface DashboardStats {
 }
 
 export function Dashboard() {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [generatedMessage, setGeneratedMessage] = useState('');
@@ -46,6 +48,19 @@ export function Dashboard() {
   const [isGeneratingMessage, setIsGeneratingMessage] = useState(false);
   const [copiedMessageId, setCopiedMessageId] = useState<string | null>(null);
   const { toast } = useToast();
+
+  // 페이지 로드시 인증 상태 확인
+  useEffect(() => {
+    const authStatus = sessionStorage.getItem('admin_authenticated');
+    if (authStatus === 'true') {
+      setIsAuthenticated(true);
+    }
+  }, []);
+
+  // 인증되지 않은 경우 로그인 화면 표시
+  if (!isAuthenticated) {
+    return <AdminAuth onAuthenticated={() => setIsAuthenticated(true)} />;
+  }
 
   // 주문 목록 조회
   const { data: orders = [], isLoading: ordersLoading, refetch: refetchOrders } = useQuery<Order[]>({

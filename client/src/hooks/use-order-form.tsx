@@ -37,6 +37,7 @@ const initialPricing = {
 export function useOrderForm() {
   const [formData, setFormData] = useState<OrderData>(initialFormData);
   const [pricing, setPricing] = useState(initialPricing);
+  const [showKakaoModal, setShowKakaoModal] = useState(false);
   const { toast } = useToast();
 
   // Calculate pricing whenever form data changes
@@ -73,6 +74,8 @@ export function useOrderForm() {
         title: "견적서 전송 완료",
         description: data.message,
       });
+      // Show Kakao consultation modal
+      setShowKakaoModal(true);
       // Reset form after successful submission
       setFormData(initialFormData);
       setPricing(initialPricing);
@@ -155,5 +158,7 @@ export function useOrderForm() {
     updateFormData,
     handleSubmit,
     isSubmitting,
+    showKakaoModal,
+    setShowKakaoModal,
   };
 }

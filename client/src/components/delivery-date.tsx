@@ -40,6 +40,7 @@ export function DeliveryDate({ deliveryDate, onUpdate }: DeliveryDateProps) {
               min={minDate}
               onChange={(e) => onUpdate(e.target.value)}
               className="w-full px-4 py-3 text-base rounded-lg border border-input bg-background focus:ring-2 focus:ring-ring focus:border-ring transition-colors"
+              placeholder="날짜 선택"
               data-testid="input-delivery-date"
             />
             
