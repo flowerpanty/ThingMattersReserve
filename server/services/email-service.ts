@@ -22,7 +22,8 @@ export class EmailService {
   }
 
   async sendQuote(orderData: OrderData, quoteBuffer: Buffer): Promise<void> {
-    const mailOptions = {
+    // 고객용 견적서 이메일
+    const customerMailOptions = {
       from: 'flowerpanty@gmail.com',
       to: orderData.customerContact,
       subject: `[nothingmatters] ${orderData.customerName}님의 쿠키 주문 견적서`,
@@ -66,18 +67,62 @@ export class EmailService {
       ],
     };
 
+    // 사업주용 알림 이메일
+    const ownerMailOptions = {
+      from: 'flowerpanty@gmail.com',
+      to: 'betterbetters@kakao.com',
+      subject: `[주문 알림] ${orderData.customerName}님의 새로운 쿠키 주문`,
+      html: `
+        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+          <div style="text-align: center; margin-bottom: 30px;">
+            <h1 style="color: #4F46E5; font-size: 24px; margin: 0; font-weight: 800;">nothingmatters</h1>
+            <p style="color: #666; margin: 5px 0;">새로운 주문이 들어왔습니다!</p>
+          </div>
+          
+          <div style="background: #f9f9f9; padding: 20px; border-radius: 10px; margin-bottom: 20px;">
+            <h2 style="color: #333; margin-top: 0;">주문 정보</h2>
+            <div style="background: white; padding: 15px; border-radius: 8px; margin: 15px 0;">
+              <p><strong>고객명:</strong> ${orderData.customerName}</p>
+              <p><strong>연락처:</strong> ${orderData.customerContact}</p>
+              <p><strong>수령 희망일:</strong> ${orderData.deliveryDate}</p>
+            </div>
+          </div>
+          
+          <div style="border-top: 1px solid #eee; padding-top: 20px; text-align: center; color: #999; font-size: 12px;">
+            <p>※ 고객에게는 견적서가 이미 전송되었습니다.</p>
+            <p>※ 카카오톡으로 상담을 진행해주세요.</p>
+          </div>
+        </div>
+      `,
+      attachments: [
+        {
+          filename: `주문알림_${orderData.customerName}_${new Date().toISOString().split('T')[0]}.xlsx`,
+          content: quoteBuffer,
+        },
+      ],
+    };
+
     try {
       console.log('견적서 이메일 전송 중...');
-      console.log('- 받는 사람:', orderData.customerName, '(' + orderData.customerContact + ')');
+      console.log('- 고객:', orderData.customerName, '(' + orderData.customerContact + ')');
+      console.log('- 사업주: betterbetters@kakao.com');
       console.log('- 수령 희망일:', orderData.deliveryDate);
       
-      const info = await this.transporter.sendMail(mailOptions);
+      // 고객과 사업주에게 동시에 이메일 전송
+      const [customerInfo, ownerInfo] = await Promise.all([
+        this.transporter.sendMail(customerMailOptions),
+        this.transporter.sendMail(ownerMailOptions)
+      ]);
       console.log('✅ 견적서 이메일 전송 완료!');
-      console.log('- Message ID:', info.messageId);
+      console.log('- 고객 Message ID:', customerInfo.messageId);
+      console.log('- 사업주 Message ID:', ownerInfo.messageId);
       
       // Ethereal Email 테스트 URL이 있으면 출력
-      if (info.previewURL) {
-        console.log('- Preview URL:', info.previewURL);
+      if (customerInfo.previewURL) {
+        console.log('- 고객 Preview URL:', customerInfo.previewURL);
+      }
+      if (ownerInfo.previewURL) {
+        console.log('- 사업주 Preview URL:', ownerInfo.previewURL);
       }
       
     } catch (error) {
