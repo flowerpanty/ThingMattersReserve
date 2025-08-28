@@ -55,24 +55,29 @@ export function InstallAppButton() {
     
     // iOS에서 PWA 설치 조건이 더 까다로우므로 일정 시간 후 버튼 표시
     const timer = setTimeout(() => {
-      if (isIOS && !isInstalled) {
+      const userAgent = navigator.userAgent.toLowerCase();
+      const isIOSDevice = /iphone|ipad|ipod/.test(userAgent);
+      
+      if (isIOSDevice) {
         // iOS에서는 항상 설치 안내 표시 (standalone 모드가 아닐 때)
         const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
         const isInWebAppiOS = (window.navigator as any).standalone;
         
         console.log('iOS PWA 설치 상태 체크:', {
+          isIOSDevice,
           isStandalone,
           isInWebAppiOS,
-          userAgent: navigator.userAgent,
-          displayMode: window.matchMedia('(display-mode: standalone)').matches
+          userAgent: navigator.userAgent
         });
         
+        // iOS 기기에서 standalone 모드가 아니면 무조건 설치 버튼 표시
         if (!isStandalone && !isInWebAppiOS) {
+          setIsIOS(true);
           setShowInstallButton(true);
-          console.log('iOS PWA 설치 버튼 표시됨');
+          console.log('iOS PWA 설치 버튼 강제 표시됨');
         }
       }
-    }, 500); // 시간을 0.5초로 더 단축
+    }, 200); // 더 빠르게 표시
     
     return () => {
       clearTimeout(timer);
@@ -82,7 +87,10 @@ export function InstallAppButton() {
   }, []);
 
   const handleInstallClick = async () => {
-    if (isIOS) {
+    const userAgent = navigator.userAgent.toLowerCase();
+    const isIOSDevice = /iphone|ipad|ipod/.test(userAgent);
+    
+    if (isIOSDevice || isIOS) {
       // iOS에서는 수동 설치 안내 표시
       setShowIOSInstructions(true);
       return;
@@ -115,8 +123,16 @@ export function InstallAppButton() {
     setShowInstallButton(false);
   };
 
-  // 이미 설치된 경우 또는 설치 버튼을 표시하지 않는 경우
-  if (isInstalled || !showInstallButton) {
+  // iOS에서는 항상 설치 안내 표시 (standalone이 아닐 때)
+  const userAgent = navigator.userAgent.toLowerCase();
+  const isIOSDevice = /iphone|ipad|ipod/.test(userAgent);
+  const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
+  const isInWebAppiOS = (window.navigator as any).standalone;
+  
+  // iOS에서 standalone 모드가 아니면 무조건 버튼 표시
+  if (isIOSDevice && !isStandalone && !isInWebAppiOS) {
+    // 강제로 iOS 설치 버튼 표시
+  } else if (isInstalled || (!showInstallButton && !isIOSDevice)) {
     return null;
   }
   
