@@ -11,6 +11,7 @@ import { Link } from 'wouter';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from 'recharts';
 import { apiRequest } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
+import { PushNotificationToggle } from '@/components/push-notification-toggle';
 
 interface OrderItem {
   type: string;
@@ -622,6 +623,9 @@ export function Dashboard() {
                   </div>
                 </CardContent>
               </Card>
+
+              {/* 푸시 알림 설정 카드 */}
+              <PushNotificationToggle />
             </div>
           </TabsContent>
         </Tabs>

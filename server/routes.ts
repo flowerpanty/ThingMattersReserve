@@ -5,6 +5,7 @@ import { orderDataSchema, cookiePrices } from "@shared/schema";
 import { ExcelGenerator } from "./services/excel-generator";
 import { EmailService } from "./services/email-service";
 import { KakaoTemplateService } from "./services/kakao-template";
+import { pushNotificationService } from "./services/push-notification-service";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   const excelGenerator = new ExcelGenerator();
@@ -228,6 +229,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         totalPrice,
       });
 
+      // 새 주문 푸시 알림 전송 (백그라운드에서 실행)
+      if (pushNotificationService.hasSubscriptions()) {
+        pushNotificationService.sendNewOrderNotification(orderData.customerName, order.id)
+          .then(() => {
+            console.log('✅ 새 주문 푸시 알림 전송 완료');
+          })
+          .catch((error) => {
+            console.error('❌ 푸시 알림 전송 실패:', error);
+          });
+      }
+
       res.json({ 
         message: "견적서가 이메일로 전송되었습니다!", 
         orderId: order.id 
@@ -337,6 +349,54 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ 
         message: "카카오톡 메시지 생성 중 오류가 발생했습니다.",
         error: error instanceof Error ? error.message : String(error) 
+      });
+    }
+  });
+
+  // 푸시 알림 구독 등록
+  app.post('/api/push/subscribe', (req, res) => {
+    try {
+      const subscription = req.body;
+      pushNotificationService.addSubscription(subscription);
+      res.json({ success: true, message: '푸시 알림 구독이 등록되었습니다.' });
+    } catch (error) {
+      console.error('Push subscription error:', error);
+      res.status(500).json({ 
+        success: false, 
+        message: '푸시 알림 구독 등록에 실패했습니다.' 
+      });
+    }
+  });
+
+  // 푸시 알림 구독 해제
+  app.post('/api/push/unsubscribe', (req, res) => {
+    try {
+      const subscription = req.body;
+      pushNotificationService.removeSubscription(subscription);
+      res.json({ success: true, message: '푸시 알림 구독이 해제되었습니다.' });
+    } catch (error) {
+      console.error('Push unsubscribe error:', error);
+      res.status(500).json({ 
+        success: false, 
+        message: '푸시 알림 구독 해제에 실패했습니다.' 
+      });
+    }
+  });
+
+  // 테스트 푸시 알림 전송
+  app.post('/api/push/test', async (req, res) => {
+    try {
+      await pushNotificationService.sendTestNotification();
+      res.json({ 
+        success: true, 
+        message: '테스트 알림이 전송되었습니다.',
+        subscriberCount: pushNotificationService.getSubscriberCount()
+      });
+    } catch (error) {
+      console.error('Test push notification error:', error);
+      res.status(500).json({ 
+        success: false, 
+        message: '테스트 알림 전송에 실패했습니다.' 
       });
     }
   });
