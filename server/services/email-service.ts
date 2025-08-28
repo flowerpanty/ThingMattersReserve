@@ -53,7 +53,7 @@ export class EmailService {
           </div>
           
           <div style="text-align: center; margin: 30px 0;">
-            <a href="https://pf.kakao.com/_QdCaK/98027924" 
+            <a href="https://pf.kakao.com/_QdCaK" 
                style="display: inline-block; background: #FEE500; color: black; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: bold;">
               💬 카카오톡으로 상담하기
             </a>

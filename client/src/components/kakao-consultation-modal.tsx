@@ -8,7 +8,7 @@ interface KakaoConsultationModalProps {
 }
 
 // 올바른 카카오톡 채널 링크 상수
-const CORRECT_KAKAO_CHANNEL_URL = 'https://pf.kakao.com/_QdCaK/98027924';
+const CORRECT_KAKAO_CHANNEL_URL = 'https://pf.kakao.com/_QdCaK';
 
 export function KakaoConsultationModal({ isOpen, onClose }: KakaoConsultationModalProps) {
   const handleKakaoTalk = () => {
