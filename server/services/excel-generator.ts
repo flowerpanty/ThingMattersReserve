@@ -6,11 +6,11 @@ export class ExcelGenerator {
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet('nothingmatters 견적서');
 
-    // 모바일 최적화 컬럼 너비 설정
-    worksheet.getColumn(1).width = 16; // 제품명
-    worksheet.getColumn(2).width = 8;  // 수량
-    worksheet.getColumn(3).width = 12; // 단가
-    worksheet.getColumn(4).width = 12; // 합계
+    // 개선된 컬럼 너비 설정 (텍스트가 잘리지 않도록)
+    worksheet.getColumn(1).width = 28; // 제품명 (더 넓게)
+    worksheet.getColumn(2).width = 10; // 수량
+    worksheet.getColumn(3).width = 15; // 단가
+    worksheet.getColumn(4).width = 15; // 합계
 
     // 스타일 정의 (모바일 친화적)
     const borderStyle = {
@@ -36,7 +36,7 @@ export class ExcelGenerator {
 
     const cellStyle = {
       font: { size: 10, name: 'Arial' },
-      alignment: { horizontal: 'center' as const, vertical: 'middle' as const },
+      alignment: { horizontal: 'center' as const, vertical: 'middle' as const, wrapText: true },
       border: borderStyle
     };
 
@@ -49,7 +49,13 @@ export class ExcelGenerator {
 
     const leftAlignStyle = {
       font: { size: 10, name: 'Arial' },
-      alignment: { horizontal: 'left' as const, vertical: 'middle' as const },
+      alignment: { horizontal: 'left' as const, vertical: 'middle' as const, wrapText: true },
+      border: borderStyle
+    };
+
+    const detailStyle = {
+      font: { size: 9, name: 'Arial' },
+      alignment: { horizontal: 'left' as const, vertical: 'top' as const, wrapText: true },
       border: borderStyle
     };
 
@@ -57,19 +63,19 @@ export class ExcelGenerator {
     worksheet.mergeCells('A1:D1');
     worksheet.getCell('A1').value = 'nothingmatters 견적서';
     worksheet.getCell('A1').style = titleStyle;
-    worksheet.getRow(1).height = 25;
+    worksheet.getRow(1).height = 35;
 
     // 2. 고객 정보
     worksheet.mergeCells('A2:D2');
     worksheet.getCell('A2').value = `고객명: ${orderData.customerName} | 연락처: ${orderData.customerContact}`;
     worksheet.getCell('A2').style = leftAlignStyle;
-    worksheet.getRow(2).height = 20;
+    worksheet.getRow(2).height = 28;
 
     // 3. 수령 날짜
     worksheet.mergeCells('A3:D3');
     worksheet.getCell('A3').value = `수령 희망일: ${orderData.deliveryDate}`;
     worksheet.getCell('A3').style = leftAlignStyle;
-    worksheet.getRow(3).height = 20;
+    worksheet.getRow(3).height = 28;
 
     // 4. 빈 줄
     worksheet.getRow(4).height = 10;
@@ -81,7 +87,7 @@ export class ExcelGenerator {
       cell.value = header;
       cell.style = headerStyle;
     });
-    worksheet.getRow(5).height = 22;
+    worksheet.getRow(5).height = 30;
 
     // 6. 주문 항목들 추가
     let currentRow = 6;
@@ -101,7 +107,7 @@ export class ExcelGenerator {
       worksheet.getCell(currentRow, 3).style = priceStyle;
       worksheet.getCell(currentRow, 4).value = amount;
       worksheet.getCell(currentRow, 4).style = priceStyle;
-      worksheet.getRow(currentRow).height = 18;
+      worksheet.getRow(currentRow).height = 35;
       currentRow++;
     }
     
@@ -119,7 +125,7 @@ export class ExcelGenerator {
       worksheet.getCell(currentRow, 3).style = priceStyle;
       worksheet.getCell(currentRow, 4).value = amount;
       worksheet.getCell(currentRow, 4).style = priceStyle;
-      worksheet.getRow(currentRow).height = 18;
+      worksheet.getRow(currentRow).height = 35;
       currentRow++;
     }
     
@@ -137,7 +143,7 @@ export class ExcelGenerator {
       worksheet.getCell(currentRow, 3).style = priceStyle;
       worksheet.getCell(currentRow, 4).value = amount;
       worksheet.getCell(currentRow, 4).style = priceStyle;
-      worksheet.getRow(currentRow).height = 18;
+      worksheet.getRow(currentRow).height = 35;
       currentRow++;
     }
 
@@ -166,7 +172,7 @@ export class ExcelGenerator {
       worksheet.getCell(currentRow, 3).style = priceStyle;
       worksheet.getCell(currentRow, 4).value = brownieAmount;
       worksheet.getCell(currentRow, 4).style = priceStyle;
-      worksheet.getRow(currentRow).height = 18;
+      worksheet.getRow(currentRow).height = 35;
       currentRow++;
     }
     
@@ -183,7 +189,7 @@ export class ExcelGenerator {
       worksheet.getCell(currentRow, 3).style = priceStyle;
       worksheet.getCell(currentRow, 4).value = amount;
       worksheet.getCell(currentRow, 4).style = priceStyle;
-      worksheet.getRow(currentRow).height = 18;
+      worksheet.getRow(currentRow).height = 35;
       currentRow++;
     }
     
@@ -200,7 +206,7 @@ export class ExcelGenerator {
       worksheet.getCell(currentRow, 3).style = priceStyle;
       worksheet.getCell(currentRow, 4).value = amount;
       worksheet.getCell(currentRow, 4).style = priceStyle;
-      worksheet.getRow(currentRow).height = 18;
+      worksheet.getRow(currentRow).height = 35;
       currentRow++;
     }
     
@@ -221,7 +227,7 @@ export class ExcelGenerator {
         worksheet.getCell(currentRow, 3).style = priceStyle;
         worksheet.getCell(currentRow, 4).value = packagingPrice;
         worksheet.getCell(currentRow, 4).style = priceStyle;
-        worksheet.getRow(currentRow).height = 18;
+        worksheet.getRow(currentRow).height = 35;
         currentRow++;
       }
     }
@@ -247,7 +253,7 @@ export class ExcelGenerator {
       border: borderStyle,
       numFmt: '#,##0"원"'
     };
-    worksheet.getRow(currentRow).height = 25;
+    worksheet.getRow(currentRow).height = 35;
     
     currentRow += 2;
 
@@ -260,7 +266,7 @@ export class ExcelGenerator {
       fill: { type: 'pattern' as const, pattern: 'solid' as const, fgColor: { argb: 'FFF3F4F6' } },
       border: borderStyle
     };
-    worksheet.getRow(currentRow).height = 20;
+    worksheet.getRow(currentRow).height = 30;
     currentRow++;
     
     // 일반 쿠키 상세
@@ -273,7 +279,7 @@ export class ExcelGenerator {
       worksheet.mergeCells(`A${currentRow}:D${currentRow}`);
       worksheet.getCell(currentRow, 1).value = `• 일반쿠키: ${selectedCookies}`;
       worksheet.getCell(currentRow, 1).style = leftAlignStyle;
-      worksheet.getRow(currentRow).height = 18;
+      worksheet.getRow(currentRow).height = 35;
       currentRow++;
     }
 
@@ -284,7 +290,7 @@ export class ExcelGenerator {
           worksheet.mergeCells(`A${currentRow}:D${currentRow}`);
           worksheet.getCell(currentRow, 1).value = `• 2구 패키지 세트 ${index + 1} (${set.quantity || 1}개): ${set.selectedCookies.join(', ')}`;
           worksheet.getCell(currentRow, 1).style = leftAlignStyle;
-          worksheet.getRow(currentRow).height = 18;
+          worksheet.getRow(currentRow).height = 35;
           currentRow++;
         }
       });
@@ -308,7 +314,7 @@ export class ExcelGenerator {
         worksheet.mergeCells(`A${currentRow}:D${currentRow}`);
         worksheet.getCell(currentRow, 1).value = detailText;
         worksheet.getCell(currentRow, 1).style = leftAlignStyle;
-        worksheet.getRow(currentRow).height = 18;
+        worksheet.getRow(currentRow).height = 35;
         currentRow++;
       });
     }
@@ -334,7 +340,7 @@ export class ExcelGenerator {
       worksheet.mergeCells(`A${currentRow}:D${currentRow}`);
       worksheet.getCell(currentRow, 1).value = detailText;
       worksheet.getCell(currentRow, 1).style = leftAlignStyle;
-      worksheet.getRow(currentRow).height = 18;
+      worksheet.getRow(currentRow).height = 35;
       currentRow++;
     }
     
@@ -346,7 +352,7 @@ export class ExcelGenerator {
       worksheet.mergeCells(`A${currentRow}:D${currentRow}`);
       worksheet.getCell(currentRow, 1).value = `• 포장 옵션: ${packagingName}`;
       worksheet.getCell(currentRow, 1).style = leftAlignStyle;
-      worksheet.getRow(currentRow).height = 18;
+      worksheet.getRow(currentRow).height = 35;
       currentRow++;
     }
 
@@ -361,7 +367,7 @@ export class ExcelGenerator {
       fill: { type: 'pattern' as const, pattern: 'solid' as const, fgColor: { argb: 'FFFEF3C7' } },
       border: borderStyle
     };
-    worksheet.getRow(currentRow).height = 25;
+    worksheet.getRow(currentRow).height = 35;
     currentRow++;
     
     worksheet.mergeCells(`A${currentRow}:D${currentRow}`);
@@ -371,7 +377,7 @@ export class ExcelGenerator {
       alignment: { horizontal: 'center' as const, vertical: 'middle' as const },
       border: borderStyle
     };
-    worksheet.getRow(currentRow).height = 20;
+    worksheet.getRow(currentRow).height = 30;
 
     // 10. 모바일 친화적 사이즈 조정
     worksheet.pageSetup = {
