@@ -1,0 +1,140 @@
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700&display=swap');
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: hsl(30, 50%, 98%);
+  --foreground: hsl(220, 9%, 20%);
+  --card: hsl(0, 0%, 100%);
+  --card-foreground: hsl(220, 9%, 20%);
+  --popover: hsl(0, 0%, 100%);
+  --popover-foreground: hsl(220, 9%, 20%);
+  --primary: hsl(330, 60%, 80%);
+  --primary-foreground: hsl(330, 30%, 30%);
+  --secondary: hsl(35, 50%, 85%);
+  --secondary-foreground: hsl(35, 30%, 30%);
+  --muted: hsl(210, 40%, 96%);
+  --muted-foreground: hsl(215, 16%, 47%);
+  --accent: hsl(35, 70%, 90%);
+  --accent-foreground: hsl(35, 40%, 25%);
+  --destructive: hsl(356, 90%, 54%);
+  --destructive-foreground: hsl(0, 0%, 100%);
+  --border: hsl(214, 32%, 91%);
+  --input: hsl(214, 32%, 91%);
+  --ring: hsl(330, 60%, 70%);
+  --chart-1: hsl(330, 60%, 80%);
+  --chart-2: hsl(159, 100%, 36%);
+  --chart-3: hsl(42, 93%, 56%);
+  --chart-4: hsl(147, 79%, 42%);
+  --chart-5: hsl(341, 75%, 51%);
+  --sidebar: hsl(0, 0%, 100%);
+  --sidebar-foreground: hsl(220, 9%, 20%);
+  --sidebar-primary: hsl(330, 60%, 80%);
+  --sidebar-primary-foreground: hsl(330, 30%, 30%);
+  --sidebar-accent: hsl(35, 70%, 90%);
+  --sidebar-accent-foreground: hsl(35, 40%, 25%);
+  --sidebar-border: hsl(214, 32%, 91%);
+  --sidebar-ring: hsl(330, 60%, 70%);
+  --font-sans: 'Noto Sans KR', -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-serif: Georgia, serif;
+  --font-mono: Menlo, monospace;
+  --radius: 16px;
+  --shadow-2xs: 0px 2px 0px 0px hsl(330, 60%, 70%, 0.00);
+  --shadow-xs: 0px 2px 0px 0px hsl(330, 60%, 70%, 0.00);
+  --shadow-sm: 0px 2px 0px 0px hsl(330, 60%, 70%, 0.00), 0px 1px 2px -1px hsl(330, 60%, 70%, 0.00);
+  --shadow: 0px 2px 0px 0px hsl(330, 60%, 70%, 0.00), 0px 1px 2px -1px hsl(330, 60%, 70%, 0.00);
+  --shadow-md: 0px 2px 0px 0px hsl(330, 60%, 70%, 0.00), 0px 2px 4px -1px hsl(330, 60%, 70%, 0.00);
+  --shadow-lg: 0px 2px 0px 0px hsl(330, 60%, 70%, 0.00), 0px 4px 6px -1px hsl(330, 60%, 70%, 0.00);
+  --shadow-xl: 0px 2px 0px 0px hsl(330, 60%, 70%, 0.00), 0px 8px 10px -1px hsl(330, 60%, 70%, 0.00);
+  --shadow-2xl: 0px 2px 0px 0px hsl(330, 60%, 70%, 0.00);
+  --tracking-normal: 0em;
+  --spacing: 0.25rem;
+}
+
+.dark {
+  --background: hsl(0, 0%, 0%);
+  --foreground: hsl(200, 7%, 91%);
+  --card: hsl(228, 10%, 10%);
+  --card-foreground: hsl(0, 0%, 85%);
+  --popover: hsl(0, 0%, 0%);
+  --popover-foreground: hsl(200, 7%, 91%);
+  --primary: hsl(330, 60%, 60%);
+  --primary-foreground: hsl(0, 0%, 100%);
+  --secondary: hsl(35, 50%, 70%);
+  --secondary-foreground: hsl(0, 0%, 100%);
+  --muted: hsl(0, 0%, 9%);
+  --muted-foreground: hsl(210, 4%, 46%);
+  --accent: hsl(35, 70%, 20%);
+  --accent-foreground: hsl(0, 0%, 100%);
+  --destructive: hsl(356, 90%, 54%);
+  --destructive-foreground: hsl(0, 0%, 100%);
+  --border: hsl(210, 5%, 15%);
+  --input: hsl(210, 5%, 15%);
+  --ring: hsl(330, 60%, 50%);
+  --chart-1: hsl(330, 60%, 60%);
+  --chart-2: hsl(159, 100%, 36%);
+  --chart-3: hsl(42, 93%, 56%);
+  --chart-4: hsl(147, 79%, 42%);
+  --chart-5: hsl(341, 75%, 51%);
+  --sidebar: hsl(228, 10%, 10%);
+  --sidebar-foreground: hsl(0, 0%, 85%);
+  --sidebar-primary: hsl(330, 60%, 60%);
+  --sidebar-primary-foreground: hsl(0, 0%, 100%);
+  --sidebar-accent: hsl(35, 70%, 20%);
+  --sidebar-accent-foreground: hsl(0, 0%, 100%);
+  --sidebar-border: hsl(210, 5%, 15%);
+  --sidebar-ring: hsl(330, 60%, 50%);
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply font-sans antialiased text-foreground;
+    background: linear-gradient(135deg, hsl(30, 50%, 98%) 0%, hsl(35, 40%, 96%) 100%);
+    min-height: 100vh;
+  }
+}
+
+@layer utilities {
+  .card-shadow {
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  }
+
+  .price-highlight {
+    background: linear-gradient(135deg, hsl(330, 60%, 90%) 0%, hsl(35, 60%, 85%) 100%);
+  }
+
+  .btn-primary {
+    background: linear-gradient(135deg, hsl(330, 60%, 75%) 0%, hsl(330, 50%, 65%) 100%);
+    transition: all 0.2s ease;
+  }
+
+  .btn-primary:hover {
+    background: linear-gradient(135deg, hsl(330, 60%, 70%) 0%, hsl(330, 50%, 60%) 100%);
+    transform: translateY(-1px);
+  }
+
+  .cookie-option {
+    transition: all 0.2s ease;
+  }
+
+  .cookie-option:hover {
+    transform: translateY(-2px);
+  }
+
+  .quantity-btn {
+    transition: all 0.15s ease;
+  }
+
+  .quantity-btn:active {
+    transform: scale(0.95);
+  }
+
+  .kakao-btn {
+    background: linear-gradient(135deg, #FEE500 0%, #FFCD00 100%);
+  }
+}
