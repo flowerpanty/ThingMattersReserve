@@ -9,8 +9,23 @@ interface KakaoConsultationModalProps {
 
 export function KakaoConsultationModal({ isOpen, onClose }: KakaoConsultationModalProps) {
   const handleKakaoClick = () => {
-    console.log('🎯 NEW: 새로운 카카오톡 버튼 클릭됨');
-    window.location.href = 'https://pf.kakao.com/_QdCaK';
+    const FINAL_LINK = 'https://pf.kakao.com/_QdCaK';
+    console.log('🔥 FINAL: 최종 카카오톡 링크 클릭:', FINAL_LINK);
+    
+    // 여러 방법으로 시도
+    try {
+      // 방법 1: window.open
+      const newWindow = window.open(FINAL_LINK, '_blank');
+      if (!newWindow) {
+        // 방법 2: location.href
+        window.location.href = FINAL_LINK;
+      }
+    } catch (error) {
+      console.error('링크 이동 실패:', error);
+      // 방법 3: 강제 이동
+      document.location = FINAL_LINK;
+    }
+    
     onClose();
   };
 
@@ -28,14 +43,14 @@ export function KakaoConsultationModal({ isOpen, onClose }: KakaoConsultationMod
         </DialogHeader>
         
         <div className="flex flex-col gap-3 mt-6">
-          <Button
+          <div 
             onClick={handleKakaoClick}
-            className="w-full bg-yellow-400 hover:bg-yellow-500 text-black font-semibold py-3 px-4 rounded-lg flex items-center justify-center gap-2"
-            data-testid="button-new-kakao-consultation"
+            className="w-full bg-yellow-400 hover:bg-yellow-500 text-black font-semibold py-3 px-4 rounded-lg flex items-center justify-center gap-2 cursor-pointer"
+            data-testid="div-final-kakao-button"
           >
             <MessageCircle className="w-5 h-5" />
-            💬 카카오톡 상담하기
-          </Button>
+            🔥 최종 카카오톡 상담
+          </div>
           
           <Button
             onClick={onClose}
