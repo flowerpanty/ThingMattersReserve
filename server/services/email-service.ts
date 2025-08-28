@@ -7,45 +7,23 @@ export class EmailService {
   constructor() {
     console.log('이메일 서비스 초기화 중...');
     
-    // Gmail 앱 비밀번호나 다른 SMTP 설정 확인
-    if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
-      console.log('Gmail 설정으로 이메일 서비스 초기화...');
-      this.transporter = nodemailer.createTransport({
-        service: 'gmail',
-        auth: {
-          user: process.env.EMAIL_USER,
-          pass: process.env.EMAIL_PASS, // Gmail 앱 비밀번호 필요
-        },
-      });
-    } else if (process.env.SMTP_HOST) {
-      console.log('SMTP 설정으로 이메일 서비스 초기화...');
-      this.transporter = nodemailer.createTransport({
-        host: process.env.SMTP_HOST,
-        port: parseInt(process.env.SMTP_PORT || '587'),
-        secure: process.env.SMTP_SECURE === 'true',
-        auth: {
-          user: process.env.SMTP_USER,
-          pass: process.env.SMTP_PASS,
-        },
-      });
-    } else {
-      console.log('이메일 설정이 없어서 테스트 모드로 실행합니다.');
-      // 테스트용 Ethereal Email 사용
-      this.transporter = nodemailer.createTransport({
-        host: 'smtp.ethereal.email',
-        port: 587,
-        secure: false,
-        auth: {
-          user: 'test@ethereal.email',
-          pass: 'test123',
-        },
-      });
-    }
+    // Gmail 설정으로 직접 설정
+    const gmailUser = 'flowerpanty@gmail.com';
+    const gmailPass = 'hplp dyyi cvsr bwma';
+    
+    console.log('Gmail 설정으로 이메일 서비스 초기화...');
+    this.transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: gmailUser,
+        pass: gmailPass,
+      },
+    });
   }
 
   async sendQuote(orderData: OrderData, quoteBuffer: Buffer): Promise<void> {
     const mailOptions = {
-      from: process.env.EMAIL_USER || 'noreply@nothingmatters.kr',
+      from: 'flowerpanty@gmail.com',
       to: orderData.customerContact,
       subject: `[nothingmatters] ${orderData.customerName}님의 쿠키 주문 견적서`,
       html: `
