@@ -310,6 +310,8 @@ export function ProductSelection({
                           >
                             <Checkbox
                               checked={set.selectedCookies.includes(type)}
+                              readOnly={true}
+                              onCheckedChange={() => {}}
                               className="pointer-events-none"
                             />
                             <span className="text-xs">{type}</span>
