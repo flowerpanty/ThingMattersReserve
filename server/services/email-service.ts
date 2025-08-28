@@ -1,59 +1,26 @@
-import nodemailer from 'nodemailer';
-import { type OrderData } from '@shared/schema';
-
-
-import dns from 'node:dns/promises';
-
-// 원래 호스트명과 IPv4 주소를 준비(Top-level await 사용)
-const SMTP_ORIG_HOST = process.env.SMTP_HOST || 'smtp.gmail.com';
-const SMTP_IPV4_HOST =
-  await dns.resolve4(SMTP_ORIG_HOST).then(a => a[0]).catch(() => SMTP_ORIG_HOST);
-
+// EmailService.ts
+import sgMail from '@sendgrid/mail'
+import { type OrderData } from '@shared/schema'
 
 export class EmailService {
-  private transporter: nodemailer.Transporter;
-
   constructor() {
-    console.log('이메일 서비스 초기화 중...');
-    
-   const host = SMTP_IPV4_HOST;             // ← IPv4로 접속
-const origHost = SMTP_ORIG_HOST;         // ← SNI용 원래 호스트명
-    const port = Number(process.env.SMTP_PORT || 587);
-    const user = process.env.SMTP_USER!;
-    const pass = process.env.SMTP_PASS!;
-    const from = process.env.MAIL_FROM || user;
-
-    console.log('Gmail(STARTTLS) 설정으로 이메일 서비스 초기화...');
-    this.transporter = nodemailer.createTransport({
-      host,
-      port,                // 587
-      secure: false,       // 587이면 false
-      requireTLS: true,    // STARTTLS 강제
-      auth: { user, pass },
-      pool: true,          // 연결 재사용(안정성↑)
-      maxConnections: 1,
-      connectionTimeout: 20000,
-      greetingTimeout: 20000,
-      socketTimeout: 20000,
-      tls: {
-        servername: origHost, // ← 'smtp.gmail.com'
-        minVersion: 'TLSv1.2',
-      },
-    });
-
+    const apiKey = process.env.SENDGRID_API_KEY
+    const from = process.env.MAIL_FROM
+    if (!apiKey || !from) {
+      throw new Error('SENDGRID_API_KEY 또는 MAIL_FROM이 설정되어 있지 않습니다.')
+    }
+    sgMail.setApiKey(apiKey)
+    console.log('이메일 서비스 초기화( SendGrid API ) 완료')
   }
 
   async sendQuote(orderData: OrderData, quoteBuffer: Buffer): Promise<void> {
-    console.log('이메일 서비스 sendQuote 호출됨:', {
-      customerName: orderData.customerName,
-      customerContact: orderData.customerContact,
-      deliveryDate: orderData.deliveryDate,
-      bufferSize: quoteBuffer.length
-    });
-    // 고객용 견적서 이메일
-    const customerMailOptions = {
-      from: 'flowerpanty@gmail.com',
+    const from = process.env.MAIL_FROM!
+    const xlsxBase64 = quoteBuffer.toString('base64')
+    const today = new Date().toISOString().split('T')[0]
+
+    const customerMsg = {
       to: orderData.customerContact,
+      from,
       subject: `[nothingmatters] ${orderData.customerName}님의 쿠키 주문 견적서`,
       html: `
         <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
@@ -61,26 +28,22 @@ const origHost = SMTP_ORIG_HOST;         // ← SNI용 원래 호스트명
             <h1 style="color: #4F46E5; font-size: 24px; margin: 0; font-weight: 800;">nothingmatters</h1>
             <p style="color: #666; margin: 5px 0;">귀여운 수제 쿠키 예약 주문</p>
           </div>
-          
           <div style="background: #f9f9f9; padding: 20px; border-radius: 10px; margin-bottom: 20px;">
             <h2 style="color: #333; margin-top: 0;">안녕하세요, ${orderData.customerName}님!</h2>
             <p style="color: #666; line-height: 1.6;">
               nothingmatters 쿠키 주문 견적서가 첨부되어 있습니다.<br>
               견적서를 확인하신 후, 아래 카카오톡 채널로 상담을 진행해주세요.
             </p>
-            
             <div style="background: white; padding: 15px; border-radius: 8px; margin: 15px 0;">
               <strong>수령 희망일:</strong> ${orderData.deliveryDate}
             </div>
           </div>
-          
           <div style="text-align: center; margin: 30px 0;">
-            <a href="https://pf.kakao.com/_QdCaK" 
+            <a href="https://pf.kakao.com/_QdCaK"
                style="display: inline-block; background: #FEE500; color: black; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: bold;">
               💬 카카오톡으로 상담하기
             </a>
           </div>
-          
           <div style="border-top: 1px solid #eee; padding-top: 20px; text-align: center; color: #999; font-size: 12px;">
             <p>※ 본 견적서는 예약 확정이 아닙니다. 카카오톡 상담 후 최종 확정됩니다.</p>
             <p>※ 당일 예약은 불가능하며, 최소 1일 전 주문 부탁드립니다.</p>
@@ -89,16 +52,17 @@ const origHost = SMTP_ORIG_HOST;         // ← SNI용 원래 호스트명
       `,
       attachments: [
         {
-          filename: `nothingmatters_견적서_${orderData.customerName}_${new Date().toISOString().split('T')[0]}.xlsx`,
-          content: quoteBuffer,
+          content: xlsxBase64,
+          filename: `nothingmatters_견적서_${orderData.customerName}_${today}.xlsx`,
+          type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+          disposition: 'attachment',
         },
       ],
-    };
+    }
 
-    // 사업주용 알림 이메일
-    const ownerMailOptions = {
-      from: 'flowerpanty@gmail.com',
+    const ownerMsg = {
       to: 'betterbetters@kakao.com',
+      from,
       subject: `[주문 알림] ${orderData.customerName}님의 새로운 쿠키 주문`,
       html: `
         <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
@@ -106,7 +70,6 @@ const origHost = SMTP_ORIG_HOST;         // ← SNI용 원래 호스트명
             <h1 style="color: #4F46E5; font-size: 24px; margin: 0; font-weight: 800;">nothingmatters</h1>
             <p style="color: #666; margin: 5px 0;">새로운 주문이 들어왔습니다!</p>
           </div>
-          
           <div style="background: #f9f9f9; padding: 20px; border-radius: 10px; margin-bottom: 20px;">
             <h2 style="color: #333; margin-top: 0;">주문 정보</h2>
             <div style="background: white; padding: 15px; border-radius: 8px; margin: 15px 0;">
@@ -115,7 +78,6 @@ const origHost = SMTP_ORIG_HOST;         // ← SNI용 원래 호스트명
               <p><strong>수령 희망일:</strong> ${orderData.deliveryDate}</p>
             </div>
           </div>
-          
           <div style="border-top: 1px solid #eee; padding-top: 20px; text-align: center; color: #999; font-size: 12px;">
             <p>※ 고객에게는 견적서가 이미 전송되었습니다.</p>
             <p>※ 카카오톡으로 상담을 진행해주세요.</p>
@@ -124,44 +86,21 @@ const origHost = SMTP_ORIG_HOST;         // ← SNI용 원래 호스트명
       `,
       attachments: [
         {
-          filename: `주문알림_${orderData.customerName}_${new Date().toISOString().split('T')[0]}.xlsx`,
-          content: quoteBuffer,
+          content: xlsxBase64,
+          filename: `주문알림_${orderData.customerName}_${today}.xlsx`,
+          type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+          disposition: 'attachment',
         },
       ],
-    };
+    }
 
     try {
-      console.log('견적서 이메일 전송 중...');
-      console.log('- 고객:', orderData.customerName, '(' + orderData.customerContact + ')');
-      console.log('- 사업주: betterbetters@kakao.com');
-      console.log('- 수령 희망일:', orderData.deliveryDate);
-      
-      // 고객과 사업주에게 동시에 이메일 전송
-      const [customerInfo, ownerInfo] = await Promise.all([
-        this.transporter.sendMail(customerMailOptions),
-        this.transporter.sendMail(ownerMailOptions)
-      ]);
-      console.log('✅ 견적서 이메일 전송 완료!');
-      console.log('- 고객 Message ID:', customerInfo.messageId);
-      console.log('- 사업주 Message ID:', ownerInfo.messageId);
-      
-      // Ethereal Email 테스트 URL이 있으면 출력
-      if (customerInfo.previewURL) {
-        console.log('- 고객 Preview URL:', customerInfo.previewURL);
-      }
-      if (ownerInfo.previewURL) {
-        console.log('- 사업주 Preview URL:', ownerInfo.previewURL);
-      }
-      
-    } catch (error) {
-      console.error('❌ 이메일 전송 실패:', error);
-      
-      // 이메일 전송 실패해도 견적서는 생성되었다고 표시
-      console.log('견적서는 성공적으로 생성되었지만 이메일 전송에 실패했습니다.');
-      console.log('- 받는 사람:', orderData.customerName, '(' + orderData.customerContact + ')');
-      console.log('- 견적서 파일 크기:', quoteBuffer.length, 'bytes');
-      
-      // 실패해도 에러를 던지지 않음 (사용자에게는 성공으로 보임)
+      console.log('견적서 이메일 전송 중...')
+      await Promise.all([sgMail.send(customerMsg), sgMail.send(ownerMsg)])
+      console.log('✅ 견적서 이메일 전송 완료!')
+    } catch (e) {
+      console.error('❌ 이메일 전송 실패:', e)
+      console.log('견적서는 생성되었지만 이메일 전송에 실패했습니다.')
     }
   }
 }
