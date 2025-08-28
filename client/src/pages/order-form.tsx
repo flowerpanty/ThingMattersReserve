@@ -22,7 +22,7 @@ export default function OrderForm() {
               <h1 className="text-3xl futura-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-[#1100ff]">
                 NOTHINGMATTERS
               </h1>
-              <p className="text-muted-foreground mt-2 text-sm">귀여운 수제 쿠키 예약 주문</p>
+              
               <div className="mt-3 p-2 bg-yellow-50 border border-yellow-200 rounded-lg">
                 <p className="text-yellow-800 text-sm font-medium">⚠️ 카카오톡 상담 후 확정</p>
               </div>
