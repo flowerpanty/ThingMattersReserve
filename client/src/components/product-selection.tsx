@@ -380,7 +380,7 @@ export function ProductSelection({
                 <div className="flex items-center gap-3">
                   <span className="text-2xl">🍪☕</span>
                   <div className="text-left">
-                    <div className="font-semibold">1구 + 음료</div>
+                    <div className="font-semibold">1구+음료 (최소수량 12개)</div>
                     <div className="text-sm text-muted-foreground">세트당 11,000원</div>
                   </div>
                   {singleWithDrinkSets.length > 0 && (
@@ -504,7 +504,7 @@ export function ProductSelection({
                 <div className="flex items-center gap-3">
                   <span className="text-2xl">🧸</span>
                   <div className="text-left">
-                    <div className="font-semibold">브라우니쿠키</div>
+                    <div className="font-semibold">브라우니쿠키(최소수량12개)</div>
                     <div className="text-sm text-muted-foreground">개당 7,800원</div>
                   </div>
                   {brownieCookieSets && brownieCookieSets.length > 0 && (
@@ -577,6 +577,10 @@ export function ProductSelection({
                             <div className="flex items-center space-x-2 p-2 bg-card rounded cursor-pointer hover:bg-accent/30 transition-colors">
                               <RadioGroupItem value="birthdayBear" id={`birthdayBear-${index}`} data-testid={`radio-shape-birthday-bear-${index}`} />
                               <Label htmlFor={`birthdayBear-${index}`} className="cursor-pointer text-xs">생일곰 (+500원)</Label>
+                            </div>
+                            <div className="flex items-center space-x-2 p-2 bg-card rounded cursor-pointer hover:bg-accent/30 transition-colors">
+                              <RadioGroupItem value="tiger" id={`tiger-${index}`} data-testid={`radio-shape-tiger-${index}`} />
+                              <Label htmlFor={`tiger-${index}`} className="cursor-pointer text-xs">호랑이</Label>
                             </div>
                           </div>
                         </RadioGroup>

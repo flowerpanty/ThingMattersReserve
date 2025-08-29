@@ -31,7 +31,7 @@ export const orderDataSchema = z.object({
   packaging: z.enum(['single_box', 'plastic_wrap', 'oil_paper']).optional(),
   brownieCookieSets: z.array(z.object({
     quantity: z.number().min(1).default(1),
-    shape: z.enum(['bear', 'rabbit', 'birthdayBear']).optional(),
+    shape: z.enum(['bear', 'rabbit', 'birthdayBear', 'tiger']).optional(),
     customSticker: z.boolean().default(false),
     heartMessage: z.string().optional(),
     customTopper: z.boolean().default(false),

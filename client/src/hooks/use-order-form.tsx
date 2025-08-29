@@ -119,6 +119,28 @@ export function useOrderForm() {
         return;
       }
 
+      // Check minimum quantity for 1구+음료 (minimum 12)
+      const totalSingleWithDrinkQuantity = validatedData.singleWithDrinkSets.reduce((sum, set) => sum + set.quantity, 0);
+      if (totalSingleWithDrinkQuantity > 0 && totalSingleWithDrinkQuantity < 12) {
+        toast({
+          title: "수량 확인",
+          description: "1구+음료는 최소 12개 이상 주문해주세요.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Check minimum quantity for 브라우니쿠키 (minimum 12)
+      const totalBrownieQuantity = validatedData.brownieCookieSets.reduce((sum, set) => sum + set.quantity, 0);
+      if (totalBrownieQuantity > 0 && totalBrownieQuantity < 12) {
+        toast({
+          title: "수량 확인",
+          description: "브라우니쿠키는 최소 12개 이상 주문해주세요.",
+          variant: "destructive",
+        });
+        return;
+      }
+
       // Check if delivery date is not today
       const today = new Date().toISOString().split('T')[0];
       if (validatedData.deliveryDate <= today) {
