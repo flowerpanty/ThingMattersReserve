@@ -16,7 +16,7 @@ export function OrderActions({ isSubmitting }: OrderActionsProps) {
         <Button
           type="submit"
           disabled={isSubmitting}
-          className="w-full py-4 px-6 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold rounded-lg transition-colors"
+          className="w-full py-6 px-8 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold text-lg rounded-lg transition-colors"
           data-testid="button-generate-quote"
         >
           {isSubmitting ? (
@@ -35,7 +35,7 @@ export function OrderActions({ isSubmitting }: OrderActionsProps) {
           href="https://pf.kakao.com/_QdCaK"
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex items-center justify-center gap-2 w-full py-4 px-6 bg-yellow-400 hover:bg-yellow-500 text-yellow-900 font-semibold rounded-lg transition-colors"
+          className="inline-flex items-center justify-center gap-2 w-full py-2 px-4 bg-yellow-400 hover:bg-yellow-500 text-yellow-900 font-medium text-sm rounded-lg transition-colors"
           data-testid="button-kakao-consultation"
         >
           💬 카카오톡 상담하기
