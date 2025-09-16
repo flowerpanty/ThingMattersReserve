@@ -76,9 +76,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           breakdown.brownie += cookiePrices.brownieOptions.customSticker;
         }
         
-        // 하트 메시지 (세트당)
+        // 하트 메시지 (수량만큼)
         if (set.heartMessage) {
-          breakdown.brownie += cookiePrices.brownieOptions.heartMessage;
+          breakdown.brownie += set.quantity * cookiePrices.brownieOptions.heartMessage;
         }
       }
       

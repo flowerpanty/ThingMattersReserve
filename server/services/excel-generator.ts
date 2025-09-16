@@ -160,40 +160,98 @@ export class ExcelGenerator {
     // 브라우니쿠키
     // 브라우니 쿠키 세트들 (다중 세트 및 수량)
     if (orderData.brownieCookieSets?.length > 0) {
-      let totalBrownieAmount = 0;
       let totalBrownieQuantity = 0;
+      let baseBrownieAmount = 0;
+      let totalBirthdayBearQuantity = 0;
+      let totalCustomStickerCount = 0;
+      let totalHeartMessageQuantity = 0;
       
       orderData.brownieCookieSets.forEach((set: any) => {
         const quantity = set.quantity || 1;
-        let brownieAmount = quantity * cookiePrices.brownie;
         
-        // 옵션 추가 비용 계산
-        if (set.shape === 'birthdayBear') {
-          brownieAmount += quantity * cookiePrices.brownieOptions.birthdayBear;
-        }
-        if (set.customSticker) {
-          brownieAmount += cookiePrices.brownieOptions.customSticker;
-        }
-        if (set.heartMessage) {
-          brownieAmount += cookiePrices.brownieOptions.heartMessage;
-        }
-        
-        totalBrownieAmount += brownieAmount;
+        // 기본 브라우니 수량 및 금액
         totalBrownieQuantity += quantity;
+        baseBrownieAmount += quantity * cookiePrices.brownie;
+        
+        // 생일곰 옵션
+        if (set.shape === 'birthdayBear') {
+          totalBirthdayBearQuantity += quantity;
+        }
+        
+        // 커스텀 스티커 (세트당)
+        if (set.customSticker) {
+          totalCustomStickerCount += 1;
+        }
+        
+        // 하트 메시지 (수량만큼)
+        if (set.heartMessage) {
+          totalHeartMessageQuantity += quantity;
+        }
       });
       
-      totalAmount += totalBrownieAmount;
-      
+      // 기본 브라우니쿠키
+      totalAmount += baseBrownieAmount;
       worksheet.getCell(currentRow, 1).value = '브라우니쿠키';
       worksheet.getCell(currentRow, 1).style = cellStyle;
       worksheet.getCell(currentRow, 2).value = totalBrownieQuantity;
       worksheet.getCell(currentRow, 2).style = cellStyle;
-      worksheet.getCell(currentRow, 3).value = Math.floor(totalBrownieAmount / totalBrownieQuantity);
+      worksheet.getCell(currentRow, 3).value = cookiePrices.brownie;
       worksheet.getCell(currentRow, 3).style = priceStyle;
-      worksheet.getCell(currentRow, 4).value = totalBrownieAmount;
+      worksheet.getCell(currentRow, 4).value = baseBrownieAmount;
       worksheet.getCell(currentRow, 4).style = priceStyle;
       worksheet.getRow(currentRow).height = 35;
       currentRow++;
+      
+      // 생일곰 추가 옵션
+      if (totalBirthdayBearQuantity > 0) {
+        const birthdayBearAmount = totalBirthdayBearQuantity * cookiePrices.brownieOptions.birthdayBear;
+        totalAmount += birthdayBearAmount;
+        
+        worksheet.getCell(currentRow, 1).value = '└ 생일곰 추가';
+        worksheet.getCell(currentRow, 1).style = cellStyle;
+        worksheet.getCell(currentRow, 2).value = totalBirthdayBearQuantity;
+        worksheet.getCell(currentRow, 2).style = cellStyle;
+        worksheet.getCell(currentRow, 3).value = cookiePrices.brownieOptions.birthdayBear;
+        worksheet.getCell(currentRow, 3).style = priceStyle;
+        worksheet.getCell(currentRow, 4).value = birthdayBearAmount;
+        worksheet.getCell(currentRow, 4).style = priceStyle;
+        worksheet.getRow(currentRow).height = 35;
+        currentRow++;
+      }
+      
+      // 커스텀 스티커 옵션
+      if (totalCustomStickerCount > 0) {
+        const customStickerAmount = totalCustomStickerCount * cookiePrices.brownieOptions.customSticker;
+        totalAmount += customStickerAmount;
+        
+        worksheet.getCell(currentRow, 1).value = '└ 하단 커스텀 스티커';
+        worksheet.getCell(currentRow, 1).style = cellStyle;
+        worksheet.getCell(currentRow, 2).value = totalCustomStickerCount;
+        worksheet.getCell(currentRow, 2).style = cellStyle;
+        worksheet.getCell(currentRow, 3).value = cookiePrices.brownieOptions.customSticker;
+        worksheet.getCell(currentRow, 3).style = priceStyle;
+        worksheet.getCell(currentRow, 4).value = customStickerAmount;
+        worksheet.getCell(currentRow, 4).style = priceStyle;
+        worksheet.getRow(currentRow).height = 35;
+        currentRow++;
+      }
+      
+      // 하트 메시지 옵션
+      if (totalHeartMessageQuantity > 0) {
+        const heartMessageAmount = totalHeartMessageQuantity * cookiePrices.brownieOptions.heartMessage;
+        totalAmount += heartMessageAmount;
+        
+        worksheet.getCell(currentRow, 1).value = '└ 하트안 문구 추가';
+        worksheet.getCell(currentRow, 1).style = cellStyle;
+        worksheet.getCell(currentRow, 2).value = totalHeartMessageQuantity;
+        worksheet.getCell(currentRow, 2).style = cellStyle;
+        worksheet.getCell(currentRow, 3).value = cookiePrices.brownieOptions.heartMessage;
+        worksheet.getCell(currentRow, 3).style = priceStyle;
+        worksheet.getCell(currentRow, 4).value = heartMessageAmount;
+        worksheet.getCell(currentRow, 4).style = priceStyle;
+        worksheet.getRow(currentRow).height = 35;
+        currentRow++;
+      }
     }
     
     // 행운쿠키 (박스당)
