@@ -232,20 +232,34 @@ export class ExcelGenerator {
     
     // 포장비
     if (orderData.packaging) {
-      const packagingPrice = cookiePrices.packaging[orderData.packaging];
-      if (packagingPrice > 0) {
-        totalAmount += packagingPrice;
-        
-        const packagingName = orderData.packaging === 'single_box' ? '1구박스' : 
-                             orderData.packaging === 'plastic_wrap' ? '비닐탭포장' : '유산지';
+      const packagingPricePerItem = cookiePrices.packaging[orderData.packaging];
+      const packagingName = orderData.packaging === 'single_box' ? '1구박스' : 
+                           orderData.packaging === 'plastic_wrap' ? '비닐탭포장' : '유산지';
+      
+      // 수량과 총액 계산 (routes.ts의 로직과 동일)
+      let packagingQuantity;
+      let totalPackagingPrice;
+      
+      if (orderData.packaging === 'single_box' || orderData.packaging === 'plastic_wrap') {
+        // 1구박스와 비닐탭포장은 일반 쿠키 개수만큼 계산
+        packagingQuantity = regularCookieQuantity;
+        totalPackagingPrice = regularCookieQuantity * packagingPricePerItem;
+      } else {
+        // 유산지는 전체 주문당 1번만
+        packagingQuantity = 1;
+        totalPackagingPrice = packagingPricePerItem;
+      }
+      
+      if (totalPackagingPrice > 0) {
+        totalAmount += totalPackagingPrice;
         
         worksheet.getCell(currentRow, 1).value = packagingName;
         worksheet.getCell(currentRow, 1).style = cellStyle;
-        worksheet.getCell(currentRow, 2).value = 1;
+        worksheet.getCell(currentRow, 2).value = packagingQuantity;
         worksheet.getCell(currentRow, 2).style = cellStyle;
-        worksheet.getCell(currentRow, 3).value = packagingPrice;
+        worksheet.getCell(currentRow, 3).value = packagingPricePerItem;
         worksheet.getCell(currentRow, 3).style = priceStyle;
-        worksheet.getCell(currentRow, 4).value = packagingPrice;
+        worksheet.getCell(currentRow, 4).value = totalPackagingPrice;
         worksheet.getCell(currentRow, 4).style = priceStyle;
         worksheet.getRow(currentRow).height = 35;
         currentRow++;
