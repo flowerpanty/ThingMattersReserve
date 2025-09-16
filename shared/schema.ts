@@ -27,6 +27,7 @@ export const orderDataSchema = z.object({
   customerContact: z.string().email("올바른 이메일 주소를 입력해주세요"),
   deliveryDate: z.string().min(1, "날짜를 선택해주세요"),
   deliveryMethod: z.enum(['pickup', 'quick']).default('pickup'),
+  deliveryAddress: z.string().optional(),
   regularCookies: z.record(z.number().min(0)).default({}),
   packaging: z.enum(['single_box', 'plastic_wrap', 'oil_paper']).optional(),
   brownieCookieSets: z.array(z.object({
@@ -83,7 +84,7 @@ export const cookiePrices = {
   twoPackSet: 10500, // 2구 패키지
   singleWithDrink: 11000, // 1구 + 음료
   packaging: {
-    single_box: 500, // 1구박스 (+500원)
+    single_box: 600, // 1구박스 (+600원)
     plastic_wrap: 500, // 비닐탭포장 (+500원) 
     oil_paper: 0, // 유산지 (무료)
   },

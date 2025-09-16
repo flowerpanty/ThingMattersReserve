@@ -52,7 +52,8 @@ export default function OrderForm() {
 
           <DeliveryMethod 
             deliveryMethod={formData.deliveryMethod}
-            onUpdate={(value) => updateFormData('deliveryMethod', value)}
+            deliveryAddress={formData.deliveryAddress || ''}
+            onUpdate={(field, value) => updateFormData(field, value)}
           />
 
           <ProductSelection 

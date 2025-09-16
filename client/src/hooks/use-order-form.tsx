@@ -9,6 +9,7 @@ const initialFormData: OrderData = {
   customerContact: '',
   deliveryDate: '',
   deliveryMethod: 'pickup',
+  deliveryAddress: '',
   regularCookies: {},
   packaging: undefined,
   brownieCookieSets: [],

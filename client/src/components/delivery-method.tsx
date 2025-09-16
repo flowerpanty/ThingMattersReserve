@@ -1,13 +1,15 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Input } from "@/components/ui/input";
 
 interface DeliveryMethodProps {
   deliveryMethod: string;
-  onUpdate: (value: string) => void;
+  deliveryAddress: string;
+  onUpdate: (field: string, value: string) => void;
 }
 
-export function DeliveryMethod({ deliveryMethod, onUpdate }: DeliveryMethodProps) {
+export function DeliveryMethod({ deliveryMethod, deliveryAddress, onUpdate }: DeliveryMethodProps) {
   return (
     <Card className="card-shadow">
       <CardContent className="p-6">
@@ -18,7 +20,7 @@ export function DeliveryMethod({ deliveryMethod, onUpdate }: DeliveryMethodProps
         
         <RadioGroup 
           value={deliveryMethod} 
-          onValueChange={onUpdate}
+          onValueChange={(value) => onUpdate('deliveryMethod', value)}
           className="grid grid-cols-1 md:grid-cols-2 gap-4"
         >
           <div className="flex items-center space-x-2 p-4 bg-card rounded-lg border border-input hover:bg-accent/50 transition-colors cursor-pointer">
@@ -37,6 +39,26 @@ export function DeliveryMethod({ deliveryMethod, onUpdate }: DeliveryMethodProps
             </Label>
           </div>
         </RadioGroup>
+        
+        {/* 퀵배송 선택 시 주소 입력 칸 */}
+        {deliveryMethod === 'quick' && (
+          <div className="mt-4 p-4 bg-accent/20 rounded-lg">
+            <Label htmlFor="delivery-address" className="text-sm font-medium mb-2 block">
+              배송 받을 주소 *
+            </Label>
+            <Input
+              id="delivery-address"
+              placeholder="배송받을 주소를 입력해주세요"
+              value={deliveryAddress}
+              onChange={(e) => onUpdate('deliveryAddress', e.target.value)}
+              data-testid="input-delivery-address"
+              className="w-full"
+            />
+            <p className="text-xs text-muted-foreground mt-2">
+              정확한 주소를 입력해주시면 배송비 산정에 도움이 됩니다.
+            </p>
+          </div>
+        )}
         
         <div className="mt-4 p-3 bg-muted/50 rounded-lg">
           <p className="text-xs text-muted-foreground">

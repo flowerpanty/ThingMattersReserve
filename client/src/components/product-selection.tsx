@@ -168,80 +168,93 @@ export function ProductSelection({
               </CollapsibleTrigger>
               
               <CollapsibleContent className="px-4 pb-4">
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 mb-4">
-                  {cookieTypes.map((type) => (
-                    <div key={type} className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
-                      <div className="flex items-center gap-2">
-                        <Checkbox
-                          id={`cookie-${type}`}
-                          checked={(regularCookies[type] || 0) > 0}
-                          onCheckedChange={(checked) => {
-                            updateRegularCookie(type, checked ? 1 : 0);
-                          }}
-                          data-testid={`checkbox-cookie-${type}`}
-                        />
-                        <Label htmlFor={`cookie-${type}`} className="text-sm font-medium">{type}</Label>
+                {/* Step 1: 포장 방법 선택 (먼저 선택해야 함) */}
+                <div className="bg-accent/20 rounded-lg p-4 mb-4">
+                  <h4 className="font-medium mb-3 text-sm text-center">🎁 포장 방법을 먼저 선택해주세요</h4>
+                  <RadioGroup value={packaging} onValueChange={(value) => onUpdate('packaging', value)}>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                      <div className="flex items-center space-x-2 p-3 bg-card rounded-lg border border-input hover:bg-muted/50 transition-colors cursor-pointer">
+                        <RadioGroupItem value="single_box" id="single_box" data-testid="radio-packaging-single-box" />
+                        <Label htmlFor="single_box" className="cursor-pointer text-sm flex-1">
+                          <div className="font-medium">1구박스</div>
+                          <div className="text-xs text-muted-foreground">각 쿠키마다 +600원</div>
+                        </Label>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          className="w-7 h-7 rounded-full p-0 text-xs"
-                          onClick={() => updateRegularCookie(type, (regularCookies[type] || 0) - 1)}
-                          data-testid={`button-decrease-${type}`}
-                        >
-                          -
-                        </Button>
-                        <span className="w-8 text-center text-sm font-medium" data-testid={`quantity-${type}`}>
-                          {regularCookies[type] || 0}
-                        </span>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          className="w-7 h-7 rounded-full p-0 text-xs"
-                          onClick={() => updateRegularCookie(type, (regularCookies[type] || 0) + 1)}
-                          data-testid={`button-increase-${type}`}
-                        >
-                          +
-                        </Button>
+                      
+                      <div className="flex items-center space-x-2 p-3 bg-card rounded-lg border border-input hover:bg-muted/50 transition-colors cursor-pointer">
+                        <RadioGroupItem value="plastic_wrap" id="plastic_wrap" data-testid="radio-packaging-plastic-wrap" />
+                        <Label htmlFor="plastic_wrap" className="cursor-pointer text-sm flex-1">
+                          <div className="font-medium">비닐탭포장</div>
+                          <div className="text-xs text-muted-foreground">각 쿠키마다 +500원</div>
+                        </Label>
+                      </div>
+                      
+                      <div className="flex items-center space-x-2 p-3 bg-card rounded-lg border border-input hover:bg-muted/50 transition-colors cursor-pointer">
+                        <RadioGroupItem value="oil_paper" id="oil_paper" data-testid="radio-packaging-oil-paper" />
+                        <Label htmlFor="oil_paper" className="cursor-pointer text-sm flex-1">
+                          <div className="font-medium">유산지</div>
+                          <div className="text-xs text-muted-foreground">무료</div>
+                        </Label>
                       </div>
                     </div>
-                  ))}
+                  </RadioGroup>
+                  {!packaging && (
+                    <p className="text-xs text-amber-600 mt-2 text-center font-medium">
+                      ⚠️ 포장방법을 선택해야 쿠키를 고를 수 있습니다
+                    </p>
+                  )}
                 </div>
 
-                {/* Packaging Options */}
-                {hasRegularCookies && (
-                  <div className="bg-accent/20 rounded-lg p-3">
-                    <h4 className="font-medium mb-3 text-sm">포장 옵션</h4>
-                    <RadioGroup value={packaging} onValueChange={(value) => onUpdate('packaging', value)}>
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
-                        <div className="flex items-center space-x-2 p-2 bg-card rounded hover:bg-muted/50 transition-colors">
-                          <RadioGroupItem value="single_box" id="single_box" data-testid="radio-packaging-single-box" />
-                          <Label htmlFor="single_box" className="cursor-pointer text-sm">
-                            <div className="font-medium">1구박스</div>
-                            <div className="text-xs text-muted-foreground">+500원</div>
-                          </Label>
+                {/* Step 2: 쿠키 선택 (포장방법 선택 후에만 활성화) */}
+                {packaging ? (
+                  <div className="space-y-3">
+                    <h4 className="font-medium text-sm text-center text-green-600">✓ 포장방법 선택완료! 이제 쿠키를 골라주세요</h4>
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+                      {cookieTypes.map((type) => (
+                        <div key={type} className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
+                          <div className="flex items-center gap-2">
+                            <Checkbox
+                              id={`cookie-${type}`}
+                              checked={(regularCookies[type] || 0) > 0}
+                              onCheckedChange={(checked) => {
+                                updateRegularCookie(type, checked ? 1 : 0);
+                              }}
+                              data-testid={`checkbox-cookie-${type}`}
+                            />
+                            <Label htmlFor={`cookie-${type}`} className="text-sm font-medium">{type}</Label>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              className="w-7 h-7 rounded-full p-0 text-xs"
+                              onClick={() => updateRegularCookie(type, (regularCookies[type] || 0) - 1)}
+                              data-testid={`button-decrease-${type}`}
+                            >
+                              -
+                            </Button>
+                            <span className="w-8 text-center text-sm font-medium" data-testid={`quantity-${type}`}>
+                              {regularCookies[type] || 0}
+                            </span>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              className="w-7 h-7 rounded-full p-0 text-xs"
+                              onClick={() => updateRegularCookie(type, (regularCookies[type] || 0) + 1)}
+                              data-testid={`button-increase-${type}`}
+                            >
+                              +
+                            </Button>
+                          </div>
                         </div>
-                        
-                        <div className="flex items-center space-x-2 p-2 bg-card rounded hover:bg-muted/50 transition-colors">
-                          <RadioGroupItem value="plastic_wrap" id="plastic_wrap" data-testid="radio-packaging-plastic-wrap" />
-                          <Label htmlFor="plastic_wrap" className="cursor-pointer text-sm">
-                            <div className="font-medium">비닐탭포장</div>
-                            <div className="text-xs text-muted-foreground">+500원</div>
-                          </Label>
-                        </div>
-                        
-                        <div className="flex items-center space-x-2 p-2 bg-card rounded hover:bg-muted/50 transition-colors">
-                          <RadioGroupItem value="oil_paper" id="oil_paper" data-testid="radio-packaging-oil-paper" />
-                          <Label htmlFor="oil_paper" className="cursor-pointer text-sm">
-                            <div className="font-medium">유산지</div>
-                            <div className="text-xs text-muted-foreground">무료</div>
-                          </Label>
-                        </div>
-                      </div>
-                    </RadioGroup>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <p className="text-sm">👆 먼저 위에서 포장방법을 선택해주세요</p>
                   </div>
                 )}
               </CollapsibleContent>
