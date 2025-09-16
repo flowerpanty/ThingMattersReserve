@@ -1,5 +1,5 @@
-// EmailService.ts (SendGrid API 버전)
-import { MailService } from '@sendgrid/mail'
+// EmailService.ts (Brevo API 버전)
+import Brevo from '@getbrevo/brevo'
 import { type OrderData } from '@shared/schema'
 
 function parseFrom(fromEnv: string) {
@@ -12,34 +12,34 @@ function parseFrom(fromEnv: string) {
 }
 
 export class EmailService {
-  private mailService: MailService
+  private api: Brevo.TransactionalEmailsApi
   private sender: { email: string; name?: string }
 
   constructor() {
-    const apiKey = process.env.SENDGRID_API_KEY
+    const apiKey = process.env.BREVO_API_KEY
     const from = process.env.MAIL_FROM
     if (!apiKey || !from) {
-      throw new Error('SENDGRID_API_KEY 또는 MAIL_FROM이 설정되어 있지 않습니다.')
+      throw new Error('BREVO_API_KEY 또는 MAIL_FROM이 설정되어 있지 않습니다.')
     }
 
-    this.mailService = new MailService()
-    this.mailService.setApiKey(apiKey)
+    this.api = new Brevo.TransactionalEmailsApi()
+    this.api.setApiKey(Brevo.TransactionalEmailsApiApiKeys.apiKey, apiKey)
 
     const { email, name } = parseFrom(from)
     this.sender = { email, name: name || undefined }
 
-    console.log('이메일 서비스 초기화(SendGrid API) 완료')
+    console.log('이메일 서비스 초기화(Brevo API) 완료')
   }
 
   async sendQuote(orderData: OrderData, quoteBuffer: Buffer): Promise<void> {
     const today = new Date().toISOString().split('T')[0]
     const xlsxBase64 = quoteBuffer.toString('base64')
 
-    const customerEmail = {
-      to: orderData.customerContact,
-      from: { email: this.sender.email, name: this.sender.name || 'nothingmatters' },
+    const customerReq: Brevo.SendSmtpEmail = {
+      to: [{ email: orderData.customerContact }],
+      sender: this.sender,
       subject: `[nothingmatters] ${orderData.customerName}님의 쿠키 주문 견적서`,
-      html: `
+      htmlContent: `
         <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
           <div style="text-align: center; margin-bottom: 30px;">
             <h1 style="color: #4F46E5; font-size: 24px; margin: 0; font-weight: 800;">nothingmatters</h1>
@@ -67,19 +67,17 @@ export class EmailService {
           </div>
         </div>
       `,
-      attachments: [{
-        filename: `nothingmatters_견적서_${orderData.customerName}_${today}.xlsx`,
-        content: xlsxBase64,
-        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-        disposition: 'attachment'
-      }]
+      attachment: [{
+        name: `nothingmatters_견적서_${orderData.customerName}_${today}.xlsx`,
+        content: xlsxBase64, // base64
+      }],
     }
 
-    const ownerEmail = {
-      to: 'betterbetters@kakao.com',
-      from: { email: this.sender.email, name: this.sender.name || 'nothingmatters' },
+    const ownerReq: Brevo.SendSmtpEmail = {
+      to: [{ email: 'betterbetters@kakao.com' }],
+      sender: this.sender,
       subject: `[주문 알림] ${orderData.customerName}님의 새로운 쿠키 주문`,
-      html: `
+      htmlContent: `
         <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
           <div style="text-align: center; margin-bottom: 30px;">
             <h1 style="color: #4F46E5; font-size: 24px; margin: 0; font-weight: 800;">nothingmatters</h1>
@@ -99,23 +97,21 @@ export class EmailService {
           </div>
         </div>
       `,
-      attachments: [{
-        filename: `주문알림_${orderData.customerName}_${today}.xlsx`,
+      attachment: [{
+        name: `주문알림_${orderData.customerName}_${today}.xlsx`,
         content: xlsxBase64,
-        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-        disposition: 'attachment'
-      }]
+      }],
     }
 
     try {
-      console.log('견적서 이메일 전송(SendGrid)...')
+      console.log('견적서 이메일 전송(Brevo)...')
       await Promise.all([
-        this.mailService.send(customerEmail),
-        this.mailService.send(ownerEmail),
+        this.api.sendTransacEmail(customerReq),
+        this.api.sendTransacEmail(ownerReq),
       ])
-      console.log('✅ SendGrid 전송 완료')
+      console.log('✅ Brevo 전송 완료')
     } catch (e: any) {
-      console.error('❌ SendGrid 오류:', e?.response?.body || e?.message || e)
+      console.error('❌ Brevo 오류:', e?.response?.body || e?.message || e)
       // 401: API 키 문제 / 403: 발신자 미인증 / 400: 수신자 이메일 형식 오류 등이 흔해요.
     }
   }
