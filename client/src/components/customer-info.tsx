@@ -5,10 +5,11 @@ import { Label } from "@/components/ui/label";
 interface CustomerInfoProps {
   customerName: string;
   customerContact: string;
+  customerPhone?: string;
   onUpdate: (field: string, value: string) => void;
 }
 
-export function CustomerInfo({ customerName, customerContact, onUpdate }: CustomerInfoProps) {
+export function CustomerInfo({ customerName, customerContact, customerPhone, onUpdate }: CustomerInfoProps) {
   return (
     <Card className="card-shadow">
       <CardContent className="p-6">
@@ -17,7 +18,7 @@ export function CustomerInfo({ customerName, customerContact, onUpdate }: Custom
           고객 정보
         </h2>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
             <Label htmlFor="customerName" className="block text-sm font-medium text-foreground mb-2">
               이름 *
@@ -47,6 +48,21 @@ export function CustomerInfo({ customerName, customerContact, onUpdate }: Custom
               placeholder="example@email.com"
               className="w-full px-4 py-3 rounded-lg border border-input bg-background focus:ring-2 focus:ring-ring focus:border-ring transition-colors"
               data-testid="input-customer-contact"
+            />
+          </div>
+          
+          <div>
+            <Label htmlFor="customerPhone" className="block text-sm font-medium text-foreground mb-2">
+              핸드폰번호
+            </Label>
+            <Input
+              id="customerPhone"
+              type="tel"
+              value={customerPhone || ''}
+              onChange={(e) => onUpdate('customerPhone', e.target.value)}
+              placeholder="010-1234-5678"
+              className="w-full px-4 py-3 rounded-lg border border-input bg-background focus:ring-2 focus:ring-ring focus:border-ring transition-colors"
+              data-testid="input-customer-phone"
             />
           </div>
         </div>

@@ -42,6 +42,7 @@ export default function OrderForm() {
           <CustomerInfo 
             customerName={formData.customerName}
             customerContact={formData.customerContact}
+            customerPhone={formData.customerPhone}
             onUpdate={(field, value) => updateFormData(field, value)}
           />
 

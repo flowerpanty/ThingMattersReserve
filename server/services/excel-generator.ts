@@ -74,7 +74,7 @@ export class ExcelGenerator {
       worksheet.getCell(2, col).style = leftAlignStyle;
     }
     worksheet.mergeCells('A2:D2');
-    worksheet.getCell('A2').value = `고객명: ${orderData.customerName} | 연락처: ${orderData.customerContact}`;
+    worksheet.getCell('A2').value = `고객명: ${orderData.customerName} | 이메일: ${orderData.customerContact} | 핸드폰: ${orderData.customerPhone || ''}`.trim();
     worksheet.getRow(2).height = 28;
 
     // 3. 수령 방법과 날짜
@@ -84,8 +84,15 @@ export class ExcelGenerator {
     }
     worksheet.mergeCells('A3:D3');
     const deliveryMethodText = orderData.deliveryMethod === 'pickup' ? '매장 픽업' : '퀵 배송';
-    worksheet.getCell('A3').value = `수령 방법: ${deliveryMethodText} | 수령 희망일: ${orderData.deliveryDate}`;
-    worksheet.getRow(3).height = 28;
+    let deliveryText = `수령 방법: ${deliveryMethodText} | 수령 희망일: ${orderData.deliveryDate}`;
+    
+    // 퀵배송 시 주소 추가
+    if (orderData.deliveryMethod === 'quick' && orderData.deliveryAddress) {
+      deliveryText += `\n배송 주소: ${orderData.deliveryAddress}`;
+    }
+    
+    worksheet.getCell('A3').value = deliveryText;
+    worksheet.getRow(3).height = orderData.deliveryMethod === 'quick' && orderData.deliveryAddress ? 45 : 28;
 
     // 4. 빈 줄
     worksheet.getRow(4).height = 10;
@@ -323,6 +330,20 @@ export class ExcelGenerator {
         currentRow++;
       }
     }
+    
+    // 배송비 (퀵배송인 경우)
+    if (orderData.deliveryMethod === 'quick') {
+      worksheet.getCell(currentRow, 1).value = '배송비';
+      worksheet.getCell(currentRow, 1).style = cellStyle;
+      worksheet.getCell(currentRow, 2).value = '';
+      worksheet.getCell(currentRow, 2).style = cellStyle;
+      worksheet.getCell(currentRow, 3).value = '';
+      worksheet.getCell(currentRow, 3).style = priceStyle;
+      worksheet.getCell(currentRow, 4).value = '';
+      worksheet.getCell(currentRow, 4).style = priceStyle;
+      worksheet.getRow(currentRow).height = 35;
+      currentRow++;
+    }
 
     // 7. 전체 합계
     currentRow += 1;
@@ -489,7 +510,7 @@ export class ExcelGenerator {
       worksheet.getCell(currentRow, col).style = accountStyle;
     }
     worksheet.mergeCells(`A${currentRow}:D${currentRow}`);
-    worksheet.getCell(currentRow, 1).value = '입금 계좌: 830501042047336 국민은행 (낫띵메터스)';
+    worksheet.getCell(currentRow, 1).value = '입금 계좌: 83050104204736 국민은행 (낫띵메터스)';
     worksheet.getRow(currentRow).height = 35;
     currentRow++;
     

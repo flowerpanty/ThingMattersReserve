@@ -7,6 +7,7 @@ import { orderDataSchema, type OrderData } from '@shared/schema';
 const initialFormData: OrderData = {
   customerName: '',
   customerContact: '',
+  customerPhone: '',
   deliveryDate: '',
   deliveryMethod: 'pickup',
   deliveryAddress: '',
