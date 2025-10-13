@@ -79,7 +79,7 @@ export const drinkTypes = [
 
 export const cookiePrices = {
   regular: 4500, // 일반 쿠키 기본 가격
-  brownie: 7000, // 브라우니쿠키 기본 가격 (곰돌이, 토끼, 호랑이)
+  brownie: 7800, // 브라우니쿠키 기본 가격 (곰돌이, 토끼, 호랑이)
   fortune: 17000, // 행운쿠키 (박스당)
   airplane: 22000, // 비행기샌드쿠키 (박스당)
   twoPackSet: 10500, // 2구 패키지
@@ -90,7 +90,7 @@ export const cookiePrices = {
     oil_paper: 0, // 유산지 (무료)
   },
   brownieOptions: {
-    birthdayBear: 500, // 생일곰 추가 비용 (+500원, 총 7,500원)
+    birthdayBear: 500, // 생일곰 추가 비용 (+500원, 총 8,300원)
     customSticker: 15000,
     heartMessage: 500,
   }
