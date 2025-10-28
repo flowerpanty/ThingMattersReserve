@@ -29,6 +29,11 @@ interface ProductSelectionProps {
     selectedDrink: string;
     quantity: number;
   }[];
+  sconeSets: {
+    flavor: string;
+    quantity: number;
+    strawberryJam: boolean;
+  }[];
   fortuneCookie: number;
   airplaneSandwich: number;
   onUpdate: (field: string, value: any) => void;
@@ -40,6 +45,7 @@ export function ProductSelection({
   brownieCookieSets,
   twoPackSets,
   singleWithDrinkSets,
+  sconeSets,
   fortuneCookie, 
   airplaneSandwich, 
   onUpdate 
@@ -50,6 +56,7 @@ export function ProductSelection({
     twopack: false,
     singledrink: false,
     brownie: false,
+    scone: false,
     fortune: false,
     airplane: false
   });
@@ -110,6 +117,22 @@ export function ProductSelection({
     const newSets = [...singleWithDrinkSets];
     newSets[index] = { ...newSets[index], [field]: value };
     onUpdate('singleWithDrinkSets', newSets);
+  };
+
+  // 스콘 세트 관리
+  const addSconeSet = () => {
+    onUpdate('sconeSets', [...(sconeSets || []), { flavor: 'chocolate', quantity: 1, strawberryJam: false }]);
+  };
+
+  const removeSconeSet = (index: number) => {
+    const newSets = (sconeSets || []).filter((_, i) => i !== index);
+    onUpdate('sconeSets', newSets);
+  };
+
+  const updateSconeSet = (index: number, field: string, value: any) => {
+    const newSets = [...(sconeSets || [])];
+    newSets[index] = { ...newSets[index], [field]: value };
+    onUpdate('sconeSets', newSets);
   };
 
   const toggleCookieInTwoPackSet = (setIndex: number, cookieType: string) => {
@@ -234,9 +257,14 @@ export function ProductSelection({
                             >
                               -
                             </Button>
-                            <span className="w-8 text-center text-sm font-medium" data-testid={`quantity-${type}`}>
-                              {regularCookies[type] || 0}
-                            </span>
+                            <Input
+                              type="number"
+                              min={0}
+                              value={regularCookies[type] || 0}
+                              onChange={(e) => updateRegularCookie(type, Math.max(0, parseInt(e.target.value) || 0))}
+                              className="w-16 h-7 text-center text-sm"
+                              data-testid={`input-quantity-${type}`}
+                            />
                             <Button
                               type="button"
                               variant="outline"
@@ -301,9 +329,14 @@ export function ProductSelection({
                             >
                               -
                             </Button>
-                            <span className="w-8 text-center text-sm font-medium" data-testid={`quantity-twopack-${index}`}>
-                              {set.quantity || 1}
-                            </span>
+                            <Input
+                              type="number"
+                              min={1}
+                              value={set.quantity || 1}
+                              onChange={(e) => updateTwoPackSet(index, 'quantity', Math.max(1, parseInt(e.target.value) || 1))}
+                              className="w-16 h-7 text-center text-sm"
+                              data-testid={`input-quantity-twopack-${index}`}
+                            />
                             <Button
                               type="button"
                               variant="outline"
@@ -423,9 +456,14 @@ export function ProductSelection({
                             >
                               -
                             </Button>
-                            <span className="w-8 text-center text-sm font-medium" data-testid={`quantity-single-drink-${index}`}>
-                              {set.quantity || 1}
-                            </span>
+                            <Input
+                              type="number"
+                              min={1}
+                              value={set.quantity || 1}
+                              onChange={(e) => updateSingleWithDrinkSet(index, 'quantity', Math.max(1, parseInt(e.target.value) || 1))}
+                              className="w-16 h-7 text-center text-sm"
+                              data-testid={`input-quantity-single-drink-${index}`}
+                            />
                             <Button
                               type="button"
                               variant="outline"
@@ -546,9 +584,14 @@ export function ProductSelection({
                           >
                             -
                           </Button>
-                          <span className="w-8 text-center text-sm font-medium" data-testid={`quantity-brownie-${index}`}>
-                            {set.quantity}
-                          </span>
+                          <Input
+                            type="number"
+                            min={1}
+                            value={set.quantity}
+                            onChange={(e) => updateBrownieCookieSet(index, 'quantity', Math.max(1, parseInt(e.target.value) || 1))}
+                            className="w-16 h-7 text-center text-sm"
+                            data-testid={`input-quantity-brownie-${index}`}
+                          />
                           <Button
                             type="button"
                             variant="outline"
@@ -722,9 +765,14 @@ export function ProductSelection({
                     >
                       -
                     </Button>
-                    <span className="w-8 text-center text-sm font-medium" data-testid="quantity-fortune">
-                      {fortuneCookie}
-                    </span>
+                    <Input
+                      type="number"
+                      min={0}
+                      value={fortuneCookie}
+                      onChange={(e) => onUpdate('fortuneCookie', Math.max(0, parseInt(e.target.value) || 0))}
+                      className="w-16 h-7 text-center text-sm"
+                      data-testid="input-quantity-fortune"
+                    />
                     <Button
                       type="button"
                       variant="outline"
@@ -787,9 +835,14 @@ export function ProductSelection({
                     >
                       -
                     </Button>
-                    <span className="w-8 text-center text-sm font-medium" data-testid="quantity-airplane">
-                      {airplaneSandwich}
-                    </span>
+                    <Input
+                      type="number"
+                      min={0}
+                      value={airplaneSandwich}
+                      onChange={(e) => onUpdate('airplaneSandwich', Math.max(0, parseInt(e.target.value) || 0))}
+                      className="w-16 h-7 text-center text-sm"
+                      data-testid="input-quantity-airplane"
+                    />
                     <Button
                       type="button"
                       variant="outline"
@@ -801,6 +854,123 @@ export function ProductSelection({
                       +
                     </Button>
                   </div>
+                </div>
+              </CollapsibleContent>
+            </div>
+          </Collapsible>
+
+          {/* Scones */}
+          <Collapsible 
+            open={openSections.scone} 
+            onOpenChange={(open) => setOpenSections(prev => ({...prev, scone: open}))}
+          >
+            <div className="border border-border rounded-lg bg-card">
+              <CollapsibleTrigger className="w-full p-4 flex items-center justify-between hover:bg-muted/50 transition-colors">
+                <div className="flex items-center gap-3">
+                  <span className="text-2xl">🥐</span>
+                  <div className="text-left">
+                    <div className="font-semibold">스콘</div>
+                    <div className="text-sm text-muted-foreground">개당 5,000원 (딸기잼 +500원)</div>
+                  </div>
+                  {sconeSets && sconeSets.length > 0 && (
+                    <div className="bg-primary text-primary-foreground text-xs px-2 py-1 rounded-full ml-2">
+                      {sconeSets.reduce((sum, set) => sum + set.quantity, 0)}개
+                    </div>
+                  )}
+                </div>
+                {openSections.scone ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+              </CollapsibleTrigger>
+              
+              <CollapsibleContent className="px-4 pb-4">
+                <div className="space-y-3">
+                  {sconeSets && sconeSets.map((set, index) => (
+                    <div key={index} className="p-3 bg-muted/30 rounded-lg space-y-3">
+                      <div className="flex items-center justify-between">
+                        <h4 className="text-sm font-medium">스콘 세트 {index + 1}</h4>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => removeSconeSet(index)}
+                          className="text-destructive hover:text-destructive"
+                          data-testid={`button-remove-scone-${index}`}
+                        >
+                          삭제
+                        </Button>
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <Label className="text-sm">맛 선택</Label>
+                        <RadioGroup
+                          value={set.flavor}
+                          onValueChange={(value) => updateSconeSet(index, 'flavor', value)}
+                        >
+                          <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="chocolate" id={`scone-chocolate-${index}`} data-testid={`radio-scone-chocolate-${index}`} />
+                            <Label htmlFor={`scone-chocolate-${index}`} className="text-sm">초코맛</Label>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <RadioGroupItem value="gourmetButter" id={`scone-butter-${index}`} data-testid={`radio-scone-butter-${index}`} />
+                            <Label htmlFor={`scone-butter-${index}`} className="text-sm">고메버터맛</Label>
+                          </div>
+                        </RadioGroup>
+                      </div>
+                      
+                      <div className="flex items-center justify-between">
+                        <Label className="text-sm">수량</Label>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            className="w-7 h-7 rounded-full p-0 text-xs"
+                            onClick={() => updateSconeSet(index, 'quantity', Math.max(1, set.quantity - 1))}
+                            data-testid={`button-decrease-scone-${index}`}
+                          >
+                            -
+                          </Button>
+                          <Input
+                            type="number"
+                            min={1}
+                            value={set.quantity}
+                            onChange={(e) => updateSconeSet(index, 'quantity', Math.max(1, parseInt(e.target.value) || 1))}
+                            className="w-16 h-7 text-center text-sm"
+                            data-testid={`input-quantity-scone-${index}`}
+                          />
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            className="w-7 h-7 rounded-full p-0 text-xs"
+                            onClick={() => updateSconeSet(index, 'quantity', set.quantity + 1)}
+                            data-testid={`button-increase-scone-${index}`}
+                          >
+                            +
+                          </Button>
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-center space-x-2">
+                        <Checkbox
+                          id={`scone-jam-${index}`}
+                          checked={set.strawberryJam}
+                          onCheckedChange={(checked) => updateSconeSet(index, 'strawberryJam', checked)}
+                          data-testid={`checkbox-scone-jam-${index}`}
+                        />
+                        <Label htmlFor={`scone-jam-${index}`} className="text-sm">딸기잼 추가 (+500원/개)</Label>
+                      </div>
+                    </div>
+                  ))}
+                  
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={addSconeSet}
+                    className="w-full"
+                    data-testid="button-add-scone-set"
+                  >
+                    + 스콘 세트 추가
+                  </Button>
                 </div>
               </CollapsibleContent>
             </div>

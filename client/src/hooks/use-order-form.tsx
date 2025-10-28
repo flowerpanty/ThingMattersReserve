@@ -112,6 +112,7 @@ export function useOrderForm() {
         validatedData.brownieCookieSets.length > 0 ||
         validatedData.twoPackSets.length > 0 ||
         validatedData.singleWithDrinkSets.length > 0 ||
+        validatedData.sconeSets.length > 0 ||
         validatedData.fortuneCookie > 0 ||
         validatedData.airplaneSandwich > 0;
       

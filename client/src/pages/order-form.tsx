@@ -63,6 +63,7 @@ export default function OrderForm() {
             brownieCookieSets={formData.brownieCookieSets}
             twoPackSets={formData.twoPackSets}
             singleWithDrinkSets={formData.singleWithDrinkSets}
+            sconeSets={formData.sconeSets}
             fortuneCookie={formData.fortuneCookie}
             airplaneSandwich={formData.airplaneSandwich}
             onUpdate={updateFormData}
