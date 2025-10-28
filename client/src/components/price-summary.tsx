@@ -6,6 +6,7 @@ interface PricingSummary {
   singleWithDrink: number;
   packaging: number;
   brownie: number;
+  scone: number;
   fortune: number;
   airplane: number;
   total: number;
@@ -52,6 +53,12 @@ export function PriceSummary({ pricing }: PriceSummaryProps) {
             <div className="flex justify-between items-center py-2 border-b border-border/50">
               <span>브라우니쿠키</span>
               <span data-testid="price-brownie">{formatPrice(pricing.brownie)}</span>
+            </div>
+          )}
+          {pricing.scone > 0 && (
+            <div className="flex justify-between items-center py-2 border-b border-border/50">
+              <span>스콘</span>
+              <span data-testid="price-scone">{formatPrice(pricing.scone)}</span>
             </div>
           )}
           {pricing.fortune > 0 && (

@@ -20,6 +20,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       singleWithDrink: 0,
       packaging: 0,
       brownie: 0,
+      scone: 0,
       fortune: 0,
       airplane: 0,
     };
@@ -83,6 +84,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       totalPrice += breakdown.brownie;
+    }
+
+    // Scones (다중 세트)
+    if (orderData.sconeSets?.length > 0) {
+      breakdown.scone = 0;
+      
+      for (const set of orderData.sconeSets) {
+        // 기본 가격 (수량 * 개당 가격)
+        breakdown.scone += set.quantity * cookiePrices.scone;
+        
+        // 딸기잼 추가 (수량만큼)
+        if (set.strawberryJam) {
+          breakdown.scone += set.quantity * cookiePrices.sconeOptions.strawberryJam;
+        }
+      }
+      
+      totalPrice += breakdown.scone;
     }
 
     // Fortune cookies (박스당)

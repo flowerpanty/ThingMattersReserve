@@ -16,6 +16,7 @@ const initialFormData: OrderData = {
   brownieCookieSets: [],
   twoPackSets: [],
   singleWithDrinkSets: [],
+  sconeSets: [],
   fortuneCookie: 0,
   airplaneSandwich: 0,
 };
@@ -26,6 +27,7 @@ const initialPricing = {
   singleWithDrink: 0,
   packaging: 0,
   brownie: 0,
+  scone: 0,
   fortune: 0,
   airplane: 0,
   total: 0,
@@ -50,6 +52,7 @@ export function useOrderForm() {
         singleWithDrink: data.breakdown.singleWithDrink || 0,
         packaging: data.breakdown.packaging || 0,
         brownie: data.breakdown.brownie || 0,
+        scone: data.breakdown.scone || 0,
         fortune: data.breakdown.fortune || 0,
         airplane: data.breakdown.airplane || 0,
         total: data.totalPrice,

@@ -261,6 +261,56 @@ export class ExcelGenerator {
       }
     }
     
+    // 스콘 (다중 세트 및 수량)
+    if (orderData.sconeSets?.length > 0) {
+      let totalSconeQuantity = 0;
+      let baseSconeAmount = 0;
+      let totalStrawberryJamQuantity = 0;
+      
+      orderData.sconeSets.forEach((set: any) => {
+        const quantity = set.quantity || 1;
+        
+        // 기본 스콘 수량 및 금액
+        totalSconeQuantity += quantity;
+        baseSconeAmount += quantity * cookiePrices.scone;
+        
+        // 딸기잼 추가 (수량만큼)
+        if (set.strawberryJam) {
+          totalStrawberryJamQuantity += quantity;
+        }
+      });
+      
+      // 기본 스콘
+      totalAmount += baseSconeAmount;
+      worksheet.getCell(currentRow, 1).value = '스콘';
+      worksheet.getCell(currentRow, 1).style = cellStyle;
+      worksheet.getCell(currentRow, 2).value = totalSconeQuantity;
+      worksheet.getCell(currentRow, 2).style = cellStyle;
+      worksheet.getCell(currentRow, 3).value = cookiePrices.scone;
+      worksheet.getCell(currentRow, 3).style = priceStyle;
+      worksheet.getCell(currentRow, 4).value = baseSconeAmount;
+      worksheet.getCell(currentRow, 4).style = priceStyle;
+      worksheet.getRow(currentRow).height = 35;
+      currentRow++;
+      
+      // 딸기잼 추가 옵션
+      if (totalStrawberryJamQuantity > 0) {
+        const strawberryJamAmount = totalStrawberryJamQuantity * cookiePrices.sconeOptions.strawberryJam;
+        totalAmount += strawberryJamAmount;
+        
+        worksheet.getCell(currentRow, 1).value = '└ 딸기잼 추가';
+        worksheet.getCell(currentRow, 1).style = cellStyle;
+        worksheet.getCell(currentRow, 2).value = totalStrawberryJamQuantity;
+        worksheet.getCell(currentRow, 2).style = cellStyle;
+        worksheet.getCell(currentRow, 3).value = cookiePrices.sconeOptions.strawberryJam;
+        worksheet.getCell(currentRow, 3).style = priceStyle;
+        worksheet.getCell(currentRow, 4).value = strawberryJamAmount;
+        worksheet.getCell(currentRow, 4).style = priceStyle;
+        worksheet.getRow(currentRow).height = 35;
+        currentRow++;
+      }
+    }
+    
     // 행운쿠키 (박스당)
     if (orderData.fortuneCookie > 0) {
       const amount = orderData.fortuneCookie * cookiePrices.fortune;
@@ -467,6 +517,29 @@ export class ExcelGenerator {
         }
         if (set.customTopper) {
           detailText += ', 커스텀토퍼';
+        }
+        
+        // 병합할 모든 셀에 먼저 테두리 적용
+        for (let col = 1; col <= 4; col++) {
+          worksheet.getCell(currentRow, col).style = leftAlignStyle;
+        }
+        worksheet.mergeCells(`A${currentRow}:D${currentRow}`);
+        worksheet.getCell(currentRow, 1).value = detailText;
+        worksheet.getRow(currentRow).height = 35;
+        currentRow++;
+      });
+    }
+    
+    // 스콘 상세
+    if (orderData.sconeSets?.length > 0) {
+      orderData.sconeSets.forEach((set: any, index: number) => {
+        let detailText = `• 스콘 세트 ${index + 1} (${set.quantity || 1}개)`;
+        if (set.flavor) {
+          const flavorText = set.flavor === 'chocolate' ? '초코맛' : '고메버터맛';
+          detailText += `: ${flavorText}`;
+        }
+        if (set.strawberryJam) {
+          detailText += ', 딸기잼 추가';
         }
         
         // 병합할 모든 셀에 먼저 테두리 적용

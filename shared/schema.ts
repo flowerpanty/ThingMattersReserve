@@ -47,6 +47,11 @@ export const orderDataSchema = z.object({
     selectedDrink: z.string(),
     quantity: z.number().min(1).default(1),
   })).default([]),
+  sconeSets: z.array(z.object({
+    flavor: z.enum(['chocolate', 'gourmetButter']),
+    quantity: z.number().min(1).default(1),
+    strawberryJam: z.boolean().default(false),
+  })).default([]),
   fortuneCookie: z.number().min(0).default(0), // 박스당
   airplaneSandwich: z.number().min(0).default(0), // 박스당
 });
@@ -80,7 +85,8 @@ export const drinkTypes = [
 export const cookiePrices = {
   regular: 4500, // 일반 쿠키 기본 가격
   brownie: 7800, // 브라우니쿠키 기본 가격 (곰돌이, 토끼, 호랑이)
-  fortune: 17000, // 행운쿠키 (박스당)
+  scone: 5000, // 스콘 기본 가격
+  fortune: 15000, // 행운쿠키 (박스당)
   airplane: 22000, // 비행기샌드쿠키 (박스당)
   twoPackSet: 10500, // 2구 패키지
   singleWithDrink: 11000, // 1구 + 음료
@@ -93,5 +99,8 @@ export const cookiePrices = {
     birthdayBear: 500, // 생일곰 추가 비용 (+500원, 총 8,300원)
     customSticker: 15000,
     heartMessage: 500,
+  },
+  sconeOptions: {
+    strawberryJam: 500, // 딸기잼 추가 (+500원)
   }
 } as const;
