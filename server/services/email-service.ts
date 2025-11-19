@@ -34,6 +34,36 @@ export class EmailService {
   async sendQuote(orderData: OrderData, quoteBuffer: Buffer): Promise<void> {
     const today = new Date().toISOString().split('T')[0]
     const xlsxBase64 = quoteBuffer.toString('base64')
+    
+    // 제품 요약 생성
+    const productSummary: string[] = [];
+    const regularCookieQuantity = Object.values(orderData.regularCookies || {}).reduce((sum, qty) => sum + qty, 0);
+    
+    if (regularCookieQuantity > 0) {
+      productSummary.push(`일반쿠키 ${regularCookieQuantity}개`);
+    }
+    if (orderData.twoPackSets?.length > 0) {
+      const totalTwoPackQuantity = orderData.twoPackSets.reduce((sum, set) => sum + (set.quantity || 1), 0);
+      productSummary.push(`2구 패키지 ${totalTwoPackQuantity}개`);
+    }
+    if (orderData.singleWithDrinkSets?.length > 0) {
+      const totalSingleWithDrinkQuantity = orderData.singleWithDrinkSets.reduce((sum, set) => sum + (set.quantity || 1), 0);
+      productSummary.push(`1구+음료 ${totalSingleWithDrinkQuantity}개`);
+    }
+    if (orderData.brownieCookieSets?.length > 0) {
+      const totalBrownieQuantity = orderData.brownieCookieSets.reduce((sum, set) => sum + (set.quantity || 1), 0);
+      productSummary.push(`브라우니쿠키 ${totalBrownieQuantity}개`);
+    }
+    if (orderData.sconeSets?.length > 0) {
+      const totalSconeQuantity = orderData.sconeSets.reduce((sum, set) => sum + (set.quantity || 1), 0);
+      productSummary.push(`스콘 ${totalSconeQuantity}개`);
+    }
+    if (orderData.fortuneCookie > 0) {
+      productSummary.push(`행운쿠키 ${orderData.fortuneCookie}박스`);
+    }
+    if (orderData.airplaneSandwich > 0) {
+      productSummary.push(`비행기샌드쿠키 ${orderData.airplaneSandwich}박스`);
+    }
 
     const customerReq: Brevo.SendSmtpEmail = {
       to: [{ email: orderData.customerContact }],
@@ -73,6 +103,12 @@ export class EmailService {
       }],
     }
 
+    const deliveryMethodText = orderData.deliveryMethod === 'pickup' ? '매장 픽업' : '퀵 배송';
+    let deliveryInfo = deliveryMethodText;
+    if (orderData.deliveryMethod === 'quick' && orderData.deliveryAddress) {
+      deliveryInfo += ` (${orderData.deliveryAddress})`;
+    }
+
     const ownerReq: Brevo.SendSmtpEmail = {
       to: [
         { email: '4nimal@naver.com' },
@@ -91,8 +127,18 @@ export class EmailService {
             <h2 style="color: #333; margin-top: 0;">주문 정보</h2>
             <div style="background: white; padding: 15px; border-radius: 8px; margin: 15px 0;">
               <p><strong>고객명:</strong> ${orderData.customerName}</p>
-              <p><strong>연락처:</strong> ${orderData.customerContact}</p>
+              <p><strong>연락처:</strong> ${orderData.customerContact}${orderData.customerPhone ? ' / ' + orderData.customerPhone : ''}</p>
               <p><strong>수령 희망일:</strong> ${orderData.deliveryDate}</p>
+            </div>
+          </div>
+          <div style="background: #f0f9ff; padding: 20px; border-radius: 10px; margin-bottom: 20px; border-left: 4px solid #4F46E5;">
+            <h3 style="color: #333; margin-top: 0; font-size: 16px;">📋 주문 요약</h3>
+            <div style="background: white; padding: 15px; border-radius: 8px;">
+              <p style="margin: 8px 0;"><strong>이름:</strong> ${orderData.customerName}</p>
+              <p style="margin: 8px 0;"><strong>연락처:</strong> ${orderData.customerContact}${orderData.customerPhone ? ' / ' + orderData.customerPhone : ''}</p>
+              <p style="margin: 8px 0;"><strong>수령날짜:</strong> ${orderData.deliveryDate}</p>
+              <p style="margin: 8px 0;"><strong>수령방법:</strong> ${deliveryInfo}</p>
+              <p style="margin: 8px 0;"><strong>제품:</strong> ${productSummary.join(', ')}</p>
             </div>
           </div>
           <div style="border-top: 1px solid #eee; padding-top: 20px; text-align: center; color: #999; font-size: 12px;">
