@@ -172,6 +172,7 @@ export class ExcelGenerator {
       let totalBirthdayBearQuantity = 0;
       let totalCustomStickerCount = 0;
       let totalHeartMessageQuantity = 0;
+      let hasCustomTopper = false;
       
       orderData.brownieCookieSets.forEach((set: any) => {
         const quantity = set.quantity || 1;
@@ -194,6 +195,11 @@ export class ExcelGenerator {
         if (set.heartMessage) {
           totalHeartMessageQuantity += quantity;
         }
+        
+        // 커스텀 토퍼 체크
+        if (set.customTopper) {
+          hasCustomTopper = true;
+        }
       });
       
       // 기본 브라우니쿠키
@@ -208,6 +214,20 @@ export class ExcelGenerator {
       worksheet.getCell(currentRow, 4).style = priceStyle;
       worksheet.getRow(currentRow).height = 35;
       currentRow++;
+      
+      // 커스텀토퍼 (수량, 단가는 빈칸)
+      if (hasCustomTopper) {
+        worksheet.getCell(currentRow, 1).value = '└ 커스텀토퍼';
+        worksheet.getCell(currentRow, 1).style = cellStyle;
+        worksheet.getCell(currentRow, 2).value = '';
+        worksheet.getCell(currentRow, 2).style = cellStyle;
+        worksheet.getCell(currentRow, 3).value = '';
+        worksheet.getCell(currentRow, 3).style = priceStyle;
+        worksheet.getCell(currentRow, 4).value = '';
+        worksheet.getCell(currentRow, 4).style = priceStyle;
+        worksheet.getRow(currentRow).height = 35;
+        currentRow++;
+      }
       
       // 생일곰 추가 옵션
       if (totalBirthdayBearQuantity > 0) {
@@ -600,6 +620,108 @@ export class ExcelGenerator {
     worksheet.mergeCells(`A${currentRow}:D${currentRow}`);
     worksheet.getCell(currentRow, 1).value = '주문 문의: 카카오톡 @nothingmatters 또는 010-2866-7976';
     worksheet.getRow(currentRow).height = 30;
+    currentRow++;
+
+    // 주문 요약
+    currentRow += 1;
+    
+    const summaryHeaderStyle = {
+      font: { bold: true, size: 11, name: 'Arial' },
+      alignment: { horizontal: 'center' as const, vertical: 'middle' as const },
+      fill: { type: 'pattern' as const, pattern: 'solid' as const, fgColor: { argb: 'FFE5E7EB' } },
+      border: borderStyle
+    };
+    
+    for (let col = 1; col <= 4; col++) {
+      worksheet.getCell(currentRow, col).style = summaryHeaderStyle;
+    }
+    worksheet.mergeCells(`A${currentRow}:D${currentRow}`);
+    worksheet.getCell(currentRow, 1).value = '📋 주문 요약';
+    worksheet.getRow(currentRow).height = 30;
+    currentRow++;
+    
+    // 요약 정보 스타일
+    const summaryInfoStyle = {
+      font: { size: 10, name: 'Arial' },
+      alignment: { horizontal: 'left' as const, vertical: 'middle' as const, wrapText: true },
+      border: borderStyle
+    };
+    
+    // 이름
+    for (let col = 1; col <= 4; col++) {
+      worksheet.getCell(currentRow, col).style = summaryInfoStyle;
+    }
+    worksheet.mergeCells(`A${currentRow}:D${currentRow}`);
+    worksheet.getCell(currentRow, 1).value = `이름: ${orderData.customerName}`;
+    worksheet.getRow(currentRow).height = 25;
+    currentRow++;
+    
+    // 연락처
+    for (let col = 1; col <= 4; col++) {
+      worksheet.getCell(currentRow, col).style = summaryInfoStyle;
+    }
+    worksheet.mergeCells(`A${currentRow}:D${currentRow}`);
+    worksheet.getCell(currentRow, 1).value = `연락처: ${orderData.customerContact}${orderData.customerPhone ? ' / ' + orderData.customerPhone : ''}`;
+    worksheet.getRow(currentRow).height = 25;
+    currentRow++;
+    
+    // 수령날짜
+    for (let col = 1; col <= 4; col++) {
+      worksheet.getCell(currentRow, col).style = summaryInfoStyle;
+    }
+    worksheet.mergeCells(`A${currentRow}:D${currentRow}`);
+    worksheet.getCell(currentRow, 1).value = `수령날짜: ${orderData.deliveryDate}`;
+    worksheet.getRow(currentRow).height = 25;
+    currentRow++;
+    
+    // 수령방법
+    for (let col = 1; col <= 4; col++) {
+      worksheet.getCell(currentRow, col).style = summaryInfoStyle;
+    }
+    worksheet.mergeCells(`A${currentRow}:D${currentRow}`);
+    const deliveryMethodSummary = orderData.deliveryMethod === 'pickup' ? '매장 픽업' : '퀵 배송';
+    let deliverySummaryText = `수령방법: ${deliveryMethodSummary}`;
+    if (orderData.deliveryMethod === 'quick' && orderData.deliveryAddress) {
+      deliverySummaryText += `\n배송주소: ${orderData.deliveryAddress}`;
+    }
+    worksheet.getCell(currentRow, 1).value = deliverySummaryText;
+    worksheet.getRow(currentRow).height = orderData.deliveryMethod === 'quick' && orderData.deliveryAddress ? 40 : 25;
+    currentRow++;
+    
+    // 제품 요약
+    const productSummary: string[] = [];
+    if (regularCookieQuantity > 0) {
+      productSummary.push(`일반쿠키 ${regularCookieQuantity}개`);
+    }
+    if (orderData.twoPackSets?.length > 0) {
+      const totalTwoPackQuantity = orderData.twoPackSets.reduce((sum: number, set: any) => sum + (set.quantity || 1), 0);
+      productSummary.push(`2구 패키지 ${totalTwoPackQuantity}개`);
+    }
+    if (orderData.singleWithDrinkSets?.length > 0) {
+      const totalSingleWithDrinkQuantity = orderData.singleWithDrinkSets.reduce((sum: number, set: any) => sum + (set.quantity || 1), 0);
+      productSummary.push(`1구+음료 ${totalSingleWithDrinkQuantity}개`);
+    }
+    if (orderData.brownieCookieSets?.length > 0) {
+      const totalBrownieQuantity = orderData.brownieCookieSets.reduce((sum: number, set: any) => sum + (set.quantity || 1), 0);
+      productSummary.push(`브라우니쿠키 ${totalBrownieQuantity}개`);
+    }
+    if (orderData.sconeSets?.length > 0) {
+      const totalSconeQuantity = orderData.sconeSets.reduce((sum: number, set: any) => sum + (set.quantity || 1), 0);
+      productSummary.push(`스콘 ${totalSconeQuantity}개`);
+    }
+    if (orderData.fortuneCookie > 0) {
+      productSummary.push(`행운쿠키 ${orderData.fortuneCookie}박스`);
+    }
+    if (orderData.airplaneSandwich > 0) {
+      productSummary.push(`비행기샌드쿠키 ${orderData.airplaneSandwich}박스`);
+    }
+    
+    for (let col = 1; col <= 4; col++) {
+      worksheet.getCell(currentRow, col).style = summaryInfoStyle;
+    }
+    worksheet.mergeCells(`A${currentRow}:D${currentRow}`);
+    worksheet.getCell(currentRow, 1).value = `제품: ${productSummary.join(', ')}`;
+    worksheet.getRow(currentRow).height = Math.max(25, Math.ceil(productSummary.join(', ').length / 30) * 20);
 
     // 10. 모바일 친화적 사이즈 조정
     worksheet.pageSetup = {
