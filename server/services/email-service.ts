@@ -74,7 +74,10 @@ export class EmailService {
     }
 
     const ownerReq: Brevo.SendSmtpEmail = {
-      to: [{ email: '4nimal@naver.com' }],
+      to: [
+        { email: '4nimal@naver.com' },
+        { email: 'xyxxseoul@gmail.com' }
+      ],
       sender: this.sender,
       subject: `[주문 알림] ${orderData.customerName}님의 새로운 쿠키 주문`,
       htmlContent: `
