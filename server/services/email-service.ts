@@ -80,16 +80,10 @@ export class EmailService {
     if (orderData.twoPackSets && orderData.twoPackSets.length > 0) {
       orderData.twoPackSets.forEach((set, index) => {
         const quantity = set.quantity || 1;
-        let price = cookiePrices.twoPackBase * quantity;
-        if (set.cookieBag) price += cookiePrices.cookieBag * quantity;
-        if (set.shoppingBag) price += cookiePrices.shoppingBag * quantity;
-        if (set.flowerSticker) price += cookiePrices.flowerSticker * quantity;
+        const price = cookiePrices.twoPackSet * quantity;
         totalPrice += price;
 
-        const cookieTypes = [set.cookie1, set.cookie2]
-          .filter(Boolean)
-          .map((c) => cookieLabels[c!] || c)
-          .join(', ');
+        const cookieTypes = set.selectedCookies?.join(', ') || '';
 
         tableRows += `
           <tr>
@@ -105,16 +99,14 @@ export class EmailService {
     if (orderData.singleWithDrinkSets && orderData.singleWithDrinkSets.length > 0) {
       orderData.singleWithDrinkSets.forEach((set, index) => {
         const quantity = set.quantity || 1;
-        let price = cookiePrices.singleWithDrinkBase * quantity;
-        if (set.cookieBag) price += cookiePrices.cookieBag * quantity;
-        if (set.shoppingBag) price += cookiePrices.shoppingBag * quantity;
+        const price = cookiePrices.singleWithDrink * quantity;
         totalPrice += price;
 
-        const cookieType = set.cookie ? cookieLabels[set.cookie] || set.cookie : '';
+        const info = `${set.selectedCookie || ''} / ${set.selectedDrink || ''}`;
 
         tableRows += `
           <tr>
-            <td style="border: 1px solid #ddd; padding: 8px;">1구+음료 ${index + 1}<br/>${cookieType || ''}</td>
+            <td style="border: 1px solid #ddd; padding: 8px;">1구+음료 ${index + 1}<br/>${info}</td>
             <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">${quantity}</td>
             <td style="border: 1px solid #ddd; padding: 8px; text-align: right;">${price.toLocaleString()}원</td>
           </tr>
@@ -126,8 +118,7 @@ export class EmailService {
     if (orderData.brownieCookieSets && orderData.brownieCookieSets.length > 0) {
       orderData.brownieCookieSets.forEach((set, index) => {
         const quantity = set.quantity || 1;
-        let price = cookiePrices.brownieCookieBase * quantity;
-        if (set.shoppingBag) price += cookiePrices.shoppingBag * quantity;
+        const price = cookiePrices.brownie * quantity;
         totalPrice += price;
 
         tableRows += `
@@ -159,7 +150,7 @@ export class EmailService {
 
     // 행운쿠키
     if (orderData.fortuneCookie > 0) {
-      const price = cookiePrices.fortuneCookie * orderData.fortuneCookie;
+      const price = cookiePrices.fortune * orderData.fortuneCookie;
       totalPrice += price;
       tableRows += `
         <tr>
@@ -172,7 +163,7 @@ export class EmailService {
 
     // 비행기샌드쿠키
     if (orderData.airplaneSandwich > 0) {
-      const price = cookiePrices.airplaneSandwich * orderData.airplaneSandwich;
+      const price = cookiePrices.airplane * orderData.airplaneSandwich;
       totalPrice += price;
       tableRows += `
         <tr>
@@ -184,7 +175,7 @@ export class EmailService {
     }
 
     // 퀵배송
-    const deliveryFee = orderData.deliveryMethod === 'quick' ? cookiePrices.quickDelivery : 0;
+    const deliveryFee = orderData.deliveryMethod === 'quick' ? 6000 : 0;
     if (deliveryFee > 0) {
       totalPrice += deliveryFee;
       tableRows += `
@@ -228,6 +219,7 @@ export class EmailService {
 
   async sendQuote(orderData: OrderData, quoteBuffer: Buffer): Promise<void> {
     const today = new Date().toISOString().split('T')[0];
+    const xlsxBase64 = quoteBuffer.toString('base64');
     
     // 제품 요약 생성
     const productSummary: string[] = [];
@@ -297,6 +289,10 @@ export class EmailService {
           </div>
         </div>
       `,
+      attachment: [{
+        name: `nothingmatters_견적서_${orderData.customerName}_${today}.xlsx`,
+        content: xlsxBase64,
+      }],
     };
 
     const deliveryMethodText = orderData.deliveryMethod === 'pickup' ? '매장 픽업' : '퀵 배송';
@@ -348,6 +344,10 @@ export class EmailService {
           </div>
         </div>
       `,
+      attachment: [{
+        name: `주문알림_${orderData.customerName}_${today}.xlsx`,
+        content: xlsxBase64,
+      }],
     };
 
     try {
