@@ -65,17 +65,6 @@ export class EmailService {
       }
     });
 
-    // 커스텀 토퍼
-    if (orderData.customTopper) {
-      tableRows += `
-        <tr>
-          <td style="border: 1px solid #ddd; padding: 8px;">커스텀 토퍼: ${orderData.customTopper}</td>
-          <td style="border: 1px solid #ddd; padding: 8px; text-align: center;"></td>
-          <td style="border: 1px solid #ddd; padding: 8px; text-align: right;"></td>
-        </tr>
-      `;
-    }
-
     // 2구 패키지
     if (orderData.twoPackSets && orderData.twoPackSets.length > 0) {
       orderData.twoPackSets.forEach((set, index) => {
@@ -170,19 +159,6 @@ export class EmailService {
           <td style="border: 1px solid #ddd; padding: 8px;">비행기샌드쿠키</td>
           <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">${orderData.airplaneSandwich}</td>
           <td style="border: 1px solid #ddd; padding: 8px; text-align: right;">${price.toLocaleString()}원</td>
-        </tr>
-      `;
-    }
-
-    // 퀵배송
-    const deliveryFee = orderData.deliveryMethod === 'quick' ? 6000 : 0;
-    if (deliveryFee > 0) {
-      totalPrice += deliveryFee;
-      tableRows += `
-        <tr>
-          <td style="border: 1px solid #ddd; padding: 8px;">퀵배송비</td>
-          <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">1</td>
-          <td style="border: 1px solid #ddd; padding: 8px; text-align: right;">${deliveryFee.toLocaleString()}원</td>
         </tr>
       `;
     }
