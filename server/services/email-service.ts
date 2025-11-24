@@ -48,93 +48,74 @@ export class EmailService {
     let tableRows = '';
     let totalPrice = 0;
 
-    // 일반쿠키
-    const regularCookies = orderData.regularCookies || {};
-    Object.entries(regularCookies).forEach(([key, quantity]) => {
-      if (quantity > 0) {
-        const label = cookieLabels[key] || key;
-        const price = cookiePrices.regular * quantity;
-        totalPrice += price;
-        tableRows += `
-          <tr>
-            <td style="border: 1px solid #ddd; padding: 8px;">${label}</td>
-            <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">${quantity}</td>
-            <td style="border: 1px solid #ddd; padding: 8px; text-align: right;">${price.toLocaleString()}원</td>
-          </tr>
-        `;
-      }
-    });
-
-    // 2구 패키지
-    if (orderData.twoPackSets && orderData.twoPackSets.length > 0) {
-      orderData.twoPackSets.forEach((set, index) => {
-        const quantity = set.quantity || 1;
-        const price = cookiePrices.twoPackSet * quantity;
-        totalPrice += price;
-
-        const cookieTypes = set.selectedCookies?.join(', ') || '';
-
-        tableRows += `
-          <tr>
-            <td style="border: 1px solid #ddd; padding: 8px;">2구 패키지 ${index + 1}<br/>${cookieTypes || ''}</td>
-            <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">${quantity}</td>
-            <td style="border: 1px solid #ddd; padding: 8px; text-align: right;">${price.toLocaleString()}원</td>
-          </tr>
-        `;
-      });
+    // 일반쿠키 - 총 수량으로 통합
+    const regularCookieQuantity = Object.values(orderData.regularCookies || {}).reduce((sum, qty) => sum + qty, 0);
+    if (regularCookieQuantity > 0) {
+      const amount = regularCookieQuantity * cookiePrices.regular;
+      totalPrice += amount;
+      tableRows += `
+        <tr>
+          <td style="border: 1px solid #ddd; padding: 8px;">일반쿠키</td>
+          <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">${regularCookieQuantity}</td>
+          <td style="border: 1px solid #ddd; padding: 8px; text-align: right;">${amount.toLocaleString()}원</td>
+        </tr>
+      `;
     }
 
-    // 1구+음료 패키지
-    if (orderData.singleWithDrinkSets && orderData.singleWithDrinkSets.length > 0) {
-      orderData.singleWithDrinkSets.forEach((set, index) => {
-        const quantity = set.quantity || 1;
-        const price = cookiePrices.singleWithDrink * quantity;
-        totalPrice += price;
-
-        const info = `${set.selectedCookie || ''} / ${set.selectedDrink || ''}`;
-
-        tableRows += `
-          <tr>
-            <td style="border: 1px solid #ddd; padding: 8px;">1구+음료 ${index + 1}<br/>${info}</td>
-            <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">${quantity}</td>
-            <td style="border: 1px solid #ddd; padding: 8px; text-align: right;">${price.toLocaleString()}원</td>
-          </tr>
-        `;
-      });
+    // 2구 패키지 - 총 수량으로 통합
+    if (orderData.twoPackSets?.length > 0) {
+      const totalTwoPackQuantity = orderData.twoPackSets.reduce((sum, set) => sum + (set.quantity || 1), 0);
+      const amount = totalTwoPackQuantity * cookiePrices.twoPackSet;
+      totalPrice += amount;
+      tableRows += `
+        <tr>
+          <td style="border: 1px solid #ddd; padding: 8px;">2구 패키지</td>
+          <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">${totalTwoPackQuantity}</td>
+          <td style="border: 1px solid #ddd; padding: 8px; text-align: right;">${amount.toLocaleString()}원</td>
+        </tr>
+      `;
     }
 
-    // 브라우니쿠키
-    if (orderData.brownieCookieSets && orderData.brownieCookieSets.length > 0) {
-      orderData.brownieCookieSets.forEach((set, index) => {
-        const quantity = set.quantity || 1;
-        const price = cookiePrices.brownie * quantity;
-        totalPrice += price;
-
-        tableRows += `
-          <tr>
-            <td style="border: 1px solid #ddd; padding: 8px;">브라우니쿠키 ${index + 1}</td>
-            <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">${quantity}</td>
-            <td style="border: 1px solid #ddd; padding: 8px; text-align: right;">${price.toLocaleString()}원</td>
-          </tr>
-        `;
-      });
+    // 1구+음료 - 총 수량으로 통합
+    if (orderData.singleWithDrinkSets?.length > 0) {
+      const totalSingleWithDrinkQuantity = orderData.singleWithDrinkSets.reduce((sum, set) => sum + (set.quantity || 1), 0);
+      const amount = totalSingleWithDrinkQuantity * cookiePrices.singleWithDrink;
+      totalPrice += amount;
+      tableRows += `
+        <tr>
+          <td style="border: 1px solid #ddd; padding: 8px;">1구 + 음료</td>
+          <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">${totalSingleWithDrinkQuantity}</td>
+          <td style="border: 1px solid #ddd; padding: 8px; text-align: right;">${amount.toLocaleString()}원</td>
+        </tr>
+      `;
     }
 
-    // 스콘
-    if (orderData.sconeSets && orderData.sconeSets.length > 0) {
-      orderData.sconeSets.forEach((set, index) => {
-        const quantity = set.quantity || 1;
-        const price = cookiePrices.scone * quantity;
-        totalPrice += price;
+    // 브라우니쿠키 - 총 수량으로 통합
+    if (orderData.brownieCookieSets?.length > 0) {
+      const totalBrownieQuantity = orderData.brownieCookieSets.reduce((sum, set) => sum + (set.quantity || 1), 0);
+      const amount = totalBrownieQuantity * cookiePrices.brownie;
+      totalPrice += amount;
+      tableRows += `
+        <tr>
+          <td style="border: 1px solid #ddd; padding: 8px;">브라우니쿠키</td>
+          <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">${totalBrownieQuantity}</td>
+          <td style="border: 1px solid #ddd; padding: 8px; text-align: right;">${amount.toLocaleString()}원</td>
+        </tr>
+      `;
+    }
 
-        tableRows += `
-          <tr>
-            <td style="border: 1px solid #ddd; padding: 8px;">스콘 ${index + 1}<br/>${set.flavor || ''}</td>
-            <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">${quantity}</td>
-            <td style="border: 1px solid #ddd; padding: 8px; text-align: right;">${price.toLocaleString()}원</td>
-          </tr>
-        `;
-      });
+    // 스콘 - 총 수량으로 통합
+    if (orderData.sconeSets?.length > 0) {
+      const totalSconeQuantity = orderData.sconeSets.reduce((sum, set) => sum + (set.quantity || 1), 0);
+      const amount = totalSconeQuantity * cookiePrices.scone;
+      totalPrice += amount;
+      tableRows += `
+        <tr>
+          <td style="border: 1px solid #ddd; padding: 8px;">스콘</td>
+          <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">${totalSconeQuantity}</td>
+          <td style="border: 1px solid #ddd; padding: 8px; text-align: right;">${amount.toLocaleString()}원</td>
+        </tr>
+      `;
     }
 
     // 행운쿠키
