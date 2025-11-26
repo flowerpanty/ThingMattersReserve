@@ -168,16 +168,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const quoteBuffer = await excelGenerator.generateQuote(orderData);
       console.log('Excel 견적서 생성 완료, 크기:', quoteBuffer.length, 'bytes');
 
-      // Send email (안전하게 처리)
+      // Send email via Gmail API (Replit 통합)
       try {
-        console.log('이메일 전송 시작...');
-        if (process.env.BREVO_API_KEY && process.env.MAIL_FROM) {
-          const emailService = new EmailService();
-          await emailService.sendQuote(orderData, quoteBuffer);
-          console.log('이메일 전송 완료');
-        } else {
-          console.log('⚠️ 이메일 환경 변수가 설정되지 않아 이메일을 전송하지 않습니다.');
-        }
+        console.log('이메일 전송 시작 (Gmail API)...');
+        const emailService = new EmailService();
+        await emailService.sendQuote(orderData, quoteBuffer);
+        console.log('이메일 전송 완료');
       } catch (emailError) {
         console.error('이메일 전송 실패:', emailError);
         // 이메일 전송 실패해도 견적서 생성은 계속 진행
