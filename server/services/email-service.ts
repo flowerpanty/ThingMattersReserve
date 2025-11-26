@@ -1,50 +1,52 @@
-// EmailService.ts (Brevo API 버전)
-import Brevo from '@getbrevo/brevo'
-import { type OrderData, cookiePrices } from '@shared/schema'
+// EmailService.ts (SendGrid API 버전 - Replit 통합 사용)
+import sgMail from '@sendgrid/mail';
+import { type OrderData, cookiePrices } from '@shared/schema';
 
-function parseFrom(fromEnv: string) {
-  // "Brand <email@domain>" 형식/일반 이메일 모두 지원
-  const m = fromEnv.match(/^(.*)<\s*([^>]+)\s*>$/)
-  return {
-    name: (m?.[1] ?? '').trim().replace(/^"|"$/g, ''),
-    email: (m?.[2] ?? fromEnv).trim(),
+let connectionSettings: any;
+
+async function getCredentials() {
+  const hostname = process.env.REPLIT_CONNECTORS_HOSTNAME;
+  const xReplitToken = process.env.REPL_IDENTITY 
+    ? 'repl ' + process.env.REPL_IDENTITY 
+    : process.env.WEB_REPL_RENEWAL 
+    ? 'depl ' + process.env.WEB_REPL_RENEWAL 
+    : null;
+
+  if (!xReplitToken) {
+    throw new Error('X_REPLIT_TOKEN not found for repl/depl');
   }
+
+  connectionSettings = await fetch(
+    'https://' + hostname + '/api/v2/connection?include_secrets=true&connector_names=sendgrid',
+    {
+      headers: {
+        'Accept': 'application/json',
+        'X_REPLIT_TOKEN': xReplitToken
+      }
+    }
+  ).then(res => res.json()).then(data => data.items?.[0]);
+
+  if (!connectionSettings || (!connectionSettings.settings.api_key || !connectionSettings.settings.from_email)) {
+    throw new Error('SendGrid not connected');
+  }
+  return { apiKey: connectionSettings.settings.api_key, email: connectionSettings.settings.from_email };
+}
+
+async function getUncachableSendGridClient() {
+  const { apiKey, email } = await getCredentials();
+  sgMail.setApiKey(apiKey);
+  return {
+    client: sgMail,
+    fromEmail: email
+  };
 }
 
 export class EmailService {
-  private api: Brevo.TransactionalEmailsApi
-  private sender: { email: string; name?: string }
-
   constructor() {
-    const apiKey = process.env.BREVO_API_KEY
-    const from = process.env.MAIL_FROM
-    if (!apiKey || !from) {
-      throw new Error('BREVO_API_KEY 또는 MAIL_FROM이 설정되어 있지 않습니다.')
-    }
-
-    this.api = new Brevo.TransactionalEmailsApi()
-    this.api.setApiKey(Brevo.TransactionalEmailsApiApiKeys.apiKey, apiKey)
-
-    const { email, name } = parseFrom(from)
-    this.sender = { email, name: name || undefined }
-
-    console.log('이메일 서비스 초기화(Brevo API) 완료')
+    console.log('이메일 서비스 초기화(SendGrid API) 완료');
   }
 
   private generateQuoteHTML(orderData: OrderData): string {
-    const cookieLabels: Record<string, string> = {
-      bear: '곰돌이',
-      rabbit: '토끼',
-      cat: '고양이',
-      chick: '병아리',
-      dinosaur: '공룡',
-      fire: '불',
-      cloud: '구름',
-      star: '별',
-      heart: '하트',
-      flower: '꽃',
-    };
-
     let tableRows = '';
     let totalPrice = 0;
 
@@ -209,113 +211,117 @@ export class EmailService {
     }
 
     const quoteHTML = this.generateQuoteHTML(orderData);
-
-    const customerReq: Brevo.SendSmtpEmail = {
-      to: [{ email: orderData.customerContact }],
-      sender: this.sender,
-      subject: `[nothingmatters] ${orderData.customerName}님의 쿠키 주문 견적서`,
-      htmlContent: `
-        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-          <div style="text-align: center; margin-bottom: 30px;">
-            <h1 style="color: #4F46E5; font-size: 24px; margin: 0; font-weight: 800;">nothingmatters</h1>
-            <p style="color: #666; margin: 5px 0;">귀여운 수제 쿠키 예약 주문</p>
-          </div>
-          <div style="background: #f9f9f9; padding: 20px; border-radius: 10px; margin-bottom: 20px;">
-            <h2 style="color: #333; margin-top: 0;">안녕하세요, ${orderData.customerName}님!</h2>
-            <p style="color: #666; line-height: 1.6;">
-              nothingmatters 쿠키 주문 견적서입니다.<br>
-              견적서를 확인하신 후, 아래 카카오톡 채널로 상담을 진행해주세요.
-            </p>
-            <div style="background: white; padding: 15px; border-radius: 8px; margin: 15px 0;">
-              <strong>수령 희망일:</strong> ${orderData.deliveryDate}
-            </div>
-          </div>
-          
-          <h3 style="color: #333; margin: 20px 0 10px 0;">📋 견적서</h3>
-          ${quoteHTML}
-          
-          <div style="text-align: center; margin: 30px 0;">
-            <a href="https://pf.kakao.com/_QdCaK" 
-               style="display: inline-block; background: #FEE500; color: black; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: bold;">
-              💬 카카오톡으로 상담하기
-            </a>
-          </div>
-          <div style="border-top: 1px solid #eee; padding-top: 20px; text-align: center; color: #999; font-size: 12px;">
-            <p>※ 본 견적서는 예약 확정이 아닙니다. 카카오톡 상담 후 최종 확정됩니다.</p>
-            <p>※ 당일 예약은 불가능하며, 최소 1일 전 주문 부탁드립니다.</p>
-          </div>
-        </div>
-      `,
-      attachment: [{
-        name: `nothingmatters_견적서_${orderData.customerName}_${today}.xlsx`,
-        content: xlsxBase64,
-      }],
-    };
-
     const deliveryMethodText = orderData.deliveryMethod === 'pickup' ? '매장 픽업' : '퀵 배송';
     let deliveryInfo = deliveryMethodText;
     if (orderData.deliveryMethod === 'quick' && orderData.deliveryAddress) {
       deliveryInfo += ` (${orderData.deliveryAddress})`;
     }
 
-    const ownerReq: Brevo.SendSmtpEmail = {
-      to: [
-        { email: '4nimal@naver.com' },
-        { email: 'xyxxseoul@gmail.com' },
-        { email: 'flowerpanty@gmail.com' }
-      ],
-      sender: this.sender,
-      subject: `[주문 알림] ${orderData.customerName}님의 새로운 쿠키 주문`,
-      htmlContent: `
-        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-          <div style="text-align: center; margin-bottom: 30px;">
-            <h1 style="color: #4F46E5; font-size: 24px; margin: 0; font-weight: 800;">nothingmatters</h1>
-            <p style="color: #666; margin: 5px 0;">새로운 주문이 들어왔습니다!</p>
-          </div>
-          <div style="background: #f9f9f9; padding: 20px; border-radius: 10px; margin-bottom: 20px;">
-            <h2 style="color: #333; margin-top: 0;">주문 정보</h2>
-            <div style="background: white; padding: 15px; border-radius: 8px; margin: 15px 0;">
-              <p><strong>고객명:</strong> ${orderData.customerName}</p>
-              <p><strong>연락처:</strong> ${orderData.customerContact}${orderData.customerPhone ? ' / ' + orderData.customerPhone : ''}</p>
-              <p><strong>수령 희망일:</strong> ${orderData.deliveryDate}</p>
-            </div>
-          </div>
-          
-          <h3 style="color: #333; margin: 20px 0 10px 0;">📋 견적서</h3>
-          ${quoteHTML}
-          
-          <div style="background: #f0f9ff; padding: 20px; border-radius: 10px; margin: 20px 0; border-left: 4px solid #4F46E5;">
-            <h3 style="color: #333; margin-top: 0; font-size: 16px;">📋 주문 요약</h3>
-            <div style="background: white; padding: 15px; border-radius: 8px;">
-              <p style="margin: 8px 0;"><strong>이름:</strong> ${orderData.customerName}</p>
-              <p style="margin: 8px 0;"><strong>연락처:</strong> ${orderData.customerContact}${orderData.customerPhone ? ' / ' + orderData.customerPhone : ''}</p>
-              <p style="margin: 8px 0;"><strong>수령날짜:</strong> ${orderData.deliveryDate}</p>
-              <p style="margin: 8px 0;"><strong>수령방법:</strong> ${deliveryInfo}</p>
-              <p style="margin: 8px 0;"><strong>제품:</strong> ${productSummary.join(', ')}</p>
-            </div>
-          </div>
-          
-          <div style="border-top: 1px solid #eee; padding-top: 20px; text-align: center; color: #999; font-size: 12px;">
-            <p>※ 고객에게는 견적서가 이미 전송되었습니다.</p>
-            <p>※ 카카오톡으로 상담을 진행해주세요.</p>
-          </div>
-        </div>
-      `,
-      attachment: [{
-        name: `주문알림_${orderData.customerName}_${today}.xlsx`,
-        content: xlsxBase64,
-      }],
-    };
-
     try {
-      console.log('견적서 이메일 전송(Brevo)...')
+      console.log('견적서 이메일 전송(SendGrid)...');
+      const { client, fromEmail } = await getUncachableSendGridClient();
+
+      // 고객용 이메일
+      const customerMsg = {
+        to: orderData.customerContact,
+        from: fromEmail,
+        subject: `[nothingmatters] ${orderData.customerName}님의 쿠키 주문 견적서`,
+        html: `
+          <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+            <div style="text-align: center; margin-bottom: 30px;">
+              <h1 style="color: #4F46E5; font-size: 24px; margin: 0; font-weight: 800;">nothingmatters</h1>
+              <p style="color: #666; margin: 5px 0;">귀여운 수제 쿠키 예약 주문</p>
+            </div>
+            <div style="background: #f9f9f9; padding: 20px; border-radius: 10px; margin-bottom: 20px;">
+              <h2 style="color: #333; margin-top: 0;">안녕하세요, ${orderData.customerName}님!</h2>
+              <p style="color: #666; line-height: 1.6;">
+                nothingmatters 쿠키 주문 견적서입니다.<br>
+                견적서를 확인하신 후, 아래 카카오톡 채널로 상담을 진행해주세요.
+              </p>
+              <div style="background: white; padding: 15px; border-radius: 8px; margin: 15px 0;">
+                <strong>수령 희망일:</strong> ${orderData.deliveryDate}
+              </div>
+            </div>
+            
+            <h3 style="color: #333; margin: 20px 0 10px 0;">📋 견적서</h3>
+            ${quoteHTML}
+            
+            <div style="text-align: center; margin: 30px 0;">
+              <a href="https://pf.kakao.com/_QdCaK" 
+                 style="display: inline-block; background: #FEE500; color: black; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: bold;">
+                💬 카카오톡으로 상담하기
+              </a>
+            </div>
+            <div style="border-top: 1px solid #eee; padding-top: 20px; text-align: center; color: #999; font-size: 12px;">
+              <p>※ 본 견적서는 예약 확정이 아닙니다. 카카오톡 상담 후 최종 확정됩니다.</p>
+              <p>※ 당일 예약은 불가능하며, 최소 1일 전 주문 부탁드립니다.</p>
+            </div>
+          </div>
+        `,
+        attachments: [{
+          filename: `nothingmatters_견적서_${orderData.customerName}_${today}.xlsx`,
+          content: xlsxBase64,
+          type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+          disposition: 'attachment'
+        }]
+      };
+
+      // 관리자용 이메일
+      const ownerMsg = {
+        to: ['4nimal@naver.com', 'xyxxseoul@gmail.com', 'flowerpanty@gmail.com'],
+        from: fromEmail,
+        subject: `[주문 알림] ${orderData.customerName}님의 새로운 쿠키 주문`,
+        html: `
+          <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+            <div style="text-align: center; margin-bottom: 30px;">
+              <h1 style="color: #4F46E5; font-size: 24px; margin: 0; font-weight: 800;">nothingmatters</h1>
+              <p style="color: #666; margin: 5px 0;">새로운 주문이 들어왔습니다!</p>
+            </div>
+            <div style="background: #f9f9f9; padding: 20px; border-radius: 10px; margin-bottom: 20px;">
+              <h2 style="color: #333; margin-top: 0;">주문 정보</h2>
+              <div style="background: white; padding: 15px; border-radius: 8px; margin: 15px 0;">
+                <p><strong>고객명:</strong> ${orderData.customerName}</p>
+                <p><strong>연락처:</strong> ${orderData.customerContact}${orderData.customerPhone ? ' / ' + orderData.customerPhone : ''}</p>
+                <p><strong>수령 희망일:</strong> ${orderData.deliveryDate}</p>
+              </div>
+            </div>
+            
+            <h3 style="color: #333; margin: 20px 0 10px 0;">📋 견적서</h3>
+            ${quoteHTML}
+            
+            <div style="background: #f0f9ff; padding: 20px; border-radius: 10px; margin: 20px 0; border-left: 4px solid #4F46E5;">
+              <h3 style="color: #333; margin-top: 0; font-size: 16px;">📋 주문 요약</h3>
+              <div style="background: white; padding: 15px; border-radius: 8px;">
+                <p style="margin: 8px 0;"><strong>이름:</strong> ${orderData.customerName}</p>
+                <p style="margin: 8px 0;"><strong>연락처:</strong> ${orderData.customerContact}${orderData.customerPhone ? ' / ' + orderData.customerPhone : ''}</p>
+                <p style="margin: 8px 0;"><strong>수령날짜:</strong> ${orderData.deliveryDate}</p>
+                <p style="margin: 8px 0;"><strong>수령방법:</strong> ${deliveryInfo}</p>
+                <p style="margin: 8px 0;"><strong>제품:</strong> ${productSummary.join(', ')}</p>
+              </div>
+            </div>
+            
+            <div style="border-top: 1px solid #eee; padding-top: 20px; text-align: center; color: #999; font-size: 12px;">
+              <p>※ 고객에게는 견적서가 이미 전송되었습니다.</p>
+              <p>※ 카카오톡으로 상담을 진행해주세요.</p>
+            </div>
+          </div>
+        `,
+        attachments: [{
+          filename: `주문알림_${orderData.customerName}_${today}.xlsx`,
+          content: xlsxBase64,
+          type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+          disposition: 'attachment'
+        }]
+      };
+
       await Promise.all([
-        this.api.sendTransacEmail(customerReq),
-        this.api.sendTransacEmail(ownerReq),
-      ])
-      console.log('✅ Brevo 전송 완료')
+        client.send(customerMsg),
+        client.send(ownerMsg),
+      ]);
+      console.log('✅ SendGrid 전송 완료');
     } catch (e: any) {
-      console.error('❌ Brevo 오류:', e?.response?.body || e?.message || e)
+      console.error('❌ SendGrid 오류:', e?.response?.body || e?.message || e);
+      throw e;
     }
   }
 }
