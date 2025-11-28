@@ -46,7 +46,17 @@ async function getUncachableGmailClient() {
     access_token: accessToken
   });
 
-  return google.gmail({ version: 'v1', auth: oauth2Client });
+  const gmail = google.gmail({ version: 'v1', auth: oauth2Client });
+  
+  // 연결된 Gmail 계정 정보 출력
+  try {
+    const profile = await gmail.users.getProfile({ userId: 'me' });
+    console.log('📧 Gmail 계정:', profile.data.emailAddress);
+  } catch (e) {
+    console.log('Gmail 프로필 확인 실패');
+  }
+  
+  return gmail;
 }
 
 function createEmailWithAttachment(
@@ -354,7 +364,7 @@ export class EmailService {
         xlsxBase64
       );
 
-      await Promise.all([
+      const [customerResult, ownerResult] = await Promise.all([
         gmail.users.messages.send({
           userId: 'me',
           requestBody: { raw: customerRaw }
@@ -366,6 +376,8 @@ export class EmailService {
       ]);
 
       console.log('✅ Gmail 전송 완료');
+      console.log('고객 이메일 결과:', JSON.stringify(customerResult.data, null, 2));
+      console.log('관리자 이메일 결과:', JSON.stringify(ownerResult.data, null, 2));
     } catch (e: any) {
       console.error('❌ Gmail 오류:', e?.response?.data || e?.message || e);
       throw e;
