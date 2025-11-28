@@ -144,148 +144,162 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Generate and send quote
+  // Generate and send quote
   app.post("/api/generate-quote", async (req, res) => {
     try {
       console.log('견적서 생성 요청 받음:', JSON.stringify(req.body, null, 2));
-      const orderData = orderDataSchema.parse(req.body);
       
-      // Validate email for sending quote
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(orderData.customerContact)) {
-        return res.status(400).json({ 
-          message: "견적서 전송을 위해 이메일 주소를 입력해주세요." 
+      // 타임아웃 설정 (30초)
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Request timeout')), 30000);
+      });
+
+      const processPromise = async () => {
+        const orderData = orderDataSchema.parse(req.body);
+        
+        // Validate email for sending quote
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(orderData.customerContact)) {
+          throw new Error("견적서 전송을 위해 올바른 이메일 주소를 입력해주세요.");
+        }
+
+        console.log('주문 데이터 파싱 성공:', orderData);
+
+        // Calculate total price
+        const { totalPrice } = calculatePrice(orderData);
+        console.log('총 금액 계산 완료:', totalPrice);
+
+        // Generate Excel quote
+        console.log('Excel 견적서 생성 시작...');
+        const quoteBuffer = await excelGenerator.generateQuote(orderData);
+        console.log('Excel 견적서 생성 완료, 크기:', quoteBuffer.length, 'bytes');
+
+        // Send email via Gmail API (Replit 통합)
+        try {
+          console.log('이메일 전송 시작...');
+          const emailService = new EmailService();
+          await emailService.sendQuote(orderData, quoteBuffer);
+          console.log('이메일 전송 완료');
+        } catch (emailError) {
+          console.error('이메일 전송 실패:', emailError);
+          // 이메일 전송 실패해도 견적서 생성은 계속 진행
+          // 단, 클라이언트에게 알림
+          console.log('이메일 전송 실패했으나 주문 처리는 계속 진행함');
+        }
+
+        // Save order to storage
+        const orderItems = [];
+        
+        // Add regular cookies
+        Object.entries(orderData.regularCookies || {}).forEach(([type, quantity]) => {
+          if (quantity > 0) {
+            orderItems.push({
+              type: 'regular' as const,
+              name: type,
+              quantity,
+              price: cookiePrices.regular,
+            });
+          }
         });
-      }
 
-      console.log('주문 데이터 파싱 성공:', orderData);
-
-      // Calculate total price
-      const { totalPrice } = calculatePrice(orderData);
-      console.log('총 금액 계산 완료:', totalPrice);
-
-      // Generate Excel quote
-      console.log('Excel 견적서 생성 시작...');
-      const quoteBuffer = await excelGenerator.generateQuote(orderData);
-      console.log('Excel 견적서 생성 완료, 크기:', quoteBuffer.length, 'bytes');
-
-      // Send email via Gmail API (Replit 통합)
-      try {
-        console.log('이메일 전송 시작 (Gmail API)...');
-        const emailService = new EmailService();
-        await emailService.sendQuote(orderData, quoteBuffer);
-        console.log('이메일 전송 완료');
-      } catch (emailError) {
-        console.error('이메일 전송 실패:', emailError);
-        // 이메일 전송 실패해도 견적서 생성은 계속 진행
-      }
-
-      // Save order to storage
-      const orderItems = [];
-      
-      // Add regular cookies
-      Object.entries(orderData.regularCookies || {}).forEach(([type, quantity]) => {
-        if (quantity > 0) {
-          orderItems.push({
-            type: 'regular' as const,
-            name: type,
-            quantity,
-            price: cookiePrices.regular,
+        // Add 2구 패키지 (다중 세트)
+        if (orderData.twoPackSets?.length > 0) {
+          orderData.twoPackSets.forEach((set, index) => {
+            orderItems.push({
+              type: 'twopack' as const,
+              name: `2구 패키지 세트 ${index + 1}`,
+              quantity: set.quantity || 1,
+              price: cookiePrices.twoPackSet,
+              options: {
+                selectedCookies: set.selectedCookies,
+              },
+            });
           });
         }
-      });
 
-      // Add 2구 패키지 (다중 세트)
-      if (orderData.twoPackSets?.length > 0) {
-        orderData.twoPackSets.forEach((set, index) => {
+        // Add 1구 + 음료 (다중 세트)
+        if (orderData.singleWithDrinkSets?.length > 0) {
+          orderData.singleWithDrinkSets.forEach((set, index) => {
+            orderItems.push({
+              type: 'singledrink' as const,
+              name: `1구 + 음료 세트 ${index + 1}`,
+              quantity: set.quantity || 1,
+              price: cookiePrices.singleWithDrink,
+              options: {
+                selectedCookie: set.selectedCookie,
+                selectedDrink: set.selectedDrink,
+              },
+            });
+          });
+        }
+
+        // Add brownie cookie sets (multiple sets)
+        if (orderData.brownieCookieSets?.length > 0) {
+          orderData.brownieCookieSets.forEach((set, index) => {
+            orderItems.push({
+              type: 'brownie' as const,
+              name: `브라우니쿠키 세트 ${index + 1}`,
+              quantity: set.quantity || 1,
+              price: cookiePrices.brownie,
+              options: {
+                shape: set.shape,
+                customSticker: set.customSticker,
+                heartMessage: set.heartMessage,
+                customTopper: set.customTopper,
+              },
+            });
+          });
+        }
+
+        // Add other products
+        if (orderData.fortuneCookie > 0) {
           orderItems.push({
-            type: 'twopack' as const,
-            name: `2구 패키지 세트 ${index + 1}`,
-            quantity: set.quantity || 1,
-            price: cookiePrices.twoPackSet,
-            options: {
-              selectedCookies: set.selectedCookies,
-            },
+            type: 'fortune' as const,
+            name: '행운쿠키',
+            quantity: orderData.fortuneCookie,
+            price: cookiePrices.fortune,
           });
-        });
-      }
+        }
 
-      // Add 1구 + 음료 (다중 세트)
-      if (orderData.singleWithDrinkSets?.length > 0) {
-        orderData.singleWithDrinkSets.forEach((set, index) => {
+        if (orderData.airplaneSandwich > 0) {
           orderItems.push({
-            type: 'singledrink' as const,
-            name: `1구 + 음료 세트 ${index + 1}`,
-            quantity: set.quantity || 1,
-            price: cookiePrices.singleWithDrink,
-            options: {
-              selectedCookie: set.selectedCookie,
-              selectedDrink: set.selectedDrink,
-            },
+            type: 'airplane' as const,
+            name: '비행기샌드쿠키',
+            quantity: orderData.airplaneSandwich,
+            price: cookiePrices.airplane,
           });
+        }
+
+        const order = await storage.createOrder({
+          customerName: orderData.customerName,
+          customerContact: orderData.customerContact,
+          deliveryDate: orderData.deliveryDate,
+          deliveryMethod: orderData.deliveryMethod,
+          orderItems,
+          totalPrice,
         });
-      }
 
-      // Add brownie cookie sets (multiple sets)
-      if (orderData.brownieCookieSets?.length > 0) {
-        orderData.brownieCookieSets.forEach((set, index) => {
-          orderItems.push({
-            type: 'brownie' as const,
-            name: `브라우니쿠키 세트 ${index + 1}`,
-            quantity: set.quantity || 1,
-            price: cookiePrices.brownie,
-            options: {
-              shape: set.shape,
-              customSticker: set.customSticker,
-              heartMessage: set.heartMessage,
-              customTopper: set.customTopper,
-            },
-          });
-        });
-      }
+        // 새 주문 푸시 알림 전송 (백그라운드에서 실행)
+        if (pushNotificationService.hasSubscriptions()) {
+          pushNotificationService.sendNewOrderNotification(orderData.customerName, order.id)
+            .then(() => {
+              console.log('✅ 새 주문 푸시 알림 전송 완료');
+            })
+            .catch((error) => {
+              console.error('❌ 푸시 알림 전송 실패:', error);
+            });
+        }
 
-      // Add other products
-      if (orderData.fortuneCookie > 0) {
-        orderItems.push({
-          type: 'fortune' as const,
-          name: '행운쿠키',
-          quantity: orderData.fortuneCookie,
-          price: cookiePrices.fortune,
-        });
-      }
+        return { 
+          message: "견적서가 이메일로 전송되었습니다!", 
+          orderId: order.id 
+        };
+      };
 
-      if (orderData.airplaneSandwich > 0) {
-        orderItems.push({
-          type: 'airplane' as const,
-          name: '비행기샌드쿠키',
-          quantity: orderData.airplaneSandwich,
-          price: cookiePrices.airplane,
-        });
-      }
+      // 타임아웃과 실제 로직 경쟁
+      const result = await Promise.race([processPromise(), timeoutPromise]);
+      res.json(result);
 
-      const order = await storage.createOrder({
-        customerName: orderData.customerName,
-        customerContact: orderData.customerContact,
-        deliveryDate: orderData.deliveryDate,
-        deliveryMethod: orderData.deliveryMethod,
-        orderItems,
-        totalPrice,
-      });
-
-      // 새 주문 푸시 알림 전송 (백그라운드에서 실행)
-      if (pushNotificationService.hasSubscriptions()) {
-        pushNotificationService.sendNewOrderNotification(orderData.customerName, order.id)
-          .then(() => {
-            console.log('✅ 새 주문 푸시 알림 전송 완료');
-          })
-          .catch((error) => {
-            console.error('❌ 푸시 알림 전송 실패:', error);
-          });
-      }
-
-      res.json({ 
-        message: "견적서가 이메일로 전송되었습니다!", 
-        orderId: order.id 
-      });
     } catch (error) {
       console.error('Quote generation error:', error);
       res.status(500).json({ 
