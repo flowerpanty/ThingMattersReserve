@@ -47,7 +47,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     // Packaging (개당 계산)
     if (orderData.packaging && orderData.packaging in cookiePrices.packaging) {
       const packagingPricePerItem = cookiePrices.packaging[orderData.packaging as keyof typeof cookiePrices.packaging];
-      
+
       // 1구박스와 비닐탭포장은 일반 쿠키 개수만큼 계산 (2구패키지와 1구+음료는 별도 포장)
       if (orderData.packaging === 'single_box' || orderData.packaging === 'plastic_wrap') {
         breakdown.packaging = regularCookieQuantity * packagingPricePerItem;
@@ -55,51 +55,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // 유산지는 전체 주문당 1번만
         breakdown.packaging = packagingPricePerItem;
       }
-      
+
       totalPrice += breakdown.packaging;
     }
 
     // Brownie cookies (다중 세트)
     if (orderData.brownieCookieSets?.length > 0) {
       breakdown.brownie = 0;
-      
+
       for (const set of orderData.brownieCookieSets) {
         // 기본 가격 (수량 * 개당 가격)
         breakdown.brownie += set.quantity * cookiePrices.brownie;
-        
+
         // 생일곰 추가 비용
         if (set.shape === 'birthdayBear') {
           breakdown.brownie += set.quantity * cookiePrices.brownieOptions.birthdayBear;
         }
-        
+
         // 커스텀 스티커 (세트당)
         if (set.customSticker) {
           breakdown.brownie += cookiePrices.brownieOptions.customSticker;
         }
-        
+
         // 하트 메시지 (수량만큼)
         if (set.heartMessage) {
           breakdown.brownie += set.quantity * cookiePrices.brownieOptions.heartMessage;
         }
       }
-      
+
       totalPrice += breakdown.brownie;
     }
 
     // Scones (다중 세트)
     if (orderData.sconeSets?.length > 0) {
       breakdown.scone = 0;
-      
+
       for (const set of orderData.sconeSets) {
         // 기본 가격 (수량 * 개당 가격)
         breakdown.scone += set.quantity * cookiePrices.scone;
-        
+
         // 딸기잼 추가 (수량만큼)
         if (set.strawberryJam) {
           breakdown.scone += set.quantity * cookiePrices.sconeOptions.strawberryJam;
         }
       }
-      
+
       totalPrice += breakdown.scone;
     }
 
@@ -123,7 +123,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const orders = await storage.getAllOrders();
       // Sort by creation date, newest first
-      const sortedOrders = orders.sort((a, b) => 
+      const sortedOrders = orders.sort((a, b) =>
         new Date(b.createdAt!).getTime() - new Date(a.createdAt!).getTime()
       );
       res.json(sortedOrders);
@@ -144,19 +144,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Generate and send quote
-  // Generate and send quote
   app.post("/api/generate-quote", async (req, res) => {
     try {
       console.log('견적서 생성 요청 받음:', JSON.stringify(req.body, null, 2));
-      
-      // 타임아웃 설정 (30초)
-      const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('Request timeout')), 30000);
-      });
 
       const processPromise = async () => {
         const orderData = orderDataSchema.parse(req.body);
-        
+
         // Validate email for sending quote
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         if (!emailRegex.test(orderData.customerContact)) {
@@ -174,22 +168,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const quoteBuffer = await excelGenerator.generateQuote(orderData);
         console.log('Excel 견적서 생성 완료, 크기:', quoteBuffer.length, 'bytes');
 
-        // Send email via Gmail API (Replit 통합)
-        try {
-          console.log('이메일 전송 시작...');
-          const emailService = new EmailService();
-          await emailService.sendQuote(orderData, quoteBuffer);
-          console.log('이메일 전송 완료');
-        } catch (emailError) {
-          console.error('이메일 전송 실패:', emailError);
-          // 이메일 전송 실패해도 견적서 생성은 계속 진행
-          // 단, 클라이언트에게 알림
-          console.log('이메일 전송 실패했으나 주문 처리는 계속 진행함');
-        }
+        // Send email via Gmail API (Replit 통합) - Background processing
+        console.log('이메일 전송 시작 (백그라운드)...');
+        const emailService = new EmailService();
+        // await 제거하여 비동기로 처리 (Fire-and-forget)
+        emailService.sendQuote(orderData, quoteBuffer)
+          .then(() => console.log('이메일 전송 완료'))
+          .catch((emailError) => {
+            console.error('이메일 전송 실패:', emailError);
+          });
 
         // Save order to storage
         const orderItems = [];
-        
+
         // Add regular cookies
         Object.entries(orderData.regularCookies || {}).forEach(([type, quantity]) => {
           if (quantity > 0) {
@@ -290,21 +281,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
             });
         }
 
-        return { 
-          message: "견적서가 이메일로 전송되었습니다!", 
-          orderId: order.id 
+        return {
+          message: "견적서가 이메일로 전송되었습니다!",
+          orderId: order.id
         };
       };
 
-      // 타임아웃과 실제 로직 경쟁
-      const result = await Promise.race([processPromise(), timeoutPromise]);
+      // 타임아웃 제거하고 바로 실행
+      const result = await processPromise();
       res.json(result);
 
     } catch (error) {
       console.error('Quote generation error:', error);
-      res.status(500).json({ 
+      res.status(500).json({
         message: "견적서 생성 중 오류가 발생했습니다. 다시 시도해주세요.",
-        error: error instanceof Error ? error.message : String(error) 
+        error: error instanceof Error ? error.message : String(error)
       });
     }
   });
@@ -313,19 +304,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/generate-kakao-message", async (req, res) => {
     try {
       const { orderId, messageType } = req.body;
-      
+
       if (!orderId) {
         return res.status(400).json({ message: "주문 ID가 필요합니다." });
       }
-      
+
       // Get order from storage
       const orders = await storage.getAllOrders();
       const order = orders.find(o => o.id === orderId);
-      
+
       if (!order) {
         return res.status(404).json({ message: "주문을 찾을 수 없습니다." });
       }
-      
+
       // Reconstruct order data for template generation
       const orderData = {
         customerName: order.customerName,
@@ -341,7 +332,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         fortuneCookie: 0,
         airplaneSandwich: 0,
       };
-      
+
       // Parse order items back to order data structure
       (order.orderItems as any[]).forEach((item: any) => {
         switch (item.type) {
@@ -385,9 +376,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
             break;
         }
       });
-      
+
       let message = '';
-      
+
       switch (messageType) {
         case 'order_confirm':
           message = kakaoTemplateService.generateOrderConfirmMessage(orderData, order.totalPrice);
@@ -401,13 +392,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         default:
           return res.status(400).json({ message: "올바른 메시지 타입을 선택해주세요." });
       }
-      
+
       res.json({ message, customerName: order.customerName });
     } catch (error) {
       console.error('Kakao message generation error:', error);
-      res.status(500).json({ 
+      res.status(500).json({
         message: "카카오톡 메시지 생성 중 오류가 발생했습니다.",
-        error: error instanceof Error ? error.message : String(error) 
+        error: error instanceof Error ? error.message : String(error)
       });
     }
   });
@@ -420,9 +411,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ success: true, message: '푸시 알림 구독이 등록되었습니다.' });
     } catch (error) {
       console.error('Push subscription error:', error);
-      res.status(500).json({ 
-        success: false, 
-        message: '푸시 알림 구독 등록에 실패했습니다.' 
+      res.status(500).json({
+        success: false,
+        message: '푸시 알림 구독 등록에 실패했습니다.'
       });
     }
   });
@@ -435,9 +426,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ success: true, message: '푸시 알림 구독이 해제되었습니다.' });
     } catch (error) {
       console.error('Push unsubscribe error:', error);
-      res.status(500).json({ 
-        success: false, 
-        message: '푸시 알림 구독 해제에 실패했습니다.' 
+      res.status(500).json({
+        success: false,
+        message: '푸시 알림 구독 해제에 실패했습니다.'
       });
     }
   });
@@ -446,16 +437,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/push/test', async (req, res) => {
     try {
       await pushNotificationService.sendTestNotification();
-      res.json({ 
-        success: true, 
+      res.json({
+        success: true,
         message: '테스트 알림이 전송되었습니다.',
         subscriberCount: pushNotificationService.getSubscriberCount()
       });
     } catch (error) {
       console.error('Test push notification error:', error);
-      res.status(500).json({ 
-        success: false, 
-        message: '테스트 알림 전송에 실패했습니다.' 
+      res.status(500).json({
+        success: false,
+        message: '테스트 알림 전송에 실패했습니다.'
       });
     }
   });
