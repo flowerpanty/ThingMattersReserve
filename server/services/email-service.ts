@@ -10,13 +10,13 @@ async function getAccessToken() {
   if (connectionSettings && connectionSettings.settings.expires_at && new Date(connectionSettings.settings.expires_at).getTime() > Date.now()) {
     return connectionSettings.settings.access_token;
   }
-  
+
   const hostname = process.env.REPLIT_CONNECTORS_HOSTNAME;
-  const xReplitToken = process.env.REPL_IDENTITY 
-    ? 'repl ' + process.env.REPL_IDENTITY 
-    : process.env.WEB_REPL_RENEWAL 
-    ? 'depl ' + process.env.WEB_REPL_RENEWAL 
-    : null;
+  const xReplitToken = process.env.REPL_IDENTITY
+    ? 'repl ' + process.env.REPL_IDENTITY
+    : process.env.WEB_REPL_RENEWAL
+      ? 'depl ' + process.env.WEB_REPL_RENEWAL
+      : null;
 
   if (!xReplitToken) {
     throw new Error('X_REPLIT_TOKEN not found for repl/depl');
@@ -60,7 +60,7 @@ function createEmailWithAttachment(
 ): string {
   const boundary = 'boundary_' + Date.now().toString(16);
   const toAddresses = Array.isArray(to) ? to.join(', ') : to;
-  
+
   const emailParts = [
     `To: ${toAddresses}`,
     `Subject: =?UTF-8?B?${Buffer.from(subject).toString('base64')}?=`,
@@ -104,7 +104,7 @@ export class EmailService {
 
   constructor() {
     this.emailMode = getEmailMode();
-    
+
     if (this.emailMode === 'smtp') {
       this.transporter = nodemailer.createTransport({
         service: 'gmail',
@@ -112,6 +112,9 @@ export class EmailService {
           user: process.env.GMAIL_USER,
           pass: process.env.GMAIL_APP_PASSWORD,
         },
+        connectionTimeout: 10000, // 10초
+        greetingTimeout: 10000, // 10초
+        socketTimeout: 10000, // 10초
       });
       console.log('📧 이메일 서비스 초기화 (Gmail SMTP)');
     } else if (this.emailMode === 'replit') {
@@ -253,11 +256,11 @@ export class EmailService {
 
   async sendQuote(orderData: OrderData, quoteBuffer: Buffer): Promise<void> {
     const today = new Date().toISOString().split('T')[0];
-    
+
     // 제품 요약 생성
     const productSummary: string[] = [];
     const regularCookieQuantity = Object.values(orderData.regularCookies || {}).reduce((sum, qty) => sum + qty, 0);
-    
+
     if (regularCookieQuantity > 0) {
       productSummary.push(`일반쿠키 ${regularCookieQuantity}개`);
     }
@@ -367,7 +370,7 @@ export class EmailService {
     if (this.emailMode === 'smtp' && this.transporter) {
       // Gmail SMTP로 전송
       console.log('📧 Gmail SMTP로 이메일 전송...');
-      
+
       await Promise.all([
         // 고객용 이메일
         this.transporter.sendMail({
@@ -394,7 +397,7 @@ export class EmailService {
       ]);
 
       console.log('✅ Gmail SMTP 전송 완료');
-      
+
     } else if (this.emailMode === 'replit') {
       // Replit Gmail 통합으로 전송
       console.log('📧 Replit Gmail 통합으로 이메일 전송...');
@@ -431,7 +434,7 @@ export class EmailService {
       console.log('✅ Replit Gmail 전송 완료');
       console.log('고객 이메일 결과:', JSON.stringify(customerResult.data, null, 2));
       console.log('관리자 이메일 결과:', JSON.stringify(ownerResult.data, null, 2));
-      
+
     } else {
       throw new Error('이메일 설정이 없습니다. GMAIL_USER와 GMAIL_APP_PASSWORD를 설정하세요.');
     }
