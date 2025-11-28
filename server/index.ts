@@ -1,4 +1,12 @@
-import "dotenv/config";
+// Load .env file in development only (Railway provides env vars directly)
+if (process.env.NODE_ENV !== "production") {
+  try {
+    require("dotenv/config");
+  } catch (e) {
+    console.log("dotenv not available, using system environment variables");
+  }
+}
+
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
