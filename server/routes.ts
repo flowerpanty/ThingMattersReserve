@@ -321,6 +321,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         regularCookies: {} as Record<string, number>,
         packaging: undefined as 'single_box' | 'plastic_wrap' | 'oil_paper' | undefined,
         brownieCookieSets: [] as Array<{ quantity: number, shape?: 'bear' | 'rabbit' | 'birthdayBear', customSticker: boolean, heartMessage?: string, customTopper: boolean }>,
+        sconeSets: [] as Array<{ quantity: number, flavor: 'chocolate' | 'gourmetButter', strawberryJam: boolean }>,
         twoPackSets: [] as Array<{ selectedCookies: string[], quantity: number }>,
         singleWithDrinkSets: [] as Array<{ selectedCookie: string, selectedDrink: string, quantity: number }>,
         fortuneCookie: 0,
@@ -360,6 +361,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
             break;
           case 'airplane':
             orderData.airplaneSandwich = item.quantity;
+            break;
+          case 'scone':
+            orderData.sconeSets.push({
+              quantity: item.quantity,
+              flavor: item.options?.flavor || 'chocolate',
+              strawberryJam: item.options?.strawberryJam || false,
+            });
             break;
         }
       });
