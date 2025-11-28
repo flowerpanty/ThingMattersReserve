@@ -1,22 +1,20 @@
-// EmailService.ts (Resend 사용)
-import { Resend } from 'resend';
+// EmailService.ts (SendGrid 사용)
+import sgMail from '@sendgrid/mail';
 import { type OrderData, cookiePrices } from '@shared/schema';
 
 export class EmailService {
-  private resend: Resend | null = null;
-
   constructor() {
-    const apiKey = process.env.RESEND_API_KEY;
+    const apiKey = process.env.SENDGRID_API_KEY;
 
     if (apiKey) {
-      this.resend = new Resend(apiKey);
-      console.log('📧 이메일 서비스 초기화 (Resend)');
+      sgMail.setApiKey(apiKey);
+      console.log('📧 이메일 서비스 초기화 (SendGrid)');
     } else {
-      console.log('⚠️ RESEND_API_KEY가 설정되지 않았습니다.');
+      console.log('⚠️ SENDGRID_API_KEY가 설정되지 않았습니다.');
     }
   }
 
-  // 이메일 HTML 생성 (기존 로직 유지)
+  // 이메일 HTML 생성
   private generateEmailHTML(orderData: OrderData): string {
     const regularCookieQuantity = Object.values(orderData.regularCookies || {}).reduce((sum: number, qty: any) => sum + (qty || 0), 0);
     const totalTwoPackQuantity = (orderData.twoPackSets || []).reduce((sum: number, set: any) => sum + (set.quantity || 0), 0);
@@ -78,49 +76,56 @@ export class EmailService {
   }
 
   async sendQuote(orderData: OrderData, quoteBuffer: Buffer): Promise<void> {
-    if (!this.resend) {
-      throw new Error('Resend가 초기화되지 않았습니다. RESEND_API_KEY를 확인하세요.');
+    if (!process.env.SENDGRID_API_KEY) {
+      throw new Error('SendGrid API 키가 설정되지 않았습니다. SENDGRID_API_KEY를 확인하세요.');
     }
 
-    console.log('📧 Resend로 이메일 전송...');
+    console.log('📧 SendGrid로 이메일 전송...');
 
     const html = this.generateEmailHTML(orderData);
     const fileName = `견적서_${orderData.customerName}_${new Date().toISOString().split('T')[0]}.xlsx`;
 
     try {
       // 고객에게 이메일 전송
-      await this.resend.emails.send({
-        from: 'onboarding@resend.dev', // Resend 검증된 도메인 (나중에 변경 가능)
+      await sgMail.send({
+        from: 'flowerpanty@gmail.com', // SendGrid에서 인증한 발신자 이메일
         to: orderData.customerContact,
         subject: `🍪 [띵매러] ${orderData.customerName}님의 주문 견적서`,
         html: html,
         attachments: [
           {
+            content: quoteBuffer.toString('base64'),
             filename: fileName,
-            content: quoteBuffer,
+            type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            disposition: 'attachment',
           },
         ],
       });
 
       console.log('✅ 고객 이메일 전송 완료:', orderData.customerContact);
 
-      // 관리자에게도 전송 (flowerpanty@gmail.com)
-      await this.resend.emails.send({
-        from: 'onboarding@resend.dev',
+      // 관리자에게도 전송
+      await sgMail.send({
+        from: 'flowerpanty@gmail.com',
         to: 'flowerpanty@gmail.com',
         subject: `[새 주문] ${orderData.customerName}님의 견적서 요청`,
         html: html,
         attachments: [
           {
+            content: quoteBuffer.toString('base64'),
             filename: fileName,
-            content: quoteBuffer,
+            type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            disposition: 'attachment',
           },
         ],
       });
 
       console.log('✅ 관리자 이메일 전송 완료');
-    } catch (error) {
-      console.error('❌ Resend 이메일 전송 실패:', error);
+    } catch (error: any) {
+      console.error('❌ SendGrid 이메일 전송 실패:', error);
+      if (error.response) {
+        console.error('SendGrid 에러 응답:', error.response.body);
+      }
       throw error;
     }
   }
