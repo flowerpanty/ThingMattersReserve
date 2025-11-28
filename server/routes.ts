@@ -170,12 +170,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         // Send email via Gmail API (Replit 통합) - Background processing
         console.log('이메일 전송 시작 (백그라운드)...');
+        console.log('환경 변수 확인 - GMAIL_USER:', process.env.GMAIL_USER ? '설정됨' : '없음');
+        console.log('환경 변수 확인 - GMAIL_APP_PASSWORD:', process.env.GMAIL_APP_PASSWORD ? '설정됨' : '없음');
+
         const emailService = new EmailService();
+
+        // 30초 timeout 추가
+        const emailTimeout = setTimeout(() => {
+          console.error('⏰ 이메일 전송 타임아웃 (30초 초과)');
+        }, 30000);
+
         // await 제거하여 비동기로 처리 (Fire-and-forget)
         emailService.sendQuote(orderData, quoteBuffer)
-          .then(() => console.log('이메일 전송 완료'))
+          .then(() => {
+            clearTimeout(emailTimeout);
+            console.log('✅ 이메일 전송 완료');
+          })
           .catch((emailError) => {
-            console.error('이메일 전송 실패:', emailError);
+            clearTimeout(emailTimeout);
+            console.error('❌ 이메일 전송 실패:', emailError);
+            console.error('에러 상세:', emailError.message);
+            if (emailError.stack) {
+              console.error('스택 트레이스:', emailError.stack);
+            }
           });
 
         // Save order to storage
