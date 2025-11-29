@@ -62,14 +62,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     // Brownie cookies (다중 세트)
     if (orderData.brownieCookieSets?.length > 0) {
       breakdown.brownie = 0;
+      console.log('🍪 브라우니쿠키 계산 시작:', orderData.brownieCookieSets);
 
       for (const set of orderData.brownieCookieSets) {
         // 기본 가격 (수량 * 개당 가격)
-        breakdown.brownie += set.quantity * cookiePrices.brownie;
+        const basePrice = set.quantity * cookiePrices.brownie;
+        breakdown.brownie += basePrice;
+        console.log(`  - 세트: 수량=${set.quantity}, 모양=${set.shape}, 기본가격=${basePrice}원`);
 
         // 생일곰 추가 비용
         if (set.shape === 'birthdayBear') {
-          breakdown.brownie += set.quantity * cookiePrices.brownieOptions.birthdayBear;
+          const birthdayBearPrice = set.quantity * cookiePrices.brownieOptions.birthdayBear;
+          breakdown.brownie += birthdayBearPrice;
+          console.log(`    ✓ 생일곰 추가: ${birthdayBearPrice}원 (${set.quantity}개 × 500원)`);
+        } else {
+          console.log(`    ✗ 생일곰 아님 (shape: ${set.shape})`);
         }
 
         // 커스텀 스티커 (세트당)
@@ -83,6 +90,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
+      console.log(`🍪 브라우니쿠키 총액: ${breakdown.brownie}원`);
       totalPrice += breakdown.brownie;
     }
 

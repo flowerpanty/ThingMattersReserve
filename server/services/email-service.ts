@@ -53,6 +53,23 @@ export class EmailService {
     total += (orderData.fortuneCookie || 0) * cookiePrices.fortune;
     total += (orderData.airplaneSandwich || 0) * cookiePrices.airplane;
 
+    // 포장비
+    if (orderData.packaging && orderData.packaging in cookiePrices.packaging) {
+      const packagingPricePerItem = cookiePrices.packaging[orderData.packaging as keyof typeof cookiePrices.packaging];
+
+      if (orderData.packaging === 'single_box' || orderData.packaging === 'plastic_wrap') {
+        // 1구박스와 비닐탭포장은 일반 쿠키 개수만큼 계산
+        let regularCookieQuantity = 0;
+        Object.values(orderData.regularCookies || {}).forEach((qty: any) => {
+          regularCookieQuantity += (qty || 0);
+        });
+        total += regularCookieQuantity * packagingPricePerItem;
+      } else {
+        // 유산지는 전체 주문당 1번만
+        total += packagingPricePerItem;
+      }
+    }
+
     return total;
   }
 
@@ -150,6 +167,31 @@ export class EmailService {
     // 비행기샌드쿠키
     if (orderData.airplaneSandwich > 0) {
       items.push({ name: '비행기샌드쿠키', quantity: orderData.airplaneSandwich, price: orderData.airplaneSandwich * cookiePrices.airplane });
+    }
+
+    // 포장비
+    if (orderData.packaging && orderData.packaging in cookiePrices.packaging) {
+      const packagingPricePerItem = cookiePrices.packaging[orderData.packaging as keyof typeof cookiePrices.packaging];
+      const packagingName = orderData.packaging === 'single_box' ? '1구박스' :
+        orderData.packaging === 'plastic_wrap' ? '비닐탭포장' : '유산지';
+
+      let packagingQuantity = 0;
+      let totalPackagingPrice = 0;
+
+      if (orderData.packaging === 'single_box' || orderData.packaging === 'plastic_wrap') {
+        // 1구박스와 비닐탭포장은 일반 쿠키 개수만큼 계산
+        const regularCookieQty = Object.values(orderData.regularCookies || {}).reduce((sum: number, qty: any) => sum + (qty || 0), 0);
+        packagingQuantity = regularCookieQty;
+        totalPackagingPrice = regularCookieQty * packagingPricePerItem;
+      } else {
+        // 유산지는 전체 주문당 1번만
+        packagingQuantity = 1;
+        totalPackagingPrice = packagingPricePerItem;
+      }
+
+      if (totalPackagingPrice > 0) {
+        items.push({ name: packagingName, quantity: packagingQuantity, price: totalPackagingPrice });
+      }
     }
 
     const itemsHTML = items.map(item => `
