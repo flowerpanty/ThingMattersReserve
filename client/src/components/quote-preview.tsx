@@ -21,7 +21,7 @@ export function QuotePreview({ formData, pricing }: QuotePreviewProps) {
         .filter(([_, qty]) => (qty as number) > 0)
         .map(([type, qty]) => `${type} ${qty}개`)
         .join(', ');
-      
+
       details.push({
         name: '일반 쿠키',
         quantity: totalQuantity,
@@ -35,7 +35,7 @@ export function QuotePreview({ formData, pricing }: QuotePreviewProps) {
       formData.twoPackSets.forEach((set: any, index: number) => {
         const quantity = set.quantity || 1;
         const selectedCookies = set.selectedCookies?.join(', ') || '';
-        
+
         details.push({
           name: `2구 패키지`,
           quantity: quantity,
@@ -51,7 +51,7 @@ export function QuotePreview({ formData, pricing }: QuotePreviewProps) {
         const quantity = set.quantity || 1;
         const selectedCookie = set.selectedCookie || '';
         const selectedDrink = set.selectedDrink || '';
-        
+
         details.push({
           name: `1구 + 음료`,
           quantity: quantity,
@@ -70,11 +70,23 @@ export function QuotePreview({ formData, pricing }: QuotePreviewProps) {
         if (set.customSticker) details_text += ' + 커스텀스티커';
         if (set.heartMessage) details_text += ' + 하트메시지';
         if (set.customTopper) details_text += ' + 커스텀토퍼';
-        
+
+        // 기본 가격 계산: 브라우니쿠키 기본 가격 * 수량
+        let totalPrice = set.quantity * 7800;
+
+        // 생일곰 추가 비용 (+500원)
+        if (set.shape === 'birthdayBear') {
+          totalPrice += set.quantity * 500;
+        }
+
+        // 커스텀 옵션 추가 비용
+        if (set.customSticker) totalPrice += 15000;
+        if (set.heartMessage) totalPrice += 500;
+
         details.push({
           name: '브라우니쿠키',
           quantity: quantity,
-          price: set.quantity * 7800 + (set.customSticker ? 15000 : 0) + (set.heartMessage ? 500 : 0),
+          price: totalPrice,
           details: details_text
         });
       });
@@ -126,7 +138,7 @@ export function QuotePreview({ formData, pricing }: QuotePreviewProps) {
         <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
           📋 주문 내역
         </h3>
-        
+
         <div className="space-y-3 mb-4">
           {orderDetails.map((item, index) => (
             <div key={index} className="flex justify-between items-start p-3 bg-muted/30 rounded-lg">

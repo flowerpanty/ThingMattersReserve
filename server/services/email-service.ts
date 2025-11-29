@@ -82,43 +82,55 @@ export class EmailService {
 <html>
 <head>
   <meta charset="UTF-8">
-  <style>
-    body { font-family: 'Apple SD Gothic Neo', sans-serif; background-color: #f5f5f5; margin: 0; padding: 20px; }
-    .container { max-width: 600px; margin: 0 auto; background-color: white; padding: 40px; border-radius: 10px; }
-    .header { text-align: center; margin-bottom: 30px; }
-    .header h1 { color: #333; margin: 0; }
-    .section { margin: 20px 0; padding: 20px; background-color: #f9f9f9; border-radius: 8px; }
-    .section-title { font-size: 18px; font-weight: bold; margin-bottom: 15px; color: #444; }
-    table { width: 100%; border-collapse: collapse; margin: 10px 0; }
-    th, td { padding: 12px; text-align: left; border-bottom: 1px solid #ddd; }
-    th { background-color: #f0f0f0; font-weight: bold; }
-    .total-row { font-weight: bold; font-size: 16px; background-color: #fff3cd; }
-    .footer { margin-top: 30px; text-align: center; color: #666; font-size: 14px; }
-  </style>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 </head>
-<body>
-  <div class="container">
-    <div class="header">
-      <h1>🍪 주문 견적서</h1>
-      <p>고객님의 주문이 접수되었습니다</p>
-    </div>
-
-    <div class="section">
-      <div class="section-title">📋 주문 정보</div>
-      <p><strong>고객명:</strong> ${orderData.customerName}</p>
-      <p><strong>연락처:</strong> ${orderData.customerContact}</p>
-      <p><strong>전화번호:</strong> ${orderData.customerPhone}</p>
-      <p><strong>수령 희망일:</strong> ${orderData.deliveryDate}</p>
-      <p><strong>수령 방법:</strong> ${orderData.deliveryMethod === 'pickup' ? '매장 픽업' : '배송'}</p>
-      ${orderData.deliveryAddress ? `<p><strong>배송 주소:</strong> ${orderData.deliveryAddress}</p>` : ''}
-    </div>
-
-    <div class="footer">
-      <p>상세 견적서는 첨부 파일을 확인해주세요.</p>
-      <p><strong>주문 문의:</strong> 카카오톡 @nothingmatters 또는 010-2866-7976</p>
-      <p>감사합니다! 🙏</p>
-    </div>
-  </div>
+<body style="margin: 0; padding: 0; font-family: 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif; background-color: #f5f5f5;">
+  <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #f5f5f5; padding: 20px;">
+    <tr>
+      <td align="center">
+        <table width="600" cellpadding="0" cellspacing="0" border="0" style="max-width: 600px; background-color: white; border-radius: 10px; overflow: hidden;">
+          <!-- Header -->
+          <tr>
+            <td style="padding: 40px; text-align: center; background-color: #4F46E5;">
+              <h1 style="margin: 0; color: white; font-size: 24px; font-weight: bold;">🔔 nothingmatters</h1>
+              <p style="margin: 10px 0 0 0; color: white; font-size: 16px;">새로운 주문이 들어왔습니다!</p>
+            </td>
+          </tr>
+          
+          <!-- Main Content -->
+          <tr>
+            <td style="padding: 40px;">
+              <!-- Order Info Section -->
+              <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom: 30px; background-color: #f9f9f9; border-radius: 8px; padding: 20px;">
+                <tr>
+                  <td>
+                    <h2 style="margin: 0 0 15px 0; font-size: 18px; font-weight: bold; color: #444;">📋 주문 정보</h2>
+                    <p style="margin: 8px 0; color: #333; font-size: 14px;"><strong>고객명:</strong> ${orderData.customerName}</p>
+                    <p style="margin: 8px 0; color: #333; font-size: 14px;"><strong>연락처:</strong> ${orderData.customerContact}</p>
+                    <p style="margin: 8px 0; color: #333; font-size: 14px;"><strong>전화번호:</strong> ${orderData.customerPhone}</p>
+                    <p style="margin: 8px 0; color: #333; font-size: 14px;"><strong>수령 희망일:</strong> ${orderData.deliveryDate}</p>
+                    <p style="margin: 8px 0; color: #333; font-size: 14px;"><strong>수령 방법:</strong> ${orderData.deliveryMethod === 'pickup' ? '매장 픽업' : '배송'}</p>
+                    ${orderData.deliveryAddress ? `<p style="margin: 8px 0; color: #333; font-size: 14px;"><strong>배송 주소:</strong> ${orderData.deliveryAddress}</p>` : ''}
+                  </td>
+                </tr>
+              </table>
+              
+              <!-- Footer -->
+              <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top: 30px; text-align: center;">
+                <tr>
+                  <td>
+                    <p style="margin: 10px 0; color: #666; font-size: 14px;">상세 견적서는 첨부 파일을 확인해주세요.</p>
+                    <p style="margin: 10px 0; color: #666; font-size: 14px;"><strong>주문 문의:</strong> 카카오톡 @nothingmatters 또는 010-2866-7976</p>
+                    <p style="margin: 10px 0; color: #666; font-size: 14px;">감사합니다! 🙏</p>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
 </body>
 </html>
     `;
@@ -207,79 +219,105 @@ export class EmailService {
 <html>
 <head>
   <meta charset="UTF-8">
-  <style>
-    body { font-family: 'Apple SD Gothic Neo', sans-serif; background-color: #f5f5f5; margin: 0; padding: 20px; }
-    .container { max-width: 600px; margin: 0 auto; background-color: white; padding: 40px; border-radius: 10px; }
-    .header { text-align: center; margin-bottom: 30px; background-color: #4CAF50; color: white; padding: 20px; border-radius: 8px; }
-    .header h1 { margin: 0; font-size: 24px; }
-    .alert { background-color: #fff3cd; padding: 15px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #ffc107; }
-    .section { margin: 20px 0; padding: 20px; background-color: #f9f9f9; border-radius: 8px; }
-    .section-title { font-size: 18px; font-weight: bold; margin-bottom: 15px; color: #444; }
-    table { width: 100%; border-collapse: collapse; margin: 10px 0; background-color: white; }
-    th, td { padding: 12px; text-align: left; border-bottom: 1px solid #ddd; }
-    th { background-color: #f0f0f0; font-weight: bold; }
-    .total-row { font-weight: bold; font-size: 16px; background-color: #fff3cd; }
-    .info-box { background-color: #e3f2fd; padding: 15px; border-radius: 8px; margin: 10px 0; }
-    .footer { margin-top: 30px; padding-top: 20px; border-top: 2px solid #ddd; color: #666; font-size: 14px; }
-  </style>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 </head>
-<body>
-  <div class="container">
-    <div class="header">
-      <h1>🔔 nothingmatters</h1>
-      <p style="margin: 10px 0 0 0;">새로운 주문이 들어왔습니다!</p>
-    </div>
-
-    <div class="section">
-      <div class="section-title">주문 정보</div>
-      <p><strong>고객명:</strong> ${orderData.customerName}</p>
-      <p><strong>연락처:</strong> ${orderData.customerContact} / ${orderData.customerPhone}</p>
-      <p><strong>수령 희망일:</strong> ${orderData.deliveryDate}</p>
-    </div>
-
-    <div class="section">
-      <div class="section-title">📋 견적서</div>
-      <table>
-        <thead>
+<body style="margin: 0; padding: 0; font-family: 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif; background-color: #f5f5f5;">
+  <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #f5f5f5; padding: 20px;">
+    <tr>
+      <td align="center">
+        <table width="600" cellpadding="0" cellspacing="0" border="0" style="max-width: 600px; background-color: white; border-radius: 10px; overflow: hidden;">
+          <!-- Header -->
           <tr>
-            <th>제품명</th>
-            <th>수량</th>
-            <th>금액</th>
+            <td style="padding: 40px; text-align: center; background-color: #4CAF50;">
+              <h1 style="margin: 0; color: white; font-size: 24px; font-weight: bold;">🔔 nothingmatters</h1>
+              <p style="margin: 10px 0 0 0; color: white; font-size: 16px;">새로운 주문이 들어왔습니다!</p>
+            </td>
           </tr>
-        </thead>
-        <tbody>
-          ${itemsHTML}
-          <tr class="total-row">
-            <td colspan="2">합계</td>
-            <td>${total.toLocaleString()}원</td>
+          
+          <!-- Main Content -->
+          <tr>
+            <td style="padding: 40px;">
+              <!-- Order Info Section -->
+              <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom: 20px; background-color: #f9f9f9; border-radius: 8px; padding: 20px;">
+                <tr>
+                  <td>
+                    <h2 style="margin: 0 0 15px 0; font-size: 18px; font-weight: bold; color: #444;">주문 정보</h2>
+                    <p style="margin: 8px 0; color: #333; font-size: 14px;"><strong>고객명:</strong> ${orderData.customerName}</p>
+                    <p style="margin: 8px 0; color: #333; font-size: 14px;"><strong>연락처:</strong> ${orderData.customerContact} / ${orderData.customerPhone}</p>
+                    <p style="margin: 8px 0; color: #333; font-size: 14px;"><strong>수령 희망일:</strong> ${orderData.deliveryDate}</p>
+                  </td>
+                </tr>
+              </table>
+              
+              <!-- Quote Section -->
+              <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom: 20px; background-color: #f9f9f9; border-radius: 8px; padding: 20px;">
+                <tr>
+                  <td>
+                    <h2 style="margin: 0 0 15px 0; font-size: 18px; font-weight: bold; color: #444;">📋 견적서</h2>
+                    <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: white; border-radius: 4px; overflow: hidden;">
+                      <tr style="background-color: #f0f0f0;">
+                        <th style="padding: 12px; text-align: left; font-weight: bold; border-bottom: 1px solid #ddd;">제품명</th>
+                        <th style="padding: 12px; text-align: left; font-weight: bold; border-bottom: 1px solid #ddd;">수량</th>
+                        <th style="padding: 12px; text-align: left; font-weight: bold; border-bottom: 1px solid #ddd;">금액</th>
+                      </tr>
+                      ${itemsHTML}
+                      <tr style="background-color: #fff3cd;">
+                        <td colspan="2" style="padding: 12px; font-weight: bold; font-size: 16px;">합계</td>
+                        <td style="padding: 12px; font-weight: bold; font-size: 16px;">${total.toLocaleString()}원</td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+              
+              <!-- Account Info -->
+              <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom: 20px; background-color: #e3f2fd; border-radius: 8px; padding: 15px;">
+                <tr>
+                  <td>
+                    <p style="margin: 5px 0; color: #333; font-size: 14px;"><strong>계좌번호:</strong> 국민은행 83050104204736 (낫띵메터스)</p>
+                    <p style="margin: 5px 0; color: #333; font-size: 14px;"><strong>주문 문의:</strong> 카카오톡 @nothingmatters 또는 010-2866-7976</p>
+                  </td>
+                </tr>
+              </table>
+              
+              <!-- Order Summary Section -->
+              <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom: 20px; background-color: #f9f9f9; border-radius: 8px; padding: 20px;">
+                <tr>
+                  <td>
+                    <h2 style="margin: 0 0 15px 0; font-size: 18px; font-weight: bold; color: #444;">📋 주문 요약</h2>
+                    <p style="margin: 8px 0; color: #333; font-size: 14px;"><strong>이름:</strong> ${orderData.customerName}</p>
+                    <p style="margin: 8px 0; color: #333; font-size: 14px;"><strong>연락처:</strong> ${orderData.customerContact} / ${orderData.customerPhone}</p>
+                    <p style="margin: 8px 0; color: #333; font-size: 14px;"><strong>수령날짜:</strong> ${orderData.deliveryDate}</p>
+                    <p style="margin: 8px 0; color: #333; font-size: 14px;"><strong>수령방법:</strong> ${orderData.deliveryMethod === 'pickup' ? '매장 픽업' : '배송'}</p>
+                    <p style="margin: 8px 0; color: #333; font-size: 14px;"><strong>제품:</strong> ${items.map(item => `${item.name} ${item.quantity}개`).join(', ')}</p>
+                  </td>
+                </tr>
+              </table>
+              
+              <!-- Alert Section -->
+              <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #fff3cd; border-left: 4px solid #ffc107; border-radius: 8px; padding: 15px;">
+                <tr>
+                  <td>
+                    <p style="margin: 5px 0; color: #333; font-size: 14px;">※ 고객에게는 견적서가 이미 전송되었습니다.</p>
+                    <p style="margin: 5px 0; color: #333; font-size: 14px;">※ 카카오톡으로 상담을 진행해주세요.</p>
+                  </td>
+                </tr>
+              </table>
+              
+              <!-- Footer -->
+              <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top: 30px; padding-top: 20px; border-top: 2px solid #ddd;">
+                <tr>
+                  <td style="text-align: center;">
+                    <p style="margin: 10px 0; color: #666; font-size: 14px;">상세 내역은 첨부된 견적서를 확인하세요.</p>
+                  </td>
+                </tr>
+              </table>
+            </td>
           </tr>
-        </tbody>
-      </table>
-    </div>
-
-    <div class="info-box">
-      <p style="margin: 5px 0;"><strong>계좌번호:</strong> 국민은행 83050104204736 (낫띵메터스)</p>
-      <p style="margin: 5px 0;"><strong>주문 문의:</strong> 카카오톡 @nothingmatters 또는 010-2866-7976</p>
-    </div>
-
-    <div class="section">
-      <div class="section-title">📋 주문 요약</div>
-      <p><strong>이름:</strong> ${orderData.customerName}</p>
-      <p><strong>연락처:</strong> ${orderData.customerContact} / ${orderData.customerPhone}</p>
-      <p><strong>수령날짜:</strong> ${orderData.deliveryDate}</p>
-      <p><strong>수령방법:</strong> ${orderData.deliveryMethod === 'pickup' ? '매장 픽업' : '배송'}</p>
-      <p><strong>제품:</strong> ${items.map(item => `${item.name} ${item.quantity}개`).join(', ')}</p>
-    </div>
-
-    <div class="alert">
-      <p style="margin: 5px 0;">※ 고객에게는 견적서가 이미 전송되었습니다.</p>
-      <p style="margin: 5px 0;">※ 카카오톡으로 상담을 진행해주세요.</p>
-    </div>
-
-    <div class="footer">
-      <p>상세 내역은 첨부된 견적서를 확인하세요.</p>
-    </div>
-  </div>
+        </table>
+      </td>
+    </tr>
+  </table>
 </body>
 </html>
     `;
