@@ -39,18 +39,18 @@ interface ProductSelectionProps {
   onUpdate: (field: string, value: any) => void;
 }
 
-export function ProductSelection({ 
-  regularCookies, 
-  packaging, 
+export function ProductSelection({
+  regularCookies,
+  packaging,
   brownieCookieSets,
   twoPackSets,
   singleWithDrinkSets,
   sconeSets,
-  fortuneCookie, 
-  airplaneSandwich, 
-  onUpdate 
+  fortuneCookie,
+  airplaneSandwich,
+  onUpdate
 }: ProductSelectionProps) {
-  
+
   const [openSections, setOpenSections] = useState({
     regular: false,
     twopack: false,
@@ -67,12 +67,12 @@ export function ProductSelection({
 
   // 브라우니쿠키 세트 관리
   const addBrownieCookieSet = () => {
-    onUpdate('brownieCookieSets', [...(brownieCookieSets || []), { 
-      quantity: 1, 
-      shape: 'bear', 
-      customSticker: false, 
-      heartMessage: undefined, 
-      customTopper: false 
+    onUpdate('brownieCookieSets', [...(brownieCookieSets || []), {
+      quantity: 1,
+      shape: 'bear',
+      customSticker: false,
+      heartMessage: undefined,
+      customTopper: false
     }]);
   };
 
@@ -138,7 +138,7 @@ export function ProductSelection({
   const toggleCookieInTwoPackSet = (setIndex: number, cookieType: string) => {
     const currentSet = twoPackSets[setIndex];
     const currentCookies = currentSet?.selectedCookies || [];
-    
+
     let newCookies;
     if (currentCookies.includes(cookieType)) {
       // 이미 선택된 쿠키면 제거
@@ -150,7 +150,7 @@ export function ProductSelection({
       // 2개 이상이면 추가하지 않음
       return;
     }
-    
+
     const newSets = [...twoPackSets];
     newSets[setIndex] = { ...newSets[setIndex], selectedCookies: newCookies };
     onUpdate('twoPackSets', newSets);
@@ -169,9 +169,9 @@ export function ProductSelection({
 
         <div className="space-y-4">
           {/* Regular Cookies */}
-          <Collapsible 
-            open={openSections.regular} 
-            onOpenChange={(open) => setOpenSections(prev => ({...prev, regular: open}))}
+          <Collapsible
+            open={openSections.regular}
+            onOpenChange={(open) => setOpenSections(prev => ({ ...prev, regular: open }))}
           >
             <div className="border border-border rounded-lg bg-card">
               <CollapsibleTrigger className="w-full p-4 flex items-center justify-between hover:bg-muted/50 transition-colors">
@@ -189,7 +189,7 @@ export function ProductSelection({
                 </div>
                 {openSections.regular ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
               </CollapsibleTrigger>
-              
+
               <CollapsibleContent className="px-4 pb-4">
                 {/* Step 1: 포장 방법 선택 (먼저 선택해야 함) */}
                 <div className="bg-accent/20 rounded-lg p-4 mb-4">
@@ -203,7 +203,7 @@ export function ProductSelection({
                           <div className="text-xs text-muted-foreground">각 쿠키마다 +600원</div>
                         </Label>
                       </div>
-                      
+
                       <div className="flex items-center space-x-2 p-3 bg-card rounded-lg border border-input hover:bg-muted/50 transition-colors cursor-pointer">
                         <RadioGroupItem value="plastic_wrap" id="plastic_wrap" data-testid="radio-packaging-plastic-wrap" />
                         <Label htmlFor="plastic_wrap" className="cursor-pointer text-sm flex-1">
@@ -211,7 +211,7 @@ export function ProductSelection({
                           <div className="text-xs text-muted-foreground">각 쿠키마다 +500원</div>
                         </Label>
                       </div>
-                      
+
                       <div className="flex items-center space-x-2 p-3 bg-card rounded-lg border border-input hover:bg-muted/50 transition-colors cursor-pointer">
                         <RadioGroupItem value="oil_paper" id="oil_paper" data-testid="radio-packaging-oil-paper" />
                         <Label htmlFor="oil_paper" className="cursor-pointer text-sm flex-1">
@@ -290,9 +290,9 @@ export function ProductSelection({
           </Collapsible>
 
           {/* 2구 패키지 */}
-          <Collapsible 
-            open={openSections.twopack} 
-            onOpenChange={(open) => setOpenSections(prev => ({...prev, twopack: open}))}
+          <Collapsible
+            open={openSections.twopack}
+            onOpenChange={(open) => setOpenSections(prev => ({ ...prev, twopack: open }))}
           >
             <div className="border border-border rounded-lg bg-card">
               <CollapsibleTrigger className="w-full p-4 flex items-center justify-between hover:bg-muted/50 transition-colors">
@@ -310,7 +310,7 @@ export function ProductSelection({
                 </div>
                 {openSections.twopack ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
               </CollapsibleTrigger>
-              
+
               <CollapsibleContent className="px-4 pb-4">
                 <div className="space-y-4">
                   {twoPackSets.map((set, index) => (
@@ -359,26 +359,24 @@ export function ProductSelection({
                           </Button>
                         </div>
                       </div>
-                      
+
                       <div className="grid grid-cols-2 lg:grid-cols-3 gap-2 mb-2">
                         {cookieTypes.map((type) => {
                           const isSelected = set.selectedCookies.includes(type);
                           return (
-                            <div 
-                              key={type} 
-                              className={`flex items-center space-x-2 p-2 rounded cursor-pointer transition-colors ${
-                                isSelected 
-                                  ? 'bg-primary text-primary-foreground' 
+                            <div
+                              key={type}
+                              className={`flex items-center space-x-2 p-2 rounded cursor-pointer transition-colors ${isSelected
+                                  ? 'bg-primary text-primary-foreground'
                                   : 'bg-card hover:bg-muted/50'
-                              }`}
+                                }`}
                               onClick={() => toggleCookieInTwoPackSet(index, type)}
                               data-testid={`twopack-${index}-cookie-${type}`}
                             >
-                              <div className={`w-4 h-4 rounded border-2 flex items-center justify-center ${
-                                isSelected 
-                                  ? 'bg-white border-white' 
+                              <div className={`w-4 h-4 rounded border-2 flex items-center justify-center ${isSelected
+                                  ? 'bg-white border-white'
                                   : 'border-muted-foreground'
-                              }`}>
+                                }`}>
                                 {isSelected && (
                                   <svg className="w-3 h-3 text-primary" fill="currentColor" viewBox="0 0 20 20">
                                     <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
@@ -390,7 +388,7 @@ export function ProductSelection({
                           );
                         })}
                       </div>
-                      
+
                       <div className="flex justify-between text-xs text-muted-foreground">
                         <span>선택됨: {set.selectedCookies.length}/2개</span>
                         {set.selectedCookies.length > 0 && (
@@ -401,7 +399,7 @@ export function ProductSelection({
                       </div>
                     </div>
                   ))}
-                  
+
                   <Button
                     type="button"
                     variant="outline"
@@ -417,9 +415,9 @@ export function ProductSelection({
           </Collapsible>
 
           {/* 1구 + 음료 */}
-          <Collapsible 
-            open={openSections.singledrink} 
-            onOpenChange={(open) => setOpenSections(prev => ({...prev, singledrink: open}))}
+          <Collapsible
+            open={openSections.singledrink}
+            onOpenChange={(open) => setOpenSections(prev => ({ ...prev, singledrink: open }))}
           >
             <div className="border border-border rounded-lg bg-card">
               <CollapsibleTrigger className="w-full p-4 flex items-center justify-between hover:bg-muted/50 transition-colors">
@@ -437,7 +435,7 @@ export function ProductSelection({
                 </div>
                 {openSections.singledrink ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
               </CollapsibleTrigger>
-              
+
               <CollapsibleContent className="px-4 pb-4">
                 <div className="space-y-4">
                   {singleWithDrinkSets.map((set, index) => (
@@ -486,12 +484,12 @@ export function ProductSelection({
                           </Button>
                         </div>
                       </div>
-                      
+
                       <div className="space-y-3">
                         <div>
                           <h4 className="font-medium mb-2 text-sm">쿠키 선택</h4>
-                          <Select 
-                            value={set.selectedCookie} 
+                          <Select
+                            value={set.selectedCookie}
                             onValueChange={(value) => updateSingleWithDrinkSet(index, 'selectedCookie', value)}
                           >
                             <SelectTrigger data-testid={`select-cookie-${index}`}>
@@ -504,11 +502,11 @@ export function ProductSelection({
                             </SelectContent>
                           </Select>
                         </div>
-                        
+
                         <div>
                           <h4 className="font-medium mb-2 text-sm">음료 선택</h4>
-                          <Select 
-                            value={set.selectedDrink} 
+                          <Select
+                            value={set.selectedDrink}
                             onValueChange={(value) => updateSingleWithDrinkSet(index, 'selectedDrink', value)}
                           >
                             <SelectTrigger data-testid={`select-drink-${index}`}>
@@ -521,7 +519,7 @@ export function ProductSelection({
                             </SelectContent>
                           </Select>
                         </div>
-                        
+
                         {(set.selectedCookie || set.selectedDrink) && (
                           <div className="text-xs text-primary font-medium">
                             선택됨: {set.selectedCookie || '미선택'} + {set.selectedDrink || '미선택'}
@@ -530,7 +528,7 @@ export function ProductSelection({
                       </div>
                     </div>
                   ))}
-                  
+
                   <Button
                     type="button"
                     variant="outline"
@@ -546,9 +544,9 @@ export function ProductSelection({
           </Collapsible>
 
           {/* Brownie Cookies */}
-          <Collapsible 
-            open={openSections.brownie} 
-            onOpenChange={(open) => setOpenSections(prev => ({...prev, brownie: open}))}
+          <Collapsible
+            open={openSections.brownie}
+            onOpenChange={(open) => setOpenSections(prev => ({ ...prev, brownie: open }))}
           >
             <div className="border border-border rounded-lg bg-card">
               <CollapsibleTrigger className="w-full p-4 flex items-center justify-between hover:bg-muted/50 transition-colors">
@@ -566,7 +564,7 @@ export function ProductSelection({
                 </div>
                 {openSections.brownie ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
               </CollapsibleTrigger>
-              
+
               <CollapsibleContent className="px-4 pb-4">
                 <div className="space-y-3">
                   {brownieCookieSets && brownieCookieSets.map((set, index) => (
@@ -613,15 +611,15 @@ export function ProductSelection({
                           </Button>
                         </div>
                       </div>
-                      
+
                       {/* Shape Selection */}
                       <div className="bg-accent/20 rounded-lg p-3 mb-3">
                         <h6 className="font-medium mb-2 text-xs">쿠키 모양</h6>
-                        <RadioGroup 
-                          value={set.shape} 
+                        <RadioGroup
+                          value={set.shape}
                           onValueChange={(value) => updateBrownieCookieSet(index, 'shape', value)}
                         >
-                          <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                          <div className="grid grid-cols-2 gap-2">
                             <div className="flex items-center space-x-2 p-2 bg-card rounded cursor-pointer hover:bg-accent/30 transition-colors">
                               <RadioGroupItem value="bear" id={`bear-${index}`} data-testid={`radio-shape-bear-${index}`} />
                               <Label htmlFor={`bear-${index}`} className="cursor-pointer text-xs">곰돌이</Label>
@@ -641,7 +639,7 @@ export function ProductSelection({
                           </div>
                         </RadioGroup>
                       </div>
-                      
+
                       {/* Custom Options */}
                       <div className="bg-accent/20 rounded-lg p-3">
                         <h6 className="font-medium mb-2 text-xs">커스텀 옵션</h6>
@@ -658,7 +656,7 @@ export function ProductSelection({
                               <div className="text-xs text-muted-foreground">+15,000원</div>
                             </Label>
                           </div>
-                          
+
                           <div className="bg-card rounded p-2">
                             <div className="flex items-start gap-2">
                               <Checkbox
@@ -687,7 +685,7 @@ export function ProductSelection({
                               </div>
                             </div>
                           </div>
-                          
+
                           <div className="flex items-start gap-2 p-2 bg-card rounded hover:bg-accent/30 transition-colors">
                             <Checkbox
                               id={`customTopper-${index}`}
@@ -704,7 +702,7 @@ export function ProductSelection({
                       </div>
                     </div>
                   ))}
-                  
+
                   <Button
                     type="button"
                     variant="outline"
@@ -720,9 +718,9 @@ export function ProductSelection({
           </Collapsible>
 
           {/* Fortune Cookies */}
-          <Collapsible 
-            open={openSections.fortune} 
-            onOpenChange={(open) => setOpenSections(prev => ({...prev, fortune: open}))}
+          <Collapsible
+            open={openSections.fortune}
+            onOpenChange={(open) => setOpenSections(prev => ({ ...prev, fortune: open }))}
           >
             <div className="border border-border rounded-lg bg-card">
               <CollapsibleTrigger className="w-full p-4 flex items-center justify-between hover:bg-muted/50 transition-colors">
@@ -740,7 +738,7 @@ export function ProductSelection({
                 </div>
                 {openSections.fortune ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
               </CollapsibleTrigger>
-              
+
               <CollapsibleContent className="px-4 pb-4">
                 <div className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
                   <div className="flex items-center gap-2">
@@ -790,9 +788,9 @@ export function ProductSelection({
           </Collapsible>
 
           {/* Airplane Sandwich Cookies */}
-          <Collapsible 
-            open={openSections.airplane} 
-            onOpenChange={(open) => setOpenSections(prev => ({...prev, airplane: open}))}
+          <Collapsible
+            open={openSections.airplane}
+            onOpenChange={(open) => setOpenSections(prev => ({ ...prev, airplane: open }))}
           >
             <div className="border border-border rounded-lg bg-card">
               <CollapsibleTrigger className="w-full p-4 flex items-center justify-between hover:bg-muted/50 transition-colors">
@@ -810,7 +808,7 @@ export function ProductSelection({
                 </div>
                 {openSections.airplane ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
               </CollapsibleTrigger>
-              
+
               <CollapsibleContent className="px-4 pb-4">
                 <div className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
                   <div className="flex items-center gap-2">
@@ -860,9 +858,9 @@ export function ProductSelection({
           </Collapsible>
 
           {/* Scones */}
-          <Collapsible 
-            open={openSections.scone} 
-            onOpenChange={(open) => setOpenSections(prev => ({...prev, scone: open}))}
+          <Collapsible
+            open={openSections.scone}
+            onOpenChange={(open) => setOpenSections(prev => ({ ...prev, scone: open }))}
           >
             <div className="border border-border rounded-lg bg-card">
               <CollapsibleTrigger className="w-full p-4 flex items-center justify-between hover:bg-muted/50 transition-colors">
@@ -880,7 +878,7 @@ export function ProductSelection({
                 </div>
                 {openSections.scone ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
               </CollapsibleTrigger>
-              
+
               <CollapsibleContent className="px-4 pb-4">
                 <div className="space-y-3">
                   {sconeSets && sconeSets.map((set, index) => (
@@ -898,7 +896,7 @@ export function ProductSelection({
                           삭제
                         </Button>
                       </div>
-                      
+
                       <div className="space-y-2">
                         <Label className="text-sm">맛 선택</Label>
                         <RadioGroup
@@ -915,7 +913,7 @@ export function ProductSelection({
                           </div>
                         </RadioGroup>
                       </div>
-                      
+
                       <div className="flex items-center justify-between">
                         <Label className="text-sm">수량</Label>
                         <div className="flex items-center gap-2">
@@ -949,7 +947,7 @@ export function ProductSelection({
                           </Button>
                         </div>
                       </div>
-                      
+
                       <div className="flex items-center space-x-2">
                         <Checkbox
                           id={`scone-jam-${index}`}
@@ -961,7 +959,7 @@ export function ProductSelection({
                       </div>
                     </div>
                   ))}
-                  
+
                   <Button
                     type="button"
                     variant="outline"
