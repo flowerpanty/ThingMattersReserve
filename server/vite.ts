@@ -50,7 +50,9 @@ export function serveStatic(app: Express) {
     res.sendFile(path.join(publicDir, 'index.html'))
   })
 
-  // SPA 라우팅이 필요하면, API 라우트 등록 끝난 뒤 마지막에:
-  // app.get('*', (_req, res) => res.sendFile(path.join(publicDir, 'index.html')))
+  // SPA 라우팅: 모든 경로를 index.html로 리다이렉트
+  app.get('*', (_req, res) => {
+    res.sendFile(path.join(publicDir, 'index.html'))
+  })
 }
 
