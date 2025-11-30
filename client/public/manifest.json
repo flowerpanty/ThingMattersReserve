@@ -11,6 +11,11 @@
   "id": "/",
   "dir": "ltr",
   "lang": "ko-KR",
+  "prefer_related_applications": false,
+  "categories": [
+    "shopping",
+    "food"
+  ],
   "icons": [
     {
       "src": "/icon-72x72.png",

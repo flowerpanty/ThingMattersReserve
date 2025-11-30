@@ -44,8 +44,17 @@ self.addEventListener('notificationclick', function (event) {
     );
 });
 
-// PWA 설치 가능 조건을 위한 fetch 핸들러 (오프라인 캐싱은 하지 않음)
+// PWA 설치 가능 조건을 위한 fetch 핸들러
 self.addEventListener('fetch', function (event) {
-    // 아무것도 하지 않고 네트워크 요청을 그대로 통과시킴
-    return;
+    // 네트워크 요청을 그대로 통과시킴 (오프라인 지원을 위해서는 캐싱 전략 필요하지만, 현재는 설치 가능 조건 충족이 목표)
+    // event.respondWith(fetch(event.request)); 
+});
+
+// 서비스 워커 즉시 활성화
+self.addEventListener('install', function (event) {
+    self.skipWaiting();
+});
+
+self.addEventListener('activate', function (event) {
+    event.waitUntil(self.clients.claim());
 });
