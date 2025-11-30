@@ -18,15 +18,15 @@ export function PushNotificationToggle() {
 
   const checkNotificationSupport = async () => {
     setIsLoading(true);
-    
+
     const supported = await pushService.init();
     setIsSupported(supported);
-    
+
     if (supported) {
       const subscribed = await pushService.isSubscribed();
       setIsSubscribed(subscribed);
     }
-    
+
     setIsLoading(false);
   };
 
@@ -45,6 +45,7 @@ export function PushNotificationToggle() {
     try {
       if (isSubscribed) {
         // 구독 해제
+        console.log('푸시 알림 구독 해제 시작...');
         const success = await pushService.unsubscribe();
         if (success) {
           setIsSubscribed(false);
@@ -57,11 +58,16 @@ export function PushNotificationToggle() {
         }
       } else {
         // 권한 요청
+        console.log('푸시 알림 권한 요청 시작...');
         const permission = await pushService.requestPermission();
-        
+        console.log('권한 결과:', permission);
+
         if (permission === 'granted') {
           // 구독 등록
+          console.log('푸시 구독 등록 시작...');
           const subscription = await pushService.subscribe();
+          console.log('구독 결과:', subscription);
+
           if (subscription) {
             setIsSubscribed(true);
             toast({
@@ -69,21 +75,28 @@ export function PushNotificationToggle() {
               description: "새로운 주문이 들어오면 알림을 받게 됩니다.",
             });
           } else {
-            throw new Error('구독 등록 실패');
+            throw new Error('구독 등록 실패: subscription이 null입니다.');
           }
-        } else {
+        } else if (permission === 'denied') {
           toast({
             title: "알림 권한 거부됨",
             description: "브라우저 설정에서 알림 권한을 허용해주세요.",
             variant: "destructive"
           });
+        } else {
+          toast({
+            title: "알림 권한 필요",
+            description: "알림을 받으려면 권한을 허용해주세요.",
+            variant: "destructive"
+          });
         }
       }
     } catch (error) {
-      console.error('알림 설정 오류:', error);
+      console.error('알림 설정 오류 상세:', error);
+      const errorMessage = error instanceof Error ? error.message : '알 수 없는 오류';
       toast({
         title: "설정 실패",
-        description: "알림 설정 중 오류가 발생했습니다.",
+        description: `알림 설정 중 오류가 발생했습니다. (${errorMessage})`,
         variant: "destructive"
       });
     } finally {
@@ -151,8 +164,8 @@ export function PushNotificationToggle() {
               {isSubscribed ? '알림 켜짐' : '알림 꺼짐'}
             </p>
             <p className="text-xs text-muted-foreground">
-              {isSubscribed 
-                ? '새로운 주문 알림을 받고 있습니다.' 
+              {isSubscribed
+                ? '새로운 주문 알림을 받고 있습니다.'
                 : '알림을 허용하면 새 주문을 놓치지 않을 수 있습니다.'
               }
             </p>
@@ -164,7 +177,7 @@ export function PushNotificationToggle() {
             data-testid="switch-push-notifications"
           />
         </div>
-        
+
         {isSubscribed && (
           <Button
             onClick={handleTestNotification}
