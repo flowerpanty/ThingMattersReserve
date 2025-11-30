@@ -19,7 +19,8 @@ import { CalendarView } from '@/components/calendar-view';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
-import { Search, Truck, Store } from 'lucide-react';
+import { Search, Truck, Store, Bell } from 'lucide-react';
+import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 
 interface OrderItem {
   type: string;
@@ -275,13 +276,6 @@ export function Dashboard() {
   return (
     <div className="min-h-screen bg-background p-3 md:p-6">
       <div className="mx-auto max-w-7xl space-y-4 md:space-y-6">
-        import {Dialog, DialogContent, DialogTrigger} from "@/components/ui/dialog";
-        import {Bell} from 'lucide-react';
-
-        // ... (existing imports)
-
-        // ... (inside Dashboard component return)
-
         {/* 헤더 */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
