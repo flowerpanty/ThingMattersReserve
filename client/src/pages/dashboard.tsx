@@ -15,6 +15,7 @@ import { PushNotificationToggle } from '@/components/push-notification-toggle';
 import { AdminAuth } from '@/components/admin-auth';
 import { OrderDetailModal } from '@/components/order-detail-modal';
 import { OrderStatusBadge } from '@/components/order-status-badge';
+import { CalendarView } from '@/components/calendar-view';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Search, Truck, Store } from 'lucide-react';
@@ -516,55 +517,13 @@ export function Dashboard() {
           <TabsContent value="schedule" className="space-y-4">
             <Card className="card-shadow">
               <CardHeader>
-                <CardTitle className="flex items-center justify-between">
-                  배송 일정
-                  <input
-                    type="date"
-                    value={selectedDate}
-                    onChange={(e) => setSelectedDate(e.target.value)}
-                    className="px-3 py-2 border border-border rounded-md text-sm"
-                    data-testid="date-picker"
-                  />
-                </CardTitle>
+                <CardTitle>배송 일정 캘린더</CardTitle>
               </CardHeader>
               <CardContent>
-                {dateOrders.length === 0 ? (
-                  <div className="text-center py-8 text-muted-foreground">
-                    선택한 날짜에 예정된 배송이 없습니다.
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    {dateOrders.map((order) => (
-                      <div
-                        key={order.id}
-                        className="flex items-center justify-between p-4 border border-border rounded-lg"
-                        data-testid={`schedule-order-${order.id}`}
-                      >
-                        <div>
-                          <h3 className="font-semibold">{order.customerName}</h3>
-                          <p className="text-sm text-muted-foreground">
-                            {order.customerContact}
-                          </p>
-                          <div className="flex flex-wrap gap-1 mt-2">
-                            {order.orderItems.map((item, idx) => (
-                              <Badge key={idx} variant="secondary" className="text-xs">
-                                {item.name} {item.quantity}개
-                              </Badge>
-                            ))}
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <div className="font-bold">
-                            {formatCurrency(order.totalPrice)}
-                          </div>
-                          <Badge variant="default" className="mt-1">
-                            {order.deliveryDate}
-                          </Badge>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
+                <CalendarView
+                  orders={orders}
+                  onOrderClick={handleViewOrderDetail}
+                />
               </CardContent>
             </Card>
           </TabsContent>
