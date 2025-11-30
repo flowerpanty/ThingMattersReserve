@@ -1,7 +1,8 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Calendar, Mail, Package, MapPin, Clock, DollarSign } from "lucide-react";
+import { Calendar, Mail, Package, MapPin, Clock, DollarSign, Download } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
 import { ko } from "date-fns/locale";
 
@@ -32,6 +33,31 @@ interface OrderDetailModalProps {
 
 export function OrderDetailModal({ order, isOpen, onClose }: OrderDetailModalProps) {
     if (!order) return null;
+
+    const handleDownloadQuote = async () => {
+        try {
+            const response = await fetch('/api/generate-quote', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ orderId: order.id }),
+            });
+
+            if (!response.ok) throw new Error('견적서 생성 실패');
+
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `견적서_${order.customerName}_${order.id.slice(0, 8)}.xlsx`;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            window.URL.revokeObjectURL(url);
+        } catch (error) {
+            console.error('견적서 다운로드 오류:', error);
+            alert('견적서 다운로드에 실패했습니다.');
+        }
+    };
 
     const formatCurrency = (amount: number) => {
         return `${amount.toLocaleString('ko-KR')}원`;
@@ -229,6 +255,18 @@ export function OrderDetailModal({ order, isOpen, onClose }: OrderDetailModalPro
                                 <span className="font-medium">{formatDateTime(order.createdAt)}</span>
                             </div>
                         </div>
+                    </div>
+
+                    {/* 견적서 다운로드 버튼 */}
+                    <div className="pt-4 border-t">
+                        <Button
+                            onClick={handleDownloadQuote}
+                            className="w-full"
+                            variant="outline"
+                        >
+                            <Download className="w-4 h-4 mr-2" />
+                            견적서 다운로드 (Excel)
+                        </Button>
                     </div>
                 </div>
             </DialogContent>
