@@ -119,7 +119,7 @@ export function CalendarView({ orders, onOrderClick }: CalendarViewProps) {
             </div>
 
             {/* 캘린더 그리드 */}
-            <div className="grid grid-cols-7 gap-2">
+            <div className="grid grid-cols-7 gap-1 md:gap-2">
                 {calendarDays.map((date, index) => {
                     const dateKey = formatDate(date);
                     const dayOrders = ordersByDate[dateKey] || [];
@@ -129,33 +129,47 @@ export function CalendarView({ orders, onOrderClick }: CalendarViewProps) {
                     return (
                         <Card
                             key={index}
-                            className={`p-2 min-h-[100px] ${!isCurrentMonthDay ? 'opacity-40 bg-muted/20' : ''
+                            className={`p-1 md:p-2 min-h-[60px] md:min-h-[100px] ${!isCurrentMonthDay ? 'opacity-40 bg-muted/20' : ''
                                 } ${isTodayDay ? 'ring-2 ring-primary' : ''}`}
                         >
-                            <div className="text-sm font-semibold mb-1">
+                            <div className="text-xs md:text-sm font-semibold mb-0.5 md:mb-1">
                                 {date.getDate()}
                             </div>
 
                             {dayOrders.length > 0 && (
-                                <div className="space-y-1">
-                                    {dayOrders.slice(0, 2).map((order) => (
+                                <div className="space-y-0.5 md:space-y-1">
+                                    {/* 모바일: 아이콘 + 숫자만 표시 */}
+                                    <div className="md:hidden">
                                         <div
-                                            key={order.id}
-                                            onClick={() => onOrderClick(order)}
-                                            className="text-xs p-1 bg-primary/10 rounded cursor-pointer hover:bg-primary/20 transition-colors"
+                                            onClick={() => onOrderClick(dayOrders[0])}
+                                            className="flex items-center justify-center gap-0.5 p-0.5 bg-primary/10 rounded cursor-pointer hover:bg-primary/20 transition-colors"
                                         >
-                                            <div className="flex items-center gap-1">
-                                                <Package className="w-3 h-3" />
-                                                <span className="truncate">{order.customerName}</span>
-                                            </div>
+                                            <Package className="w-3 h-3" />
+                                            <span className="text-[10px] font-medium">{dayOrders.length}</span>
                                         </div>
-                                    ))}
+                                    </div>
 
-                                    {dayOrders.length > 2 && (
-                                        <div className="text-xs text-muted-foreground text-center">
-                                            +{dayOrders.length - 2}개 더
-                                        </div>
-                                    )}
+                                    {/* 데스크탑: 기존 표시 방식 */}
+                                    <div className="hidden md:block space-y-1">
+                                        {dayOrders.slice(0, 2).map((order) => (
+                                            <div
+                                                key={order.id}
+                                                onClick={() => onOrderClick(order)}
+                                                className="text-xs p-1 bg-primary/10 rounded cursor-pointer hover:bg-primary/20 transition-colors"
+                                            >
+                                                <div className="flex items-center gap-1">
+                                                    <Package className="w-3 h-3" />
+                                                    <span className="truncate">{order.customerName}</span>
+                                                </div>
+                                            </div>
+                                        ))}
+
+                                        {dayOrders.length > 2 && (
+                                            <div className="text-xs text-muted-foreground text-center">
+                                                +{dayOrders.length - 2}개 더
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
                             )}
                         </Card>
