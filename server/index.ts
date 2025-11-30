@@ -50,6 +50,38 @@ app.use((req, res, next) => {
 });
 
 (async () => {
+  // 서버 시작 전에 데이터베이스 테이블 생성
+  try {
+    if (process.env.DATABASE_URL) {
+      console.log('🔄 데이터베이스 테이블 확인 중...');
+      const { db } = await import('./db');
+      const { sql } = await import('drizzle-orm');
+
+      // orders 테이블 생성 (존재하지 않으면)
+      await db.execute(sql`
+        CREATE TABLE IF NOT EXISTS orders (
+          id TEXT PRIMARY KEY,
+          customer_name TEXT NOT NULL,
+          customer_contact TEXT NOT NULL,
+          delivery_date TEXT NOT NULL,
+          delivery_method TEXT,
+          order_items JSONB NOT NULL,
+          total_price INTEGER NOT NULL,
+          order_status TEXT,
+          payment_confirmed INTEGER DEFAULT 0,
+          quote_file_url TEXT,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+      `);
+
+      console.log('✅ 데이터베이스 테이블 준비 완료!');
+    } else {
+      console.log('⚠️  DATABASE_URL이 설정되지 않았습니다. 메모리 저장소를 사용합니다.');
+    }
+  } catch (error) {
+    console.error('❌ 데이터베이스 초기화 오류:', error);
+  }
+
   const server = await registerRoutes(app);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
@@ -82,3 +114,4 @@ app.use((req, res, next) => {
     log(`serving on port ${port}`);
   });
 })();
+
