@@ -134,7 +134,7 @@ export function CalendarView({ orders, onOrderClick }: CalendarViewProps) {
             </div>
 
             {/* 캘린더 그리드 - 날짜만 간단하게 */}
-            <div className="grid grid-cols-7 gap-1">
+            <div className="grid grid-cols-7 gap-px bg-border border border-border rounded-lg overflow-hidden">
                 {calendarDays.map((date, index) => {
                     const dateKey = formatDate(date);
                     const dayOrders = ordersByDate[dateKey] || [];
@@ -147,21 +147,33 @@ export function CalendarView({ orders, onOrderClick }: CalendarViewProps) {
                             key={index}
                             onClick={() => handleDateClick(date)}
                             className={`
-                                relative aspect-square p-1 md:p-2 rounded-lg border transition-all
-                                ${!isCurrentMonthDay ? 'opacity-30 bg-muted/20' : 'hover:bg-accent'}
-                                ${isTodayDay ? 'bg-primary text-primary-foreground font-bold' : ''}
-                                ${isSelected ? 'ring-2 ring-primary bg-primary/10' : ''}
+                                relative min-h-[60px] md:min-h-[100px] p-1 md:p-2 bg-background transition-all hover:bg-accent/50 text-left flex flex-col items-start justify-between
+                                ${!isCurrentMonthDay ? 'text-muted-foreground bg-muted/10' : ''}
+                                ${isSelected ? 'ring-2 ring-primary ring-inset z-10' : ''}
                             `}
                         >
-                            <div className="text-xs md:text-sm">
+                            <span className={`
+                                text-xs md:text-sm font-medium w-6 h-6 flex items-center justify-center rounded-full
+                                ${isTodayDay ? 'bg-primary text-primary-foreground' : ''}
+                            `}>
                                 {date.getDate()}
-                            </div>
+                            </span>
+
                             {/* 주문이 있으면 점으로 표시 */}
                             {dayOrders.length > 0 && (
-                                <div className="absolute bottom-1 left-1/2 transform -translate-x-1/2 flex gap-0.5">
-                                    {Array.from({ length: Math.min(dayOrders.length, 4) }).map((_, i) => (
-                                        <div key={i} className={`w-1 h-1 md:w-1.5 md:h-1.5 rounded-full ${isTodayDay ? 'bg-primary-foreground' : 'bg-primary'}`} />
+                                <div className="flex gap-1 mt-1 flex-wrap content-end w-full">
+                                    {Array.from({ length: Math.min(dayOrders.length, 6) }).map((_, i) => (
+                                        <div
+                                            key={i}
+                                            className={`
+                                                w-1.5 h-1.5 rounded-full 
+                                                ${dayOrders[i]?.paymentConfirmed ? 'bg-blue-500' : 'bg-orange-400'}
+                                            `}
+                                        />
                                     ))}
+                                    {dayOrders.length > 6 && (
+                                        <span className="text-[10px] text-muted-foreground leading-none">+</span>
+                                    )}
                                 </div>
                             )}
                         </button>
