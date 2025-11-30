@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -14,8 +14,10 @@ import { useToast } from '@/hooks/use-toast';
 import { PushNotificationToggle } from '@/components/push-notification-toggle';
 import { AdminAuth } from '@/components/admin-auth';
 import { OrderDetailModal } from '@/components/order-detail-modal';
+import { OrderStatusBadge } from '@/components/order-status-badge';
 import { Input } from '@/components/ui/input';
-import { Search } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Search, Truck, Store } from 'lucide-react';
 
 interface OrderItem {
   type: string;
@@ -33,6 +35,8 @@ interface Order {
   deliveryMethod?: string;
   orderItems: OrderItem[];
   totalPrice: number;
+  orderStatus?: string;
+  paymentConfirmed?: number;
   createdAt: string;
 }
 
@@ -64,6 +68,7 @@ export function Dashboard() {
   const [isGeneratingMessage, setIsGeneratingMessage] = useState(false);
   const [copiedMessageId, setCopiedMessageId] = useState<string | null>(null);
   const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   // 페이지 로드시 인증 상태 확인
   useEffect(() => {
@@ -74,14 +79,41 @@ export function Dashboard() {
   }, []);
 
   // 인증 콜백 함수
-  const handleAuthentication = () => {
-    console.log('handleAuthentication called');
+  const handleAuthenticate = () => {
     setIsAuthenticated(true);
+  };
+
+  // 주문 상태 업데이트 함수
+  const updateOrderStatus = async (orderId: string, status: string) => {
+    try {
+      await apiRequest('PATCH', `/api/orders/${orderId}/status`, {
+        status
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/orders'] });
+      toast({ title: '주문 상태가 업데이트되었습니다.' });
+    } catch (error) {
+      console.error('주문 상태 업데이트 실패:', error);
+      toast({ title: '주문 상태 업데이트 실패', variant: 'destructive' });
+    }
+  };
+
+  // 입금 확인 토글 함수
+  const togglePaymentConfirmed = async (orderId: string, confirmed: boolean) => {
+    try {
+      await apiRequest('PATCH', `/api/orders/${orderId}/payment`, {
+        confirmed
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/orders'] });
+      toast({ title: confirmed ? '입금이 확인되었습니다.' : '입금 확인이 취소되었습니다.' });
+    } catch (error) {
+      console.error('입금 상태 업데이트 실패:', error);
+      toast({ title: '입금 상태 업데이트 실패', variant: 'destructive' });
+    }
   };
 
   // 인증되지 않은 경우 로그인 화면 표시
   if (!isAuthenticated) {
-    return <AdminAuth onAuthenticated={handleAuthentication} />;
+    return <AdminAuth onAuthenticated={handleAuthenticate} />;
   }
 
   // 주문 목록 조회
@@ -342,9 +374,40 @@ export function Dashboard() {
                         data-testid={`order-${order.id}`}
                       >
                         <div className="flex-1">
-                          <div className="flex items-center gap-3">
+                          <div className="flex items-center gap-2 flex-wrap">
                             <h3 className="font-semibold">{order.customerName}</h3>
-                            <Badge variant="outline">
+
+                            {/* 배송 방법 아이콘 */}
+                            {order.deliveryMethod === 'quick' ? (
+                              <Badge className="bg-orange-100 text-orange-800 border-0 flex items-center gap-1">
+                                <Truck className="w-3 h-3" />
+                                퀵배송
+                              </Badge>
+                            ) : (
+                              <Badge className="bg-blue-100 text-blue-800 border-0 flex items-center gap-1">
+                                <Store className="w-3 h-3" />
+                                픽업
+                              </Badge>
+                            )}
+
+                            {/* 주문 상태 뱃지 */}
+                            <OrderStatusBadge status={order.orderStatus || 'pending'} />
+
+                            {/* 입금 확인 체크박스 */}
+                            <label
+                              className="flex items-center gap-1 cursor-pointer"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <Checkbox
+                                checked={order.paymentConfirmed === 1}
+                                onCheckedChange={(checked) => {
+                                  togglePaymentConfirmed(order.id, checked as boolean);
+                                }}
+                              />
+                              <span className="text-xs text-muted-foreground">입금확인</span>
+                            </label>
+
+                            <Badge variant="outline" className="text-xs">
                               {formatOrderDate(order.createdAt)}
                             </Badge>
                           </div>
