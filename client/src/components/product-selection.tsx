@@ -621,28 +621,28 @@ export function ProductSelection({
                         >
                           <div className="grid grid-cols-2 gap-2">
                             <div
-                              className="flex items-center space-x-2 p-2 bg-card rounded cursor-pointer hover:bg-accent/30 transition-colors"
+                              className="flex items-center space-x-2 p-2 bg-card rounded cursor-pointer hover:bg-accent/30 transition-colors relative z-10"
                               onClick={() => updateBrownieCookieSet(index, 'shape', 'bear')}
                             >
                               <RadioGroupItem value="bear" id={`bear-${index}`} data-testid={`radio-shape-bear-${index}`} />
                               <Label htmlFor={`bear-${index}`} className="cursor-pointer text-xs">곰돌이</Label>
                             </div>
                             <div
-                              className="flex items-center space-x-2 p-2 bg-card rounded cursor-pointer hover:bg-accent/30 transition-colors"
+                              className="flex items-center space-x-2 p-2 bg-card rounded cursor-pointer hover:bg-accent/30 transition-colors relative z-10"
                               onClick={() => updateBrownieCookieSet(index, 'shape', 'rabbit')}
                             >
                               <RadioGroupItem value="rabbit" id={`rabbit-${index}`} data-testid={`radio-shape-rabbit-${index}`} />
                               <Label htmlFor={`rabbit-${index}`} className="cursor-pointer text-xs">토끼</Label>
                             </div>
                             <div
-                              className="flex items-center space-x-2 p-2 bg-card rounded cursor-pointer hover:bg-accent/30 transition-colors"
+                              className="flex items-center space-x-2 p-2 bg-card rounded cursor-pointer hover:bg-accent/30 transition-colors relative z-10"
                               onClick={() => updateBrownieCookieSet(index, 'shape', 'birthdayBear')}
                             >
                               <RadioGroupItem value="birthdayBear" id={`birthdayBear-${index}`} data-testid={`radio-shape-birthday-bear-${index}`} />
                               <Label htmlFor={`birthdayBear-${index}`} className="cursor-pointer text-xs">생일곰 (+500원)</Label>
                             </div>
                             <div
-                              className="flex items-center space-x-2 p-2 bg-card rounded cursor-pointer hover:bg-accent/30 transition-colors"
+                              className="flex items-center space-x-2 p-2 bg-card rounded cursor-pointer hover:bg-accent/30 transition-colors relative z-10"
                               onClick={() => updateBrownieCookieSet(index, 'shape', 'tiger')}
                             >
                               <RadioGroupItem value="tiger" id={`tiger-${index}`} data-testid={`radio-shape-tiger-${index}`} />
