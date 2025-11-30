@@ -204,20 +204,18 @@ export function CalendarView({ orders, onOrderClick }: CalendarViewProps) {
                                     <CardContent className="p-4">
                                         <div className="flex flex-col gap-2">
                                             {/* 첫째 줄: 고객명 + 입금확인 + 상세정보 */}
-                                            <div className="flex items-center justify-between">
-                                                <div className="flex items-center gap-2">
-                                                    <h4 className="font-semibold text-base">
-                                                        {order.customerName}
-                                                    </h4>
-                                                    {order.paymentConfirmed === 1 && (
-                                                        <Badge variant="default" className="text-xs bg-blue-500 hover:bg-blue-600">
-                                                            입금확인
-                                                        </Badge>
-                                                    )}
-                                                </div>
-                                                <div className="flex items-center text-sm text-muted-foreground">
-                                                    상세정보 <ChevronRight className="w-4 h-4 ml-1" />
-                                                </div>
+                                            <div className="flex items-center gap-2">
+                                                <h4 className="font-semibold text-base">
+                                                    {order.customerName}
+                                                </h4>
+                                                {order.paymentConfirmed === 1 && (
+                                                    <Badge variant="default" className="text-xs bg-blue-500 hover:bg-blue-600">
+                                                        입금확인
+                                                    </Badge>
+                                                )}
+                                                <Badge variant="outline" className="text-xs text-muted-foreground hover:bg-accent cursor-pointer">
+                                                    상세정보 <ChevronRight className="w-3 h-3 ml-1" />
+                                                </Badge>
                                             </div>
 
                                             {/* 둘째 줄: 픽업/배송 구분 + 시간 */}
