@@ -266,7 +266,7 @@ export function Dashboard() {
               </Button>
             </Link>
             <Button
-              onClick={() => refetchOrders()}
+              onClick={() => window.location.reload()}
               variant="outline"
               size="sm"
               className="flex-1 sm:flex-none"
