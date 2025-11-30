@@ -18,7 +18,15 @@ function Router() {
   );
 }
 
+import { useEffect } from "react";
+import { pushService } from "@/lib/push-notifications";
+
 function App() {
+  useEffect(() => {
+    // 앱 시작 시 서비스 워커 등록 및 PWA 기능 초기화
+    pushService.init().catch(console.error);
+  }, []);
+
   return (
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>

@@ -43,3 +43,9 @@ self.addEventListener('notificationclick', function (event) {
         })
     );
 });
+
+// PWA 설치 가능 조건을 위한 fetch 핸들러 (오프라인 캐싱은 하지 않음)
+self.addEventListener('fetch', function (event) {
+    // 아무것도 하지 않고 네트워크 요청을 그대로 통과시킴
+    return;
+});
