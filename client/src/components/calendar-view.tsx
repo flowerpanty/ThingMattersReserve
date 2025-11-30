@@ -104,7 +104,7 @@ export function CalendarView({ orders, onOrderClick }: CalendarViewProps) {
     const selectedOrders = selectedDate ? (ordersByDate[selectedDate] || []) : [];
 
     return (
-        <div className="space-y-4">
+        <div className="space-y-4 pb-8">
             {/* 캘린더 헤더 */}
             <div className="flex items-center justify-between">
                 <h2 className="text-xl md:text-2xl font-bold">
