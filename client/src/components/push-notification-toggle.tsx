@@ -131,6 +131,10 @@ export function PushNotificationToggle() {
   };
 
   if (!isSupported) {
+    // iOS Safari 체크
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
+
     return (
       <Card>
         <CardHeader>
@@ -139,7 +143,24 @@ export function PushNotificationToggle() {
             푸시 알림
           </CardTitle>
           <CardDescription>
-            이 브라우저는 푸시 알림을 지원하지 않습니다.
+            {isIOS && !isStandalone ? (
+              <>
+                📱 iOS에서는 홈 화면에 추가한 후에만 푸시 알림을 사용할 수 있습니다.
+                <br />
+                <br />
+                <strong>사용 방법:</strong>
+                <br />
+                1. Safari 하단의 '공유' 버튼(⬆️) 클릭
+                <br />
+                2. '홈 화면에 추가' 선택
+                <br />
+                3. 홈 화면 아이콘으로 앱 실행
+                <br />
+                4. 다시 알림 설정 시도
+              </>
+            ) : (
+              '이 브라우저는 푸시 알림을 지원하지 않습니다.'
+            )}
           </CardDescription>
         </CardHeader>
       </Card>
