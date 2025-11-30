@@ -60,10 +60,10 @@ app.use((req, res, next) => {
       // Drizzle ORM이 인식할 수 있도록 스키마 import
       const { orders } = await import('../shared/schema');
 
-      // orders 테이블 생성 - Drizzle 스키마에 맞춰서
+      // orders 테이블 생성 - ID는 애플리케이션에서 생성
       await db.execute(sql`
         CREATE TABLE IF NOT EXISTS orders (
-          id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid(),
+          id VARCHAR PRIMARY KEY,
           customer_name TEXT NOT NULL,
           customer_contact TEXT NOT NULL,
           delivery_date TEXT NOT NULL,

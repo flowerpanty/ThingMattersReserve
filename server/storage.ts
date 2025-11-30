@@ -1,29 +1,18 @@
 import { type Order, type InsertOrder, orders } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc } from "drizzle-orm";
+import { randomUUID } from 'crypto';
 
 export interface IStorage {
+  getAllOrders(): Promise<Order[]>;
   getOrder(id: string): Promise<Order | undefined>;
   createOrder(order: InsertOrder): Promise<Order>;
-  getAllOrders(): Promise<Order[]>;
   updateOrderStatus(id: string, status: string): Promise<Order | undefined>;
   updatePaymentStatus(id: string, confirmed: boolean): Promise<Order | undefined>;
   deleteOrder(id: string): Promise<boolean>;
 }
 
 export class PostgreStorage implements IStorage {
-  async getOrder(id: string): Promise<Order | undefined> {
-    const result = await db.select().from(orders).where(eq(orders.id, id));
-    return result[0];
-  }
-
-  async createOrder(insertOrder: InsertOrder): Promise<Order> {
-    const result = await db.insert(orders).values(insertOrder).returning();
-    const order = result[0];
-    console.log(`주문 저장됨 (DB): ID=${order.id}, 고객명=${order.customerName}`);
-    return order;
-  }
-
   async getAllOrders(): Promise<Order[]> {
     // 최신 주문이 먼저 오도록 정렬
     const result = await db.select().from(orders).orderBy(desc(orders.createdAt));
