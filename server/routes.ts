@@ -476,6 +476,58 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // 주문 상태 변경
+  app.patch('/api/orders/:id/status', async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { status } = req.body;
+
+      if (!['pending', 'payment_confirmed', 'in_production', 'completed'].includes(status)) {
+        return res.status(400).json({ message: '올바른 상태 값이 아닙니다.' });
+      }
+
+      const updatedOrder = await storage.updateOrderStatus(id, status);
+
+      if (!updatedOrder) {
+        return res.status(404).json({ message: '주문을 찾을 수 없습니다.' });
+      }
+
+      res.json(updatedOrder);
+    } catch (error) {
+      console.error('주문 상태 업데이트 오류:', error);
+      res.status(500).json({
+        message: '주문 상태 업데이트 중 오류가 발생했습니다.',
+        error: error instanceof Error ? error.message : String(error)
+      });
+    }
+  });
+
+  // 입금 확인 상태 변경
+  app.patch('/api/orders/:id/payment', async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { confirmed } = req.body;
+
+      if (typeof confirmed !== 'boolean') {
+        return res.status(400).json({ message: 'confirmed는 boolean 값이어야 합니다.' });
+      }
+
+      const updatedOrder = await storage.updatePaymentStatus(id, confirmed);
+
+      if (!updatedOrder) {
+        return res.status(404).json({ message: '주문을 찾을 수 없습니다.' });
+      }
+
+      res.json(updatedOrder);
+    } catch (error) {
+      console.error('입금 상태 업데이트 오류:', error);
+      res.status(500).json({
+        message: '입금 상태 업데이트 중 오류가 발생했습니다.',
+        error: error instanceof Error ? error.message : String(error)
+      });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

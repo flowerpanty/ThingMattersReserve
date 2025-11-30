@@ -11,6 +11,9 @@ export const orders = pgTable("orders", {
   deliveryMethod: text("delivery_method").notNull().default('pickup'),
   orderItems: json("order_items").notNull(),
   totalPrice: integer("total_price").notNull(),
+  orderStatus: text("order_status").notNull().default('pending'), // pending, payment_confirmed, in_production, completed
+  paymentConfirmed: integer("payment_confirmed").notNull().default(0), // 0 = false, 1 = true (boolean in SQLite style)
+  quoteFileUrl: text("quote_file_url"), // 견적서 파일 저장 경로 (optional)
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -68,7 +71,7 @@ export type OrderItem = z.infer<typeof orderItemSchema>;
 
 export const cookieTypes = [
   '호두초코',
-  '더블초코', 
+  '더블초코',
   '블랙피넛',
   '로투스',
   '버터스카치',
