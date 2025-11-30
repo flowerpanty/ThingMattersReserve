@@ -413,19 +413,24 @@ export function Dashboard() {
 
                             {/* 입금 확인 체크박스 */}
                             <div
-                              className="flex items-center gap-1 relative z-10"
-                              onClick={(e) => e.stopPropagation()}
+                              className="flex items-center gap-1 relative z-50"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                console.log('Checkbox container clicked', order.id);
+                              }}
                             >
                               <Checkbox
                                 id={`payment-confirmed-${order.id}`}
                                 checked={order.paymentConfirmed === 1}
                                 onCheckedChange={(checked) => {
+                                  console.log('Checkbox changed', order.id, checked);
                                   togglePaymentConfirmed(order.id, checked as boolean);
                                 }}
                               />
                               <Label
                                 htmlFor={`payment-confirmed-${order.id}`}
                                 className="text-xs text-muted-foreground cursor-pointer select-none"
+                                onClick={(e) => console.log('Label clicked', order.id)}
                               >
                                 입금확인
                               </Label>
@@ -437,9 +442,9 @@ export function Dashboard() {
                           </div>
                           <p className="text-sm text-muted-foreground mt-1">
                             배송일: {order.deliveryDate}
-                            {order.pickupTime && (
+                            {(order.pickupTime || (order as any).pickup_time) && (
                               <span className="ml-2 font-medium text-foreground">
-                                {order.deliveryMethod === 'quick' ? '🚚 퀵 배송' : '🏪 픽업'} 시간: {order.pickupTime}
+                                {order.deliveryMethod === 'quick' ? '🚚 퀵 배송' : '🏪 픽업'} 시간: {order.pickupTime || (order as any).pickup_time}
                               </span>
                             )}
                           </p>
