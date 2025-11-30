@@ -38,6 +38,7 @@ interface Order {
   totalPrice: number;
   orderStatus?: string;
   paymentConfirmed?: number;
+  pickupTime?: string;
   createdAt: string;
 }
 
@@ -434,6 +435,11 @@ export function Dashboard() {
                           </div>
                           <p className="text-sm text-muted-foreground mt-1">
                             배송일: {order.deliveryDate}
+                            {order.pickupTime && (
+                              <span className="ml-2 font-medium text-foreground">
+                                {order.deliveryMethod === 'quick' ? '🚚 퀵 배송' : '🏪 픽업'} 시간: {order.pickupTime}
+                              </span>
+                            )}
                           </p>
                           <div className="flex flex-wrap gap-1 mt-2">
                             {order.orderItems.slice(0, 3).map((item, idx) => (
