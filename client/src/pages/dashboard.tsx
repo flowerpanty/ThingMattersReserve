@@ -275,6 +275,13 @@ export function Dashboard() {
   return (
     <div className="min-h-screen bg-background p-3 md:p-6">
       <div className="mx-auto max-w-7xl space-y-4 md:space-y-6">
+        import {Dialog, DialogContent, DialogTrigger} from "@/components/ui/dialog";
+        import {Bell} from 'lucide-react';
+
+        // ... (existing imports)
+
+        // ... (inside Dashboard component return)
+
         {/* 헤더 */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
@@ -282,6 +289,19 @@ export function Dashboard() {
             <p className="text-muted-foreground mt-1 text-sm md:text-base">낫띵메터스 예약 주문 시스템</p>
           </div>
           <div className="flex items-center gap-2 md:gap-3">
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button variant="outline" size="sm" className="flex-1 sm:flex-none">
+                  <Bell className="w-4 h-4 mr-2" />
+                  <span className="hidden sm:inline">알림 설정</span>
+                  <span className="sm:hidden">알림</span>
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <PushNotificationToggle />
+              </DialogContent>
+            </Dialog>
+
             <Link href="/">
               <Button variant="outline" size="sm" className="flex-1 sm:flex-none" data-testid="link-order-form">
                 <ShoppingCart className="w-4 h-4 mr-2" />
