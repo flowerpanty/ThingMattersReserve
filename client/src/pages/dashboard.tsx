@@ -98,13 +98,15 @@ export function Dashboard() {
     }
   };
 
-  // 입금 확인 토글 함수
+  // 입금 확인 토글 함수  
   const togglePaymentConfirmed = async (orderId: string, confirmed: boolean) => {
     try {
-      await apiRequest('PATCH', `/api/orders/${orderId}/payment`, {
+      const response = await apiRequest('PATCH', `/api/orders/${orderId}/payment`, {
         confirmed
       });
-      queryClient.invalidateQueries({ queryKey: ['/api/orders'] });
+
+      // 즉시 UI 업데이트
+      await queryClient.invalidateQueries({ queryKey: ['/api/orders'] });
       toast({ title: confirmed ? '입금이 확인되었습니다.' : '입금 확인이 취소되었습니다.' });
     } catch (error) {
       console.error('입금 상태 업데이트 실패:', error);
@@ -115,16 +117,10 @@ export function Dashboard() {
   // 주문 삭제
   const handleDeleteOrder = async (orderId: string) => {
     try {
-      const response = await apiRequest(`/api/orders/${orderId}`, {
-        method: 'DELETE',
-      });
+      await apiRequest('DELETE', `/api/orders/${orderId}`);
 
-      if (response.success) {
-        toast({ title: '주문이 삭제되었습니다.', variant: 'default' });
-        queryClient.invalidateQueries({ queryKey: ['/api/orders'] });
-      } else {
-        throw new Error('삭제 실패');
-      }
+      toast({ title: '주문이 삭제되었습니다.', variant: 'default' });
+      await queryClient.invalidateQueries({ queryKey: ['/api/orders'] });
     } catch (error) {
       console.error('주문 삭제 실패:', error);
       toast({ title: '주문 삭제 실패', variant: 'destructive' });
