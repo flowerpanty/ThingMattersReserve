@@ -1,6 +1,5 @@
-import { type Order, type InsertOrder, orders } from "@shared/schema";
-import { db } from "./db";
-import { eq } from "drizzle-orm";
+import { type Order, type InsertOrder } from "@shared/schema";
+import { randomUUID } from "crypto";
 
 export interface IStorage {
   getOrder(id: string): Promise<Order | undefined>;
@@ -11,65 +10,67 @@ export interface IStorage {
   deleteOrder(id: string): Promise<boolean>;
 }
 
-export class PostgreStorage implements IStorage {
+export class MemStorage implements IStorage {
+  private orders: Map<string, Order>;
+
+  constructor() {
+    this.orders = new Map();
+  }
+
   async getOrder(id: string): Promise<Order | undefined> {
-    const result = await db.select().from(orders).where(eq(orders.id, id));
-    return result[0];
+    return this.orders.get(id);
   }
 
   async createOrder(insertOrder: InsertOrder): Promise<Order> {
-    const result = await db.insert(orders).values(insertOrder).returning();
-    const order = result[0];
-    console.log(`주문 저장됨 (DB): ID=${order.id}, 고객명=${order.customerName}`);
+    const id = randomUUID();
+    const order: Order = {
+      ...insertOrder,
+      id,
+      createdAt: new Date()
+    };
+    this.orders.set(id, order);
+    console.log(`주문 저장됨: ID=${id}, 고객명=${order.customerName}, 총 주문 수=${this.orders.size}`);
     return order;
   }
 
   async getAllOrders(): Promise<Order[]> {
-    const result = await db.select().from(orders);
-    return result;
+    return Array.from(this.orders.values());
   }
 
   async updateOrderStatus(id: string, status: string): Promise<Order | undefined> {
-    const result = await db
-      .update(orders)
-      .set({ orderStatus: status })
-      .where(eq(orders.id, id))
-      .returning();
+    const order = this.orders.get(id);
+    if (!order) return undefined;
 
-    if (result.length > 0) {
-      console.log(`주문 상태 업데이트 (DB): ID=${id}, 상태=${status}`);
-      return result[0];
-    }
-    return undefined;
+    const updatedOrder: Order = { ...order, orderStatus: status };
+    this.orders.set(id, updatedOrder);
+    console.log(`주문 상태 업데이트: ID=${id}, 상태=${status}`);
+    return updatedOrder;
   }
 
   async updatePaymentStatus(id: string, confirmed: boolean): Promise<Order | undefined> {
-    const result = await db
-      .update(orders)
-      .set({
-        paymentConfirmed: confirmed ? 1 : 0,
-        // 입금 확인되면 자동으로 상태를 payment_confirmed로 변경
-        orderStatus: confirmed ? 'payment_confirmed' : undefined,
-      })
-      .where(eq(orders.id, id))
-      .returning();
+    const order = this.orders.get(id);
+    if (!order) return undefined;
 
-    if (result.length > 0) {
-      console.log(`입금 상태 업데이트 (DB): ID=${id}, 입금확인=${confirmed}`);
-      return result[0];
-    }
-    return undefined;
+    const updatedOrder: Order = {
+      ...order,
+      paymentConfirmed: confirmed ? 1 : 0,
+      // 입금 확인되면 자동으로 상태를 payment_confirmed로 변경
+      orderStatus: confirmed ? 'payment_confirmed' : order.orderStatus
+    };
+    this.orders.set(id, updatedOrder);
+    console.log(`입금 상태 업데이트: ID=${id}, 입금확인=${confirmed}`);
+    return updatedOrder;
   }
 
   async deleteOrder(id: string): Promise<boolean> {
-    const result = await db.delete(orders).where(eq(orders.id, id)).returning();
-
-    if (result.length > 0) {
-      console.log(`주문 삭제 (DB): ID=${id}`);
+    const exists = this.orders.has(id);
+    if (exists) {
+      this.orders.delete(id);
+      console.log(`주문 삭제: ID=${id}`);
       return true;
     }
     return false;
   }
 }
 
-export const storage = new PostgreStorage();
+export const storage = new MemStorage();
