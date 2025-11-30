@@ -291,6 +291,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           customerContact: orderData.customerContact,
           deliveryDate: orderData.deliveryDate,
           deliveryMethod: orderData.deliveryMethod,
+          pickupTime: orderData.pickupTime,
           orderItems,
           totalPrice,
         });

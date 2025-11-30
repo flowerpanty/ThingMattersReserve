@@ -103,13 +103,15 @@ export function Dashboard() {
   // 입금 확인 토글 함수  
   const togglePaymentConfirmed = async (orderId: string, confirmed: boolean) => {
     try {
-      const response = await apiRequest('PATCH', `/api/orders/${orderId}/payment`, {
-        confirmed
-      });
+      const response = await apiRequest('PATCH', `/api/orders/${orderId}/payment`, { confirmed });
 
-      // 즉시 UI 업데이트
+      // 쿼리 무효화 및 데이터 갱신 대기
       await queryClient.invalidateQueries({ queryKey: ['/api/orders'] });
-      toast({ title: confirmed ? '입금이 확인되었습니다.' : '입금 확인이 취소되었습니다.' });
+
+      toast({
+        title: confirmed ? "입금 확인 완료" : "입금 확인 취소",
+        description: confirmed ? "주문 상태가 '결제완료'로 변경되었습니다." : "주문 상태가 '대기중'으로 변경되었습니다.",
+      });
     } catch (error) {
       console.error('입금 상태 업데이트 실패:', error);
       toast({ title: '입금 상태 업데이트 실패', variant: 'destructive' });
