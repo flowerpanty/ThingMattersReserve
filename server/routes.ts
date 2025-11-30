@@ -295,6 +295,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           orderItems,
           totalPrice,
         });
+        console.log(`[API] 주문 생성 완료: ID=${order.id}, PickupTime=${orderData.pickupTime}`);
 
         // 새 주문 푸시 알림 전송 (백그라운드에서 실행)
         if (pushNotificationService.hasSubscriptions()) {
