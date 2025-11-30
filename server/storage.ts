@@ -19,6 +19,24 @@ export class PostgreStorage implements IStorage {
     return result;
   }
 
+  async getOrder(id: string): Promise<Order | undefined> {
+    const result = await db.select().from(orders).where(eq(orders.id, id));
+    return result[0];
+  }
+
+  async createOrder(insertOrder: InsertOrder): Promise<Order> {
+    // 애플리케이션 레벨에서 UUID 생성
+    const newOrder = {
+      ...insertOrder,
+      id: randomUUID(),
+    };
+
+    const result = await db.insert(orders).values(newOrder).returning();
+    const order = result[0];
+    console.log(`주문 저장됨 (DB): ID=${order.id}, 고객명=${order.customerName}`);
+    return order;
+  }
+
   async updateOrderStatus(id: string, status: string): Promise<Order | undefined> {
     const result = await db
       .update(orders)
