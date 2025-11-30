@@ -13,6 +13,9 @@ import { apiRequest } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
 import { PushNotificationToggle } from '@/components/push-notification-toggle';
 import { AdminAuth } from '@/components/admin-auth';
+import { OrderDetailModal } from '@/components/order-detail-modal';
+import { Input } from '@/components/ui/input';
+import { Search } from 'lucide-react';
 
 interface OrderItem {
   type: string;
@@ -27,6 +30,7 @@ interface Order {
   customerName: string;
   customerContact: string;
   deliveryDate: string;
+  deliveryMethod?: string;
   orderItems: OrderItem[];
   totalPrice: number;
   createdAt: string;
@@ -53,6 +57,8 @@ export function Dashboard() {
   });
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
   const [generatedMessage, setGeneratedMessage] = useState('');
   const [messageType, setMessageType] = useState<'order_confirm' | 'payment_confirm' | 'ready_for_pickup'>('order_confirm');
   const [isGeneratingMessage, setIsGeneratingMessage] = useState(false);
@@ -100,7 +106,7 @@ export function Dashboard() {
         orderId,
         messageType: type
       });
-      
+
       const result = await response.json();
       setGeneratedMessage(result.message);
       toast({
@@ -137,10 +143,27 @@ export function Dashboard() {
     }
   };
 
-  // 통계 계산
+  // 주문 상세 보기
+  const handleViewOrderDetail = (order: Order) => {
+    setSelectedOrder(order);
+    setIsModalOpen(true);
+  };
+
+  // 주문 검색 필터링
+  const filteredOrders = orders.filter(order => {
+    if (!searchQuery) return true;
+    const query = searchQuery.toLowerCase();
+    return (
+      order.customerName.toLowerCase().includes(query) ||
+      order.customerContact.toLowerCase().includes(query) ||
+      order.id.toLowerCase().includes(query)
+    );
+  });
+
+  // 통계 계산 (검색 필터링 결과 기반)
   const stats: DashboardStats = {
     totalOrders: orders.length,
-    todayOrders: orders.filter(order => 
+    todayOrders: orders.filter(order =>
       new Date(order.createdAt).toDateString() === new Date().toDateString()
     ).length,
     totalRevenue: orders.reduce((sum, order) => sum + order.totalPrice, 0),
@@ -155,7 +178,7 @@ export function Dashboard() {
     });
   });
   stats.popularProducts = Object.entries(productCounts)
-    .sort(([,a], [,b]) => b - a)
+    .sort(([, a], [, b]) => b - a)
     .slice(0, 5)
     .map(([name, count]) => ({ name, count }));
 
@@ -194,8 +217,8 @@ export function Dashboard() {
                 <span className="sm:hidden">주문</span>
               </Button>
             </Link>
-            <Button 
-              onClick={() => refetchOrders()} 
+            <Button
+              onClick={() => refetchOrders()}
               variant="outline"
               size="sm"
               className="flex-1 sm:flex-none"
@@ -277,22 +300,45 @@ export function Dashboard() {
           <TabsContent value="orders" className="space-y-4">
             <Card className="card-shadow">
               <CardHeader>
-                <CardTitle>최근 주문 목록</CardTitle>
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+                  <CardTitle>최근 주문 목록</CardTitle>
+                  <div className="relative w-full md:w-64">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <Input
+                      type="text"
+                      placeholder="이름, 연락처 검색..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="pl-9"
+                      data-testid="search-orders"
+                    />
+                  </div>
+                </div>
               </CardHeader>
               <CardContent>
                 {ordersLoading ? (
                   <div className="text-center py-8">📦 주문 데이터를 불러오는 중...</div>
-                ) : orders.length === 0 ? (
+                ) : filteredOrders.length === 0 ? (
                   <div className="text-center py-8 text-muted-foreground">
-                    📄 아직 주문이 없습니다.<br />
-                    <span className="text-xs">새로운 주문이 들어오면 여기에 표시됩니다.</span>
+                    {searchQuery ? (
+                      <>
+                        🔍 검색 결과가 없습니다.<br />
+                        <span className="text-xs">다른 검색어를 입력해보세요.</span>
+                      </>
+                    ) : (
+                      <>
+                        📄 아직 주문이 없습니다.<br />
+                        <span className="text-xs">새로운 주문이 들어오면 여기에 표시됩니다.</span>
+                      </>
+                    )}
                   </div>
                 ) : (
                   <div className="space-y-3">
-                    {orders.slice(0, 10).map((order) => (
+                    {filteredOrders.slice(0, 20).map((order) => (
                       <div
                         key={order.id}
-                        className="flex items-center justify-between p-4 border border-border rounded-lg hover:bg-muted/50 transition-colors"
+                        onClick={() => handleViewOrderDetail(order)}
+                        className="flex items-center justify-between p-4 border border-border rounded-lg hover:bg-muted/50 transition-all cursor-pointer hover:shadow-md"
                         data-testid={`order-${order.id}`}
                       >
                         <div className="flex-1">
@@ -367,7 +413,7 @@ export function Dashboard() {
                 )}
               </CardContent>
             </Card>
-            
+
             {/* 카카오톡 메시지 미리보기 */}
             {generatedMessage && (
               <Card className="card-shadow">
@@ -478,8 +524,8 @@ export function Dashboard() {
                       <ResponsiveContainer width="100%" height="100%">
                         <BarChart data={stats.popularProducts}>
                           <CartesianGrid strokeDasharray="3 3" />
-                          <XAxis 
-                            dataKey="name" 
+                          <XAxis
+                            dataKey="name"
                             tick={{ fontSize: 10 }}
                             angle={-45}
                             textAnchor="end"
@@ -487,7 +533,7 @@ export function Dashboard() {
                             interval={0}
                           />
                           <YAxis tick={{ fontSize: 10 }} />
-                          <Tooltip 
+                          <Tooltip
                             formatter={(value) => [`${value}개`, '주문량']}
                             labelStyle={{ color: '#333' }}
                           />
@@ -512,7 +558,7 @@ export function Dashboard() {
                       const date = new Date();
                       date.setDate(date.getDate() - i);
                       const dateStr = date.toDateString();
-                      const dayOrders = orders.filter(order => 
+                      const dayOrders = orders.filter(order =>
                         new Date(order.createdAt).toDateString() === dateStr
                       );
                       last7Days.push({
@@ -521,7 +567,7 @@ export function Dashboard() {
                         revenue: dayOrders.reduce((sum, order) => sum + order.totalPrice, 0)
                       });
                     }
-                    
+
                     return (
                       <div className="h-48 md:h-64">
                         <ResponsiveContainer width="100%" height="100%">
@@ -529,17 +575,17 @@ export function Dashboard() {
                             <CartesianGrid strokeDasharray="3 3" />
                             <XAxis dataKey="date" tick={{ fontSize: 10 }} />
                             <YAxis tick={{ fontSize: 10 }} />
-                            <Tooltip 
+                            <Tooltip
                               formatter={(value, name) => {
                                 if (name === 'orders') return [`${value}건`, '주문 수'];
                                 if (name === 'revenue') return [`${formatCurrency(Number(value))}`, '매출'];
                                 return [value, name];
                               }}
                             />
-                            <Line 
-                              type="monotone" 
-                              dataKey="orders" 
-                              stroke="hsl(var(--primary))" 
+                            <Line
+                              type="monotone"
+                              dataKey="orders"
+                              stroke="hsl(var(--primary))"
                               strokeWidth={2}
                               dot={{ fill: 'hsl(var(--primary))', strokeWidth: 2, r: 3 }}
                             />
@@ -568,14 +614,14 @@ export function Dashboard() {
                         productRevenue[item.name] = (productRevenue[item.name] || 0) + (item.price * item.quantity);
                       });
                     });
-                    
+
                     const pieData = Object.entries(productRevenue)
-                      .sort(([,a], [,b]) => b - a)
+                      .sort(([, a], [, b]) => b - a)
                       .slice(0, 5)
                       .map(([name, revenue]) => ({ name, value: revenue }));
-                    
+
                     const colors = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8'];
-                    
+
                     return pieData.length === 0 ? (
                       <div className="text-center py-8 text-muted-foreground">
                         매출 데이터가 없습니다.
@@ -627,7 +673,7 @@ export function Dashboard() {
                   <div className="flex justify-between items-center p-3 bg-muted/30 rounded-lg">
                     <span className="text-sm md:text-base">평균 주문 금액</span>
                     <span className="font-bold text-xs md:text-base">
-                      {orders.length > 0 
+                      {orders.length > 0
                         ? formatCurrency(Math.round(stats.totalRevenue / orders.length))
                         : '0원'
                       }
@@ -650,7 +696,7 @@ export function Dashboard() {
                           startOfWeek.setDate(now.getDate() - now.getDay());
                           return orderDate >= startOfWeek;
                         });
-                        return thisWeekOrders.length > 0 
+                        return thisWeekOrders.length > 0
                           ? `${Math.round(thisWeekOrders.length / 7)}건/일`
                           : '0건/일';
                       })()
@@ -665,6 +711,13 @@ export function Dashboard() {
             </div>
           </TabsContent>
         </Tabs>
+
+        {/* 주문 상세 모달 */}
+        <OrderDetailModal
+          order={selectedOrder}
+          isOpen={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+        />
       </div>
     </div>
   );
