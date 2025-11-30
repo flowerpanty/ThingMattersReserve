@@ -55,13 +55,26 @@ export function OrderDetailModal({ order, isOpen, onClose, onDelete }: OrderDeta
 
     const handleDownloadQuote = async () => {
         try {
+            // 주문 데이터를 API 형식에 맞게 변환
+            const quoteData = {
+                customerName: order.customerName,
+                customerContact: order.customerContact,
+                deliveryDate: order.deliveryDate,
+                deliveryMethod: order.deliveryMethod || 'pickup',
+                orderItems: order.orderItems,
+            };
+
             const response = await fetch('/api/generate-quote', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ orderId: order.id }),
+                body: JSON.stringify(quoteData),
             });
 
-            if (!response.ok) throw new Error('견적서 생성 실패');
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.error('견적서 생성 실패:', errorText);
+                throw new Error(`견적서 생성 실패: ${response.status}`);
+            }
 
             const blob = await response.blob();
             const url = window.URL.createObjectURL(blob);
@@ -74,7 +87,7 @@ export function OrderDetailModal({ order, isOpen, onClose, onDelete }: OrderDeta
             window.URL.revokeObjectURL(url);
         } catch (error) {
             console.error('견적서 다운로드 오류:', error);
-            alert('견적서 다운로드에 실패했습니다.');
+            alert('견적서 다운로드에 실패했습니다. 오류: ' + (error instanceof Error ? error.message : String(error)));
         }
     };
 
