@@ -1,4 +1,5 @@
-import { Card, CardContent } from "@/components/ui/card";
+import React, { useRef } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cookieTypes, drinkTypes } from "@shared/schema";
 
 interface QuotePreviewProps {
@@ -172,6 +173,9 @@ export function QuotePreview({ formData, pricing }: QuotePreviewProps) {
             <div>이메일: {formData.customerContact || '미입력'}</div>
             <div>수령일: {formData.deliveryDate || '미선택'}</div>
             <div>수령방법: {formData.deliveryMethod === 'pickup' ? '매장 픽업' : '퀵 배송'}</div>
+            {formData.pickupTime && (
+              <div>시간: {formData.pickupTime}</div>
+            )}
           </div>
         </div>
 

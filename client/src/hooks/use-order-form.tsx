@@ -10,6 +10,7 @@ const initialFormData: OrderData = {
   customerPhone: '',
   deliveryDate: '',
   deliveryMethod: 'pickup',
+  pickupTime: '',
   deliveryAddress: '',
   regularCookies: {},
   packaging: undefined,
@@ -89,25 +90,56 @@ export function useOrderForm() {
     },
   });
 
-  const updateFormData = useCallback((field: string, value: any) => {
+  // 초기 데이터 로드
+  useEffect(() => {
+    const savedData = localStorage.getItem('orderFormData');
+    if (savedData) {
+      try {
+        const parsed = JSON.parse(savedData);
+        // 날짜 형식이 올바른지 확인
+        if (parsed.deliveryDate) {
+          setFormData(prev => ({ ...prev, ...parsed }));
+        }
+      } catch (e) {
+        console.error('Failed to load saved form data', e);
+      }
+    }
+  }, []);
+
+  // 폼 데이터 변경 시 저장
+  useEffect(() => {
+    localStorage.setItem('orderFormData', JSON.stringify(formData));
+  }, [formData]);
+
+  const updateFormData = useCallback((field: keyof OrderData, value: any) => {
     setFormData(prev => ({
       ...prev,
       [field]: value,
     }));
   }, []);
 
+  const updateRegularCookie = useCallback((type: string, qty: number) => {
+    setFormData(prev => ({
+      ...prev,
+      regularCookies: {
+        ...prev.regularCookies,
+        [type]: qty
+      }
+    }));
+  }, []);
+
   const handleSubmit = useCallback((e: React.FormEvent) => {
     e.preventDefault();
-    
+
     console.log('폼 제출 시도:', formData);
-    
+
     try {
       // Validate form data
       const validatedData = orderDataSchema.parse(formData);
       console.log('검증된 데이터:', validatedData);
-      
+
       // Check if at least one product is selected
-      const hasProducts = 
+      const hasProducts =
         Object.values(validatedData.regularCookies).some(qty => qty > 0) ||
         validatedData.brownieCookieSets.length > 0 ||
         validatedData.twoPackSets.length > 0 ||
@@ -115,7 +147,7 @@ export function useOrderForm() {
         validatedData.sconeSets.length > 0 ||
         validatedData.fortuneCookie > 0 ||
         validatedData.airplaneSandwich > 0;
-      
+
       if (!hasProducts) {
         toast({
           title: "제품을 선택해주세요",

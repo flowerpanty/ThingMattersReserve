@@ -68,6 +68,7 @@ app.use((req, res, next) => {
           customer_contact TEXT NOT NULL,
           delivery_date TEXT NOT NULL,
           delivery_method TEXT NOT NULL DEFAULT 'pickup',
+          pickup_time TEXT,
           order_items JSON NOT NULL,
           total_price INTEGER NOT NULL,
           order_status TEXT NOT NULL DEFAULT 'pending',
@@ -76,6 +77,13 @@ app.use((req, res, next) => {
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
       `);
+
+      // 기존 테이블에 pickup_time 컬럼 추가 (이미 존재하는 경우를 대비해 별도 실행)
+      try {
+        await db.execute(sql`ALTER TABLE orders ADD COLUMN IF NOT EXISTS pickup_time TEXT`);
+      } catch (e) {
+        console.log('ℹ️ pickup_time 컬럼 추가 건너뜀 (이미 존재하거나 오류 발생)');
+      }
 
       console.log('✅ 데이터베이스 테이블 준비 완료!');
     } else {

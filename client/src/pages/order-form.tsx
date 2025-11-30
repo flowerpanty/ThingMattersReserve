@@ -38,26 +38,27 @@ export default function OrderForm() {
 
       <main className="max-w-4xl mx-auto px-4 py-8 space-y-8">
         <form onSubmit={handleSubmit} className="space-y-8" data-testid="order-form">
-          
-          <CustomerInfo 
+
+          <CustomerInfo
             customerName={formData.customerName}
             customerContact={formData.customerContact}
             customerPhone={formData.customerPhone}
             onUpdate={(field, value) => updateFormData(field, value)}
           />
 
-          <DeliveryDate 
+          <DeliveryDate
             deliveryDate={formData.deliveryDate}
             onUpdate={(value) => updateFormData('deliveryDate', value)}
           />
 
-          <DeliveryMethod 
+          <DeliveryMethod
             deliveryMethod={formData.deliveryMethod}
             deliveryAddress={formData.deliveryAddress || ''}
+            pickupTime={formData.pickupTime}
             onUpdate={(field, value) => updateFormData(field, value)}
           />
 
-          <ProductSelection 
+          <ProductSelection
             regularCookies={formData.regularCookies}
             packaging={formData.packaging}
             brownieCookieSets={formData.brownieCookieSets}
@@ -72,7 +73,7 @@ export default function OrderForm() {
           <PriceSummary pricing={pricing} />
 
           <OrderActions isSubmitting={isSubmitting} />
-          
+
         </form>
       </main>
 
@@ -87,13 +88,13 @@ export default function OrderForm() {
           </div>
         </div>
       </footer>
-      
+
       {/* Kakao Consultation Modal */}
-      <FinalKakaoModal 
+      <FinalKakaoModal
         isOpen={showKakaoModal}
         onClose={() => setShowKakaoModal(false)}
       />
-      
+
     </div>
   );
 }

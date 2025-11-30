@@ -1,15 +1,34 @@
 import { Card, CardContent } from "@/components/ui/card";
+import React from 'react';
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface DeliveryMethodProps {
   deliveryMethod: string;
   deliveryAddress: string;
+  pickupTime?: string;
   onUpdate: (field: string, value: string) => void;
 }
 
-export function DeliveryMethod({ deliveryMethod, deliveryAddress, onUpdate }: DeliveryMethodProps) {
+export function DeliveryMethod({ deliveryMethod, deliveryAddress, pickupTime, onUpdate }: DeliveryMethodProps) {
+  const timeOptions = [
+    "10:00~11:00",
+    "11:00~12:00",
+    "12:00~13:00",
+    "13:00~14:00",
+    "14:00~15:00",
+    "15:00~16:00",
+    "16:00~17:00",
+  ];
+
   return (
     <Card className="card-shadow">
       <CardContent className="p-6">
@@ -17,9 +36,9 @@ export function DeliveryMethod({ deliveryMethod, deliveryAddress, onUpdate }: De
           <span className="w-8 h-8 bg-primary rounded-full flex items-center justify-center text-primary-foreground text-sm font-bold">3</span>
           수령 방법
         </h2>
-        
-        <RadioGroup 
-          value={deliveryMethod} 
+
+        <RadioGroup
+          value={deliveryMethod}
           onValueChange={(value) => onUpdate('deliveryMethod', value)}
           className="grid grid-cols-1 md:grid-cols-2 gap-4"
         >
@@ -30,7 +49,7 @@ export function DeliveryMethod({ deliveryMethod, deliveryAddress, onUpdate }: De
               <div className="text-sm text-muted-foreground mt-1">직접 매장에서 수령</div>
             </Label>
           </div>
-          
+
           <div className="flex items-center space-x-2 p-4 bg-card rounded-lg border border-input hover:bg-accent/50 transition-colors cursor-pointer">
             <RadioGroupItem value="quick" id="quick" data-testid="radio-quick" />
             <Label htmlFor="quick" className="cursor-pointer flex-1">
@@ -39,7 +58,32 @@ export function DeliveryMethod({ deliveryMethod, deliveryAddress, onUpdate }: De
             </Label>
           </div>
         </RadioGroup>
-        
+
+        {/* 픽업/배송 시간 선택 */}
+        <div className="mt-6 p-4 bg-accent/20 rounded-lg">
+          <Label className="text-sm font-medium mb-2 block">
+            {deliveryMethod === 'pickup' ? '픽업 시간 선택 *' : '퀵 배송 희망 시간 *'}
+          </Label>
+          <Select
+            value={pickupTime}
+            onValueChange={(value) => onUpdate('pickupTime', value)}
+          >
+            <SelectTrigger className="w-full bg-background">
+              <SelectValue placeholder="시간을 선택해주세요" />
+            </SelectTrigger>
+            <SelectContent>
+              {timeOptions.map((time) => (
+                <SelectItem key={time} value={time}>
+                  {time}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <p className="text-xs text-muted-foreground mt-2">
+            * 매장 운영 시간: 10:00 ~ 17:00
+          </p>
+        </div>
+
         {/* 퀵배송 선택 시 주소 입력 칸 */}
         {deliveryMethod === 'quick' && (
           <div className="mt-4 p-4 bg-accent/20 rounded-lg">
@@ -59,7 +103,7 @@ export function DeliveryMethod({ deliveryMethod, deliveryAddress, onUpdate }: De
             </p>
           </div>
         )}
-        
+
         <div className="mt-4 p-3 bg-muted/50 rounded-lg">
           <p className="text-xs text-muted-foreground">
             💡 퀵 배송의 경우 별도 배송비가 발생할 수 있습니다. 정확한 배송비는 견적서에서 확인해주세요.

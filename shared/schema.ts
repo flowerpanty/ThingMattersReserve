@@ -9,6 +9,7 @@ export const orders = pgTable("orders", {
   customerContact: text("customer_contact").notNull(),
   deliveryDate: text("delivery_date").notNull(),
   deliveryMethod: text("delivery_method").notNull().default('pickup'),
+  pickupTime: text("pickup_time"), // 픽업/배송 시간 (예: "10:00~11:00")
   orderItems: json("order_items").notNull(),
   totalPrice: integer("total_price").notNull(),
   orderStatus: text("order_status").notNull().default('pending'), // pending, payment_confirmed, in_production, completed
@@ -31,6 +32,7 @@ export const orderDataSchema = z.object({
   customerPhone: z.string().optional(),
   deliveryDate: z.string().min(1, "날짜를 선택해주세요"),
   deliveryMethod: z.enum(['pickup', 'quick']).default('pickup'),
+  pickupTime: z.string().optional(),
   deliveryAddress: z.string().optional(),
   regularCookies: z.record(z.number().min(0)).default({}),
   packaging: z.enum(['single_box', 'plastic_wrap', 'oil_paper']).optional(),

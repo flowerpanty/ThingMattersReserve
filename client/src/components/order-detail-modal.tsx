@@ -6,6 +6,7 @@ import { Calendar, Mail, Package, MapPin, Clock, DollarSign, Download, Trash2 } 
 import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
 import { ko } from "date-fns/locale";
+import React from "react";
 import { useState } from 'react';
 
 interface OrderItem {
@@ -22,6 +23,7 @@ interface Order {
     customerContact: string;
     deliveryDate: string;
     deliveryMethod?: string;
+    pickupTime?: string;
     orderItems: OrderItem[];
     totalPrice: number;
     createdAt: string;
@@ -61,6 +63,7 @@ export function OrderDetailModal({ order, isOpen, onClose, onDelete }: OrderDeta
                 customerContact: order.customerContact,
                 deliveryDate: order.deliveryDate,
                 deliveryMethod: order.deliveryMethod || 'pickup',
+                pickupTime: order.pickupTime,
                 orderItems: order.orderItems,
             };
 
@@ -210,6 +213,15 @@ export function OrderDetailModal({ order, isOpen, onClose, onDelete }: OrderDeta
                                 <span className="text-sm text-muted-foreground">배송/픽업 날짜</span>
                                 <span className="font-medium">{order.deliveryDate}</span>
                             </div>
+                            {order.pickupTime && (
+                                <>
+                                    <Separator />
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-sm text-muted-foreground">시간</span>
+                                        <span className="font-medium">{order.pickupTime}</span>
+                                    </div>
+                                </>
+                            )}
                         </div>
                     </div>
 

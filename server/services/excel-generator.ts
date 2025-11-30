@@ -85,12 +85,16 @@ export class ExcelGenerator {
     worksheet.mergeCells('A3:D3');
     const deliveryMethodText = orderData.deliveryMethod === 'pickup' ? '매장 픽업' : '퀵 배송';
     let deliveryText = `수령 방법: ${deliveryMethodText} | 수령 희망일: ${orderData.deliveryDate}`;
-    
+
+    if (orderData.pickupTime) {
+      deliveryText += ` | 시간: ${orderData.pickupTime}`;
+    }
+
     // 퀵배송 시 주소 추가
     if (orderData.deliveryMethod === 'quick' && orderData.deliveryAddress) {
       deliveryText += `\n배송 주소: ${orderData.deliveryAddress}`;
     }
-    
+
     worksheet.getCell('A3').value = deliveryText;
     worksheet.getRow(3).height = orderData.deliveryMethod === 'quick' && orderData.deliveryAddress ? 45 : 28;
 
@@ -109,13 +113,13 @@ export class ExcelGenerator {
     // 6. 주문 항목들 추가
     let currentRow = 6;
     let totalAmount = 0;
-    
+
     // 일반 쿠키
     const regularCookieQuantity = Object.values(orderData.regularCookies || {}).reduce((sum, qty) => sum + qty, 0);
     if (regularCookieQuantity > 0) {
       const amount = regularCookieQuantity * cookiePrices.regular;
       totalAmount += amount;
-      
+
       worksheet.getCell(currentRow, 1).value = '일반쿠키';
       worksheet.getCell(currentRow, 1).style = cellStyle;
       worksheet.getCell(currentRow, 2).value = regularCookieQuantity;
@@ -127,13 +131,13 @@ export class ExcelGenerator {
       worksheet.getRow(currentRow).height = 35;
       currentRow++;
     }
-    
+
     // 2구 패키지 (다중 세트 및 수량)
     if (orderData.twoPackSets?.length > 0) {
       const totalTwoPackQuantity = orderData.twoPackSets.reduce((sum: number, set: any) => sum + (set.quantity || 1), 0);
       const amount = totalTwoPackQuantity * cookiePrices.twoPackSet;
       totalAmount += amount;
-      
+
       worksheet.getCell(currentRow, 1).value = '2구 패키지';
       worksheet.getCell(currentRow, 1).style = cellStyle;
       worksheet.getCell(currentRow, 2).value = totalTwoPackQuantity;
@@ -145,13 +149,13 @@ export class ExcelGenerator {
       worksheet.getRow(currentRow).height = 35;
       currentRow++;
     }
-    
+
     // 1구 + 음료 (다중 세트 및 수량)
     if (orderData.singleWithDrinkSets?.length > 0) {
       const totalSingleWithDrinkQuantity = orderData.singleWithDrinkSets.reduce((sum: number, set: any) => sum + (set.quantity || 1), 0);
       const amount = totalSingleWithDrinkQuantity * cookiePrices.singleWithDrink;
       totalAmount += amount;
-      
+
       worksheet.getCell(currentRow, 1).value = '1구 + 음료';
       worksheet.getCell(currentRow, 1).style = cellStyle;
       worksheet.getCell(currentRow, 2).value = totalSingleWithDrinkQuantity;
@@ -173,35 +177,35 @@ export class ExcelGenerator {
       let totalCustomStickerCount = 0;
       let totalHeartMessageQuantity = 0;
       let hasCustomTopper = false;
-      
+
       orderData.brownieCookieSets.forEach((set: any) => {
         const quantity = set.quantity || 1;
-        
+
         // 기본 브라우니 수량 및 금액
         totalBrownieQuantity += quantity;
         baseBrownieAmount += quantity * cookiePrices.brownie;
-        
+
         // 생일곰 옵션
         if (set.shape === 'birthdayBear') {
           totalBirthdayBearQuantity += quantity;
         }
-        
+
         // 커스텀 스티커 (세트당)
         if (set.customSticker) {
           totalCustomStickerCount += 1;
         }
-        
+
         // 하트 메시지 (수량만큼)
         if (set.heartMessage) {
           totalHeartMessageQuantity += quantity;
         }
-        
+
         // 커스텀 토퍼 체크
         if (set.customTopper) {
           hasCustomTopper = true;
         }
       });
-      
+
       // 기본 브라우니쿠키
       totalAmount += baseBrownieAmount;
       worksheet.getCell(currentRow, 1).value = '브라우니쿠키';
@@ -214,7 +218,7 @@ export class ExcelGenerator {
       worksheet.getCell(currentRow, 4).style = priceStyle;
       worksheet.getRow(currentRow).height = 35;
       currentRow++;
-      
+
       // 커스텀토퍼 (수량, 단가는 빈칸)
       if (hasCustomTopper) {
         worksheet.getCell(currentRow, 1).value = '└ 커스텀토퍼';
@@ -228,12 +232,12 @@ export class ExcelGenerator {
         worksheet.getRow(currentRow).height = 35;
         currentRow++;
       }
-      
+
       // 생일곰 추가 옵션
       if (totalBirthdayBearQuantity > 0) {
         const birthdayBearAmount = totalBirthdayBearQuantity * cookiePrices.brownieOptions.birthdayBear;
         totalAmount += birthdayBearAmount;
-        
+
         worksheet.getCell(currentRow, 1).value = '└ 생일곰 추가';
         worksheet.getCell(currentRow, 1).style = cellStyle;
         worksheet.getCell(currentRow, 2).value = totalBirthdayBearQuantity;
@@ -245,12 +249,12 @@ export class ExcelGenerator {
         worksheet.getRow(currentRow).height = 35;
         currentRow++;
       }
-      
+
       // 커스텀 스티커 옵션
       if (totalCustomStickerCount > 0) {
         const customStickerAmount = totalCustomStickerCount * cookiePrices.brownieOptions.customSticker;
         totalAmount += customStickerAmount;
-        
+
         worksheet.getCell(currentRow, 1).value = '└ 하단 커스텀 스티커';
         worksheet.getCell(currentRow, 1).style = cellStyle;
         worksheet.getCell(currentRow, 2).value = totalCustomStickerCount;
@@ -262,12 +266,12 @@ export class ExcelGenerator {
         worksheet.getRow(currentRow).height = 35;
         currentRow++;
       }
-      
+
       // 하트 메시지 옵션
       if (totalHeartMessageQuantity > 0) {
         const heartMessageAmount = totalHeartMessageQuantity * cookiePrices.brownieOptions.heartMessage;
         totalAmount += heartMessageAmount;
-        
+
         worksheet.getCell(currentRow, 1).value = '└ 하트안 문구 추가';
         worksheet.getCell(currentRow, 1).style = cellStyle;
         worksheet.getCell(currentRow, 2).value = totalHeartMessageQuantity;
@@ -280,26 +284,26 @@ export class ExcelGenerator {
         currentRow++;
       }
     }
-    
+
     // 스콘 (다중 세트 및 수량)
     if (orderData.sconeSets?.length > 0) {
       let totalSconeQuantity = 0;
       let baseSconeAmount = 0;
       let totalStrawberryJamQuantity = 0;
-      
+
       orderData.sconeSets.forEach((set: any) => {
         const quantity = set.quantity || 1;
-        
+
         // 기본 스콘 수량 및 금액
         totalSconeQuantity += quantity;
         baseSconeAmount += quantity * cookiePrices.scone;
-        
+
         // 딸기잼 추가 (수량만큼)
         if (set.strawberryJam) {
           totalStrawberryJamQuantity += quantity;
         }
       });
-      
+
       // 기본 스콘
       totalAmount += baseSconeAmount;
       worksheet.getCell(currentRow, 1).value = '스콘';
@@ -312,12 +316,12 @@ export class ExcelGenerator {
       worksheet.getCell(currentRow, 4).style = priceStyle;
       worksheet.getRow(currentRow).height = 35;
       currentRow++;
-      
+
       // 딸기잼 추가 옵션
       if (totalStrawberryJamQuantity > 0) {
         const strawberryJamAmount = totalStrawberryJamQuantity * cookiePrices.sconeOptions.strawberryJam;
         totalAmount += strawberryJamAmount;
-        
+
         worksheet.getCell(currentRow, 1).value = '└ 딸기잼 추가';
         worksheet.getCell(currentRow, 1).style = cellStyle;
         worksheet.getCell(currentRow, 2).value = totalStrawberryJamQuantity;
@@ -330,12 +334,12 @@ export class ExcelGenerator {
         currentRow++;
       }
     }
-    
+
     // 행운쿠키 (박스당)
     if (orderData.fortuneCookie > 0) {
       const amount = orderData.fortuneCookie * cookiePrices.fortune;
       totalAmount += amount;
-      
+
       worksheet.getCell(currentRow, 1).value = '행운쿠키';
       worksheet.getCell(currentRow, 1).style = cellStyle;
       worksheet.getCell(currentRow, 2).value = orderData.fortuneCookie + '박스';
@@ -347,12 +351,12 @@ export class ExcelGenerator {
       worksheet.getRow(currentRow).height = 35;
       currentRow++;
     }
-    
+
     // 비행기샌드쿠키 (박스당)
     if (orderData.airplaneSandwich > 0) {
       const amount = orderData.airplaneSandwich * cookiePrices.airplane;
       totalAmount += amount;
-      
+
       worksheet.getCell(currentRow, 1).value = '비행기샌드쿠키';
       worksheet.getCell(currentRow, 1).style = cellStyle;
       worksheet.getCell(currentRow, 2).value = orderData.airplaneSandwich + '박스';
@@ -364,17 +368,17 @@ export class ExcelGenerator {
       worksheet.getRow(currentRow).height = 35;
       currentRow++;
     }
-    
+
     // 포장비
     if (orderData.packaging) {
       const packagingPricePerItem = cookiePrices.packaging[orderData.packaging];
-      const packagingName = orderData.packaging === 'single_box' ? '1구박스' : 
-                           orderData.packaging === 'plastic_wrap' ? '비닐탭포장' : '유산지';
-      
+      const packagingName = orderData.packaging === 'single_box' ? '1구박스' :
+        orderData.packaging === 'plastic_wrap' ? '비닐탭포장' : '유산지';
+
       // 수량과 총액 계산 (routes.ts의 로직과 동일)
       let packagingQuantity;
       let totalPackagingPrice;
-      
+
       if (orderData.packaging === 'single_box' || orderData.packaging === 'plastic_wrap') {
         // 1구박스와 비닐탭포장은 일반 쿠키 개수만큼 계산
         packagingQuantity = regularCookieQuantity;
@@ -384,10 +388,10 @@ export class ExcelGenerator {
         packagingQuantity = 1;
         totalPackagingPrice = packagingPricePerItem;
       }
-      
+
       if (totalPackagingPrice > 0) {
         totalAmount += totalPackagingPrice;
-        
+
         worksheet.getCell(currentRow, 1).value = packagingName;
         worksheet.getCell(currentRow, 1).style = cellStyle;
         worksheet.getCell(currentRow, 2).value = packagingQuantity;
@@ -400,7 +404,7 @@ export class ExcelGenerator {
         currentRow++;
       }
     }
-    
+
     // 배송비 (퀵배송인 경우)
     if (orderData.deliveryMethod === 'quick') {
       worksheet.getCell(currentRow, 1).value = '배송비';
@@ -417,7 +421,7 @@ export class ExcelGenerator {
 
     // 7. 전체 합계
     currentRow += 1;
-    
+
     // 합계 선 - 병합할 모든 셀에 먼저 테두리 적용
     const totalStyle = {
       font: { bold: true, size: 12, name: 'Arial', color: { argb: 'FFFFFFFF' } },
@@ -425,13 +429,13 @@ export class ExcelGenerator {
       fill: { type: 'pattern' as const, pattern: 'solid' as const, fgColor: { argb: 'FF4F46E5' } },
       border: borderStyle
     };
-    
+
     for (let col = 1; col <= 3; col++) {
       worksheet.getCell(currentRow, col).style = totalStyle;
     }
     worksheet.mergeCells(`A${currentRow}:C${currentRow}`);
     worksheet.getCell(currentRow, 1).value = '총 합계';
-    
+
     worksheet.getCell(currentRow, 4).value = totalAmount;
     worksheet.getCell(currentRow, 4).style = {
       font: { bold: true, size: 12, name: 'Arial', color: { argb: 'FFFFFFFF' } },
@@ -441,7 +445,7 @@ export class ExcelGenerator {
       numFmt: '#,##0"원"'
     };
     worksheet.getRow(currentRow).height = 35;
-    
+
     currentRow += 2;
 
     // 8. 주문 상세 옵션
@@ -452,7 +456,7 @@ export class ExcelGenerator {
       fill: { type: 'pattern' as const, pattern: 'solid' as const, fgColor: { argb: 'FFF3F4F6' } },
       border: borderStyle
     };
-    
+
     for (let col = 1; col <= 4; col++) {
       worksheet.getCell(currentRow, col).style = detailHeaderStyle;
     }
@@ -460,14 +464,14 @@ export class ExcelGenerator {
     worksheet.getCell(currentRow, 1).value = '주문 상세 옵션';
     worksheet.getRow(currentRow).height = 30;
     currentRow++;
-    
+
     // 일반 쿠키 상세
     if (regularCookieQuantity > 0) {
       const selectedCookies = Object.entries(orderData.regularCookies || {})
         .filter(([_, qty]) => qty > 0)
         .map(([type, qty]) => `${type} ${qty}개`)
         .join(', ');
-      
+
       // 병합할 모든 셀에 먼저 테두리 적용
       for (let col = 1; col <= 4; col++) {
         worksheet.getCell(currentRow, col).style = leftAlignStyle;
@@ -493,7 +497,7 @@ export class ExcelGenerator {
         }
       });
     }
-    
+
     // 1구 + 음료 상세 (다중 세트)
     if (orderData.singleWithDrinkSets?.length > 0) {
       orderData.singleWithDrinkSets.forEach((set, index) => {
@@ -508,7 +512,7 @@ export class ExcelGenerator {
             detailText += `음료(${set.selectedDrink})`;
           }
         }
-        
+
         // 병합할 모든 셀에 먼저 테두리 적용
         for (let col = 1; col <= 4; col++) {
           worksheet.getCell(currentRow, col).style = leftAlignStyle;
@@ -526,7 +530,7 @@ export class ExcelGenerator {
         let detailText = `• 브라우니쿠키 세트 ${index + 1} (${set.quantity || 1}개)`;
         if (set.shape) {
           const shapeText = set.shape === 'bear' ? '곰' :
-                           set.shape === 'rabbit' ? '토끼' : '생일곰';
+            set.shape === 'rabbit' ? '토끼' : '생일곰';
           detailText += `: ${shapeText} 모양`;
         }
         if (set.customSticker) {
@@ -538,7 +542,7 @@ export class ExcelGenerator {
         if (set.customTopper) {
           detailText += ', 커스텀토퍼';
         }
-        
+
         // 병합할 모든 셀에 먼저 테두리 적용
         for (let col = 1; col <= 4; col++) {
           worksheet.getCell(currentRow, col).style = leftAlignStyle;
@@ -549,7 +553,7 @@ export class ExcelGenerator {
         currentRow++;
       });
     }
-    
+
     // 스콘 상세
     if (orderData.sconeSets?.length > 0) {
       orderData.sconeSets.forEach((set: any, index: number) => {
@@ -561,7 +565,7 @@ export class ExcelGenerator {
         if (set.strawberryJam) {
           detailText += ', 딸기잼 추가';
         }
-        
+
         // 병합할 모든 셀에 먼저 테두리 적용
         for (let col = 1; col <= 4; col++) {
           worksheet.getCell(currentRow, col).style = leftAlignStyle;
@@ -572,12 +576,12 @@ export class ExcelGenerator {
         currentRow++;
       });
     }
-    
+
     // 포장 옵션 상세
     if (orderData.packaging) {
-      const packagingName = orderData.packaging === 'single_box' ? '1구박스 (+500원)' : 
-                           orderData.packaging === 'plastic_wrap' ? '비닐탭포장 (+500원)' : '유산지 (무료)';
-      
+      const packagingName = orderData.packaging === 'single_box' ? '1구박스 (+500원)' :
+        orderData.packaging === 'plastic_wrap' ? '비닐탭포장 (+500원)' : '유산지 (무료)';
+
       // 병합할 모든 셀에 먼저 테두리 적용
       for (let col = 1; col <= 4; col++) {
         worksheet.getCell(currentRow, col).style = leftAlignStyle;
@@ -590,7 +594,7 @@ export class ExcelGenerator {
 
     // 9. 계좌번호 및 안내사항
     currentRow += 1;
-    
+
     // 병합할 모든 셀에 먼저 테두리 적용
     const accountStyle = {
       font: { bold: true, size: 11, name: 'Arial' },
@@ -598,7 +602,7 @@ export class ExcelGenerator {
       fill: { type: 'pattern' as const, pattern: 'solid' as const, fgColor: { argb: 'FFFEF3C7' } },
       border: borderStyle
     };
-    
+
     for (let col = 1; col <= 4; col++) {
       worksheet.getCell(currentRow, col).style = accountStyle;
     }
@@ -606,14 +610,14 @@ export class ExcelGenerator {
     worksheet.getCell(currentRow, 1).value = '입금 계좌: 83050104204736 국민은행 (낫띵메터스)';
     worksheet.getRow(currentRow).height = 35;
     currentRow++;
-    
+
     // 병합할 모든 셀에 먼저 테두리 적용
     const contactStyle = {
       font: { size: 10, name: 'Arial' },
       alignment: { horizontal: 'center' as const, vertical: 'middle' as const },
       border: borderStyle
     };
-    
+
     for (let col = 1; col <= 4; col++) {
       worksheet.getCell(currentRow, col).style = contactStyle;
     }
@@ -637,7 +641,7 @@ export class ExcelGenerator {
         footer: 0.3
       }
     };
-    
+
     const buffer = await workbook.xlsx.writeBuffer();
     return Buffer.from(buffer);
   }
