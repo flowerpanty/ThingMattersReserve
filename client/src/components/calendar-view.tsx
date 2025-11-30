@@ -12,6 +12,7 @@ interface Order {
     customerContact: string;
     deliveryDate: string;
     deliveryMethod?: string;
+    pickupTime?: string;
     orderItems: any[];
     totalPrice: number;
     orderStatus?: string;
@@ -166,7 +167,7 @@ export function CalendarView({ orders, onOrderClick }: CalendarViewProps) {
                                         <div
                                             key={i}
                                             className={`
-                                                w-1.5 h-1.5 rounded-full 
+                                                w-1.5 h-1.5 rounded-full
                                                 ${dayOrders[i]?.paymentConfirmed ? 'bg-blue-500' : 'bg-orange-400'}
                                             `}
                                         />
@@ -201,36 +202,32 @@ export function CalendarView({ orders, onOrderClick }: CalendarViewProps) {
                                     onClick={() => onOrderClick(order)}
                                 >
                                     <CardContent className="p-4">
-                                        <div className="flex items-start justify-between">
-                                            <div className="flex-1">
-                                                <div className="flex items-center gap-2 mb-2">
+                                        <div className="flex flex-col gap-2">
+                                            {/* 첫째 줄: 고객명 + 입금확인 + 상세정보 */}
+                                            <div className="flex items-center justify-between">
+                                                <div className="flex items-center gap-2">
                                                     <h4 className="font-semibold text-base">
                                                         {order.customerName}
                                                     </h4>
                                                     {order.paymentConfirmed === 1 && (
-                                                        <Badge variant="default" className="text-xs">
+                                                        <Badge variant="default" className="text-xs bg-blue-500 hover:bg-blue-600">
                                                             입금확인
                                                         </Badge>
                                                     )}
                                                 </div>
-                                                <div className="text-sm text-muted-foreground space-y-1">
-                                                    <div>
-                                                        {order.orderItems.map((item: any, idx: number) => (
-                                                            <span key={idx}>
-                                                                {item.productName} {item.quantity}개
-                                                                {idx < order.orderItems.length - 1 && ', '}
-                                                            </span>
-                                                        ))}
-                                                    </div>
-                                                    <div className="flex items-center gap-2">
-                                                        <Badge variant="outline" className="text-xs">
-                                                            {order.deliveryMethod === 'delivery' ? '배송' : '픽업'}
-                                                        </Badge>
-                                                        <span className="font-medium text-primary">
-                                                            {order.totalPrice.toLocaleString()}원
-                                                        </span>
-                                                    </div>
+                                                <div className="flex items-center text-sm text-muted-foreground">
+                                                    상세정보 <ChevronRight className="w-4 h-4 ml-1" />
                                                 </div>
+                                            </div>
+
+                                            {/* 둘째 줄: 픽업/배송 구분 + 시간 */}
+                                            <div className="flex items-center gap-2 text-sm">
+                                                <Badge variant="outline" className="text-xs font-normal">
+                                                    {order.deliveryMethod === 'delivery' ? '배송' : '픽업'}
+                                                </Badge>
+                                                <span className="font-medium">
+                                                    {order.pickupTime || '시간 미지정'}
+                                                </span>
                                             </div>
                                         </div>
                                     </CardContent>
