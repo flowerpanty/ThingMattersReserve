@@ -529,8 +529,13 @@ export class ExcelGenerator {
       orderData.brownieCookieSets.forEach((set: any, index: number) => {
         let detailText = `• 브라우니쿠키 세트 ${index + 1} (${set.quantity || 1}개)`;
         if (set.shape) {
-          const shapeText = set.shape === 'bear' ? '곰' :
-            set.shape === 'rabbit' ? '토끼' : '생일곰';
+          const shapeMap: Record<string, string> = {
+            'bear': '곰',
+            'rabbit': '토끼',
+            'tiger': '호랑이',
+            'birthdayBear': '생일곰'
+          };
+          const shapeText = shapeMap[set.shape] || set.shape;
           detailText += `: ${shapeText} 모양`;
         }
         if (set.customSticker) {
