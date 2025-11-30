@@ -410,8 +410,8 @@ export function Dashboard() {
                             <OrderStatusBadge status={order.orderStatus || 'pending'} />
 
                             {/* 입금 확인 체크박스 */}
-                            <label
-                              className="flex items-center gap-1 cursor-pointer"
+                            <div
+                              className="flex items-center gap-1"
                               onClick={(e) => e.stopPropagation()}
                             >
                               <Checkbox
@@ -420,8 +420,13 @@ export function Dashboard() {
                                   togglePaymentConfirmed(order.id, checked as boolean);
                                 }}
                               />
-                              <span className="text-xs text-muted-foreground">입금확인</span>
-                            </label>
+                              <span
+                                className="text-xs text-muted-foreground cursor-pointer"
+                                onClick={() => togglePaymentConfirmed(order.id, !(order.paymentConfirmed === 1))}
+                              >
+                                입금확인
+                              </span>
+                            </div>
 
                             <Badge variant="outline" className="text-xs">
                               {formatOrderDate(order.createdAt)}

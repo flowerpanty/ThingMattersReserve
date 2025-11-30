@@ -52,13 +52,30 @@ export class PostgreStorage implements IStorage {
   }
 
   async updatePaymentStatus(id: string, confirmed: boolean): Promise<Order | undefined> {
-    // 입금 확인 시 자동으로 상태를 payment_confirmed로 변경
+    // 현재 주문 상태 조회
+    const currentOrder = await this.getOrder(id);
+    if (!currentOrder) return undefined;
+
     const updateData: any = {
       paymentConfirmed: confirmed ? 1 : 0,
     };
 
     if (confirmed) {
-      updateData.orderStatus = 'payment_confirmed';
+      // 입금 확인 시, 상태가 pending이면 payment_confirmed로 변경
+      // 이미 더 진행된 상태(제작중, 완료 등)라면 변경하지 않음 (선택사항, 여기서는 강제 변경하지 않도록 수정 가능하지만, 
+      // 기존 로직 유지하되 pending일 때만 변경하거나, 무조건 변경하거나 정책 결정 필요.
+      // 일단 기존처럼 무조건 변경하되, 이미 완료된 건 건드리지 않는게 좋을듯.
+      // 하지만 요구사항이 명확하지 않으므로, 입금 확인 = 결제 완료 상태로 보는 것이 일반적.
+      // 여기서는 'pending'이거나 'payment_confirmed'가 아닌 경우에도 입금 확인을 누르면 'payment_confirmed'로 가는게 맞을 수 있음.
+      // 다만, 'in_production' 상태에서 입금 확인을 다시 누른다고 상태가 뒤로 가면 안됨.
+      if (currentOrder.orderStatus === 'pending') {
+        updateData.orderStatus = 'payment_confirmed';
+      }
+    } else {
+      // 입금 취소 시, 상태가 payment_confirmed이면 pending으로 원복
+      if (currentOrder.orderStatus === 'payment_confirmed') {
+        updateData.orderStatus = 'pending';
+      }
     }
 
     const result = await db
