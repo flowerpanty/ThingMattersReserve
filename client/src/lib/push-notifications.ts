@@ -41,25 +41,32 @@ export class PushNotificationService {
 
   async subscribe(): Promise<PushSubscription | null> {
     if (!this.registration) {
-      console.error('서비스 워커가 등록되지 않았습니다.');
-      return null;
+      const error = '서비스 워커가 등록되지 않았습니다.';
+      console.error(error);
+      throw new Error(error);
     }
 
     try {
+      console.log('푸시 구독 시작...');
       const subscription = await this.registration.pushManager.subscribe({
         userVisibleOnly: true,
         applicationServerKey: this.urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
       });
 
       console.log('푸시 구독 완료:', subscription);
-      
+
       // 서버에 구독 정보 전송
+      console.log('서버에 구독 정보 전송 시작...');
       await this.sendSubscriptionToServer(subscription);
-      
+      console.log('서버에 구독 정보 전송 완료');
+
       return subscription;
     } catch (error) {
-      console.error('푸시 구독 실패:', error);
-      return null;
+      console.error('푸시 구독 실패 상세:', error);
+      if (error instanceof Error) {
+        throw new Error(`푸시 구독 실패: ${error.message}`);
+      }
+      throw error;
     }
   }
 
@@ -73,10 +80,10 @@ export class PushNotificationService {
       if (subscription) {
         const result = await subscription.unsubscribe();
         console.log('푸시 구독 해제:', result);
-        
+
         // 서버에서도 구독 정보 제거
         await this.removeSubscriptionFromServer(subscription);
-        
+
         return result;
       }
       return true;
@@ -102,6 +109,7 @@ export class PushNotificationService {
 
   private async sendSubscriptionToServer(subscription: PushSubscription): Promise<void> {
     try {
+      console.log('서버로 구독 정보 전송 중...', subscription);
       const response = await fetch('/api/push/subscribe', {
         method: 'POST',
         headers: {
@@ -111,12 +119,14 @@ export class PushNotificationService {
       });
 
       if (!response.ok) {
-        throw new Error('구독 정보 서버 전송 실패');
+        const errorText = await response.text();
+        throw new Error(`구독 정보 서버 전송 실패: ${response.status} ${errorText}`);
       }
 
       console.log('구독 정보 서버 저장 완료');
     } catch (error) {
       console.error('구독 정보 서버 전송 오류:', error);
+      throw error; // 에러를 다시 throw
     }
   }
 
