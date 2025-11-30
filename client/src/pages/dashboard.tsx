@@ -755,9 +755,9 @@ export function Dashboard() {
 
         {/* 주문 상세 모달 */}
         <OrderDetailModal
-          order={selectedOrderDetail}
-          isOpen={!!selectedOrderDetail}
-          onClose={() => setSelectedOrderDetail(null)}
+          order={selectedOrder}
+          isOpen={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
           onDelete={handleDeleteOrder}
         />
       </div>
