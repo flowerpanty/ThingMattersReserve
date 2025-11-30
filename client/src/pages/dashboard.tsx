@@ -101,11 +101,23 @@ export function Dashboard() {
   };
 
   // 입금 확인 토글 함수  
+  // 입금 확인 토글 함수 (Optimistic Update 적용)
   const togglePaymentConfirmed = async (orderId: string, confirmed: boolean) => {
-    try {
-      const response = await apiRequest('PATCH', `/api/orders/${orderId}/payment`, { confirmed });
+    // 1. 즉시 UI 업데이트 (Optimistic Update)
+    queryClient.setQueryData(['/api/orders'], (oldOrders: Order[] | undefined) => {
+      if (!oldOrders) return [];
+      return oldOrders.map(order =>
+        order.id === orderId
+          ? { ...order, paymentConfirmed: confirmed ? 1 : 0, orderStatus: confirmed ? 'payment_confirmed' : 'pending' }
+          : order
+      );
+    });
 
-      // 쿼리 무효화 및 데이터 갱신 대기
+    try {
+      console.log(`입금 확인 요청: ID=${orderId}, Confirmed=${confirmed}`);
+      await apiRequest('PATCH', `/api/orders/${orderId}/payment`, { confirmed });
+
+      // 성공 시 확실한 데이터 동기화를 위해 다시 조회
       await queryClient.invalidateQueries({ queryKey: ['/api/orders'] });
 
       toast({
@@ -114,7 +126,15 @@ export function Dashboard() {
       });
     } catch (error) {
       console.error('입금 상태 업데이트 실패:', error);
-      toast({ title: '입금 상태 업데이트 실패', variant: 'destructive' });
+
+      // 실패 시 롤백
+      await queryClient.invalidateQueries({ queryKey: ['/api/orders'] });
+
+      toast({
+        title: '입금 상태 업데이트 실패',
+        description: '서버와 통신 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.',
+        variant: 'destructive'
+      });
     }
   };
 
@@ -441,9 +461,9 @@ export function Dashboard() {
                           </div>
                           <p className="text-sm text-muted-foreground mt-1">
                             배송일: {order.deliveryDate}
-                            <span className="ml-2 font-medium text-foreground">
-                              {order.deliveryMethod === 'quick' ? '🚚 퀵 배송' : '🏪 픽업'} 시간: {order.pickupTime || (order as any).pickup_time || '미지정'}
-                            </span>
+                          </p>
+                          <p className="text-sm font-medium text-foreground mt-1">
+                            {order.deliveryMethod === 'quick' ? '🚚 퀵 배송' : '🏪 픽업'} 시간: {order.pickupTime || (order as any).pickup_time || '미지정'}
                           </p>
                           <div className="flex flex-wrap gap-1 mt-2">
                             {order.orderItems.slice(0, 3).map((item, idx) => (
