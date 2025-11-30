@@ -28,8 +28,11 @@ export function AdminAuth({ onAuthenticated }: AdminAuthProps) {
         // 세션 스토리지에 인증 상태 저장
         console.log('Authentication successful, setting sessionStorage...');
         sessionStorage.setItem('admin_authenticated', 'true');
-        console.log('SessionStorage set, calling onAuthenticated...');
-        onAuthenticated();
+        console.log('SessionStorage set, reloading page...');
+
+        // 캐시 문제 해결을 위해 강제 새로고침
+        window.location.reload();
+        // onAuthenticated(); // reload가 발생하므로 이 콜백은 실행되지 않을 수 있으나, App.tsx에서 초기 로드시 체크함
       } else {
         setError('잘못된 관리자 비밀번호입니다.');
       }
@@ -68,13 +71,13 @@ export function AdminAuth({ onAuthenticated }: AdminAuthProps) {
                 {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               </button>
             </div>
-            
+
             {error && (
               <div className="text-red-600 text-sm text-center bg-red-50 p-2 rounded-md">
                 {error}
               </div>
             )}
-            
+
             <Button
               type="submit"
               className="w-full"
@@ -84,7 +87,7 @@ export function AdminAuth({ onAuthenticated }: AdminAuthProps) {
               {isLoading ? '확인 중...' : '관리자 로그인'}
             </Button>
           </form>
-          
+
           <div className="mt-6 text-center">
             <div className="text-xs text-muted-foreground space-y-1">
               <p>💡 힌트: 브랜드명 + 연도</p>
