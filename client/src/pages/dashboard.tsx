@@ -18,6 +18,7 @@ import { OrderStatusBadge } from '@/components/order-status-badge';
 import { CalendarView } from '@/components/calendar-view';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Label } from '@/components/ui/label';
 import { Search, Truck, Store } from 'lucide-react';
 
 interface OrderItem {
@@ -412,21 +413,22 @@ export function Dashboard() {
 
                             {/* 입금 확인 체크박스 */}
                             <div
-                              className="flex items-center gap-1"
+                              className="flex items-center gap-1 relative z-10"
                               onClick={(e) => e.stopPropagation()}
                             >
                               <Checkbox
+                                id={`payment-confirmed-${order.id}`}
                                 checked={order.paymentConfirmed === 1}
                                 onCheckedChange={(checked) => {
                                   togglePaymentConfirmed(order.id, checked as boolean);
                                 }}
                               />
-                              <span
-                                className="text-xs text-muted-foreground cursor-pointer"
-                                onClick={() => togglePaymentConfirmed(order.id, !(order.paymentConfirmed === 1))}
+                              <Label
+                                htmlFor={`payment-confirmed-${order.id}`}
+                                className="text-xs text-muted-foreground cursor-pointer select-none"
                               >
                                 입금확인
-                              </span>
+                              </Label>
                             </div>
 
                             <Badge variant="outline" className="text-xs">
