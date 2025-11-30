@@ -112,6 +112,25 @@ export function Dashboard() {
     }
   };
 
+  // 주문 삭제
+  const handleDeleteOrder = async (orderId: string) => {
+    try {
+      const response = await apiRequest(`/api/orders/${orderId}`, {
+        method: 'DELETE',
+      });
+
+      if (response.success) {
+        toast({ title: '주문이 삭제되었습니다.', variant: 'default' });
+        queryClient.invalidateQueries({ queryKey: ['/api/orders'] });
+      } else {
+        throw new Error('삭제 실패');
+      }
+    } catch (error) {
+      console.error('주문 삭제 실패:', error);
+      toast({ title: '주문 삭제 실패', variant: 'destructive' });
+    }
+  };
+
   // 인증되지 않은 경우 로그인 화면 표시
   if (!isAuthenticated) {
     return <AdminAuth onAuthenticated={handleAuthenticate} />;
@@ -736,9 +755,10 @@ export function Dashboard() {
 
         {/* 주문 상세 모달 */}
         <OrderDetailModal
-          order={selectedOrder}
-          isOpen={isModalOpen}
-          onClose={() => setIsModalOpen(false)}
+          order={selectedOrderDetail}
+          isOpen={!!selectedOrderDetail}
+          onClose={() => setSelectedOrderDetail(null)}
+          onDelete={handleDeleteOrder}
         />
       </div>
     </div>

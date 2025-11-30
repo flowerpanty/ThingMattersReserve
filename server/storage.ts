@@ -7,6 +7,7 @@ export interface IStorage {
   getAllOrders(): Promise<Order[]>;
   updateOrderStatus(id: string, status: string): Promise<Order | undefined>;
   updatePaymentStatus(id: string, confirmed: boolean): Promise<Order | undefined>;
+  deleteOrder(id: string): Promise<boolean>;
 }
 
 export class MemStorage implements IStorage {
@@ -59,6 +60,16 @@ export class MemStorage implements IStorage {
     this.orders.set(id, updatedOrder);
     console.log(`입금 상태 업데이트: ID=${id}, 입금확인=${confirmed}`);
     return updatedOrder;
+  }
+
+  async deleteOrder(id: string): Promise<boolean> {
+    const exists = this.orders.has(id);
+    if (exists) {
+      this.orders.delete(id);
+      console.log(`주문 삭제: ID=${id}`);
+      return true;
+    }
+    return false;
   }
 }
 

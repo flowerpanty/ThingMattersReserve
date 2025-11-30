@@ -528,6 +528,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // 주문 삭제
+  app.delete('/api/orders/:id', async (req, res) => {
+    try {
+      const { id } = req.params;
+
+      const success = await storage.deleteOrder(id);
+
+      if (!success) {
+        return res.status(404).json({ message: '주문을 찾을 수 없습니다.' });
+      }
+
+      res.json({ message: '주문이 삭제되었습니다.', success: true });
+    } catch (error) {
+      console.error('주문 삭제 오류:', error);
+      res.status(500).json({
+        message: '주문 삭제 중 오류가 발생했습니다.',
+        error: error instanceof Error ? error.message : String(error)
+      });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

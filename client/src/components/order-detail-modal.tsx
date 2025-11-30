@@ -1,10 +1,12 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Calendar, Mail, Package, MapPin, Clock, DollarSign, Download } from "lucide-react";
+import { Calendar, Mail, Package, MapPin, Clock, DollarSign, Download, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
 import { ko } from "date-fns/locale";
+import { useState } from 'react';
 
 interface OrderItem {
     type: string;
@@ -29,10 +31,27 @@ interface OrderDetailModalProps {
     order: Order | null;
     isOpen: boolean;
     onClose: () => void;
+    onDelete?: (orderId: string) => void;
 }
 
-export function OrderDetailModal({ order, isOpen, onClose }: OrderDetailModalProps) {
+export function OrderDetailModal({ order, isOpen, onClose, onDelete }: OrderDetailModalProps) {
     if (!order) return null;
+
+    const [isDeleting, setIsDeleting] = useState(false);
+
+    const handleDelete = async () => {
+        if (!order || !onDelete) return;
+
+        setIsDeleting(true);
+        try {
+            await onDelete(order.id);
+            onClose();
+        } catch (error) {
+            console.error('주문 삭제 오류:', error);
+        } finally {
+            setIsDeleting(false);
+        }
+    };
 
     const handleDownloadQuote = async () => {
         try {
@@ -257,8 +276,8 @@ export function OrderDetailModal({ order, isOpen, onClose }: OrderDetailModalPro
                         </div>
                     </div>
 
-                    {/* 견적서 다운로드 버튼 */}
-                    <div className="pt-4 border-t">
+                    {/* 견적서 다운로드 및 삭제 버튼 */}
+                    <div className="pt-4 border-t space-y-2">
                         <Button
                             onClick={handleDownloadQuote}
                             className="w-full"
@@ -267,6 +286,38 @@ export function OrderDetailModal({ order, isOpen, onClose }: OrderDetailModalPro
                             <Download className="w-4 h-4 mr-2" />
                             견적서 다운로드 (Excel)
                         </Button>
+
+                        {onDelete && (
+                            <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                    <Button
+                                        variant="destructive"
+                                        className="w-full"
+                                        disabled={isDeleting}
+                                    >
+                                        <Trash2 className="w-4 h-4 mr-2" />
+                                        주문 삭제
+                                    </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                        <AlertDialogTitle>주문을 삭제하시겠습니까?</AlertDialogTitle>
+                                        <AlertDialogDescription>
+                                            이 작업은 취소할 수 없습니다. 주문이 영구적으로 삭제됩니다.
+                                            <br /><br />
+                                            고객: <strong>{order.customerName}</strong><br />
+                                            주문ID: <strong>{order.id.slice(0, 8)}...</strong>
+                                        </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                        <AlertDialogCancel>취소</AlertDialogCancel>
+                                        <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                                            {isDeleting ? '삭제 중...' : '삭제 확인'}
+                                        </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                </AlertDialogContent>
+                            </AlertDialog>
+                        )}
                     </div>
                 </div>
             </DialogContent>
