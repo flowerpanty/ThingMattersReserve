@@ -431,7 +431,11 @@ export function Dashboard() {
                             )}
 
                             {/* 주문 상태 뱃지 */}
-                            <OrderStatusBadge status={order.orderStatus || 'pending'} />
+                            <OrderStatusBadge status={
+                              (order.paymentConfirmed && order.orderStatus === 'pending')
+                                ? 'payment_confirmed'
+                                : (order.orderStatus || 'pending')
+                            } />
 
                             {/* 입금 확인 체크박스 */}
                             <div

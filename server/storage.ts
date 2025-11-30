@@ -63,9 +63,9 @@ export class PostgreStorage implements IStorage {
     };
 
     if (confirmed) {
-      // 입금 확인 시, 상태가 pending이거나 order_confirmed이면 payment_confirmed로 변경
-      // (이미 제작중이거나 완료된 상태가 아니면 변경)
-      if (['pending', 'order_confirmed'].includes(currentOrder.orderStatus)) {
+      // 입금 확인 시, 상태가 completed가 아니면 payment_confirmed로 변경
+      // (기존에는 pending, order_confirmed만 허용했으나, 롤백 이슈 해결을 위해 조건 완화)
+      if (currentOrder.orderStatus !== 'completed') {
         updateData.orderStatus = 'payment_confirmed';
       }
     } else {
