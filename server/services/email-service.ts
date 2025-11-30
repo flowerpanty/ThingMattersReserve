@@ -39,14 +39,32 @@ export class EmailService {
       total += (set.quantity || 0) * cookiePrices.singleWithDrink;
     });
 
-    // 브라우니쿠키
+    // 브라우니쿠키 (옵션 포함)
     (orderData.brownieCookieSets || []).forEach((set: any) => {
       total += (set.quantity || 0) * cookiePrices.brownie;
+
+      // 생일곰
+      if (set.shape === 'birthdayBear') {
+        total += (set.quantity || 0) * cookiePrices.brownieOptions.birthdayBear;
+      }
+      // 커스텀 스티커 (세트당 1회)
+      if (set.customSticker) {
+        total += cookiePrices.brownieOptions.customSticker;
+      }
+      // 하트 메시지
+      if (set.heartMessage) {
+        total += (set.quantity || 0) * cookiePrices.brownieOptions.heartMessage;
+      }
     });
 
-    // 스콘
+    // 스콘 (옵션 포함)
     (orderData.sconeSets || []).forEach((set: any) => {
       total += (set.quantity || 0) * cookiePrices.scone;
+
+      // 딸기잼
+      if (set.strawberryJam) {
+        total += (set.quantity || 0) * cookiePrices.sconeOptions.strawberryJam;
+      }
     });
 
     // 기타
@@ -163,12 +181,44 @@ export class EmailService {
     const brownieQty = (orderData.brownieCookieSets || []).reduce((sum: number, set: any) => sum + (set.quantity || 0), 0);
     if (brownieQty > 0) {
       items.push({ name: '브라우니쿠키', quantity: brownieQty, price: brownieQty * cookiePrices.brownie });
+
+      // 브라우니 옵션 집계
+      let birthdayBearQty = 0;
+      let customStickerCount = 0;
+      let heartMessageQty = 0;
+
+      (orderData.brownieCookieSets || []).forEach((set: any) => {
+        const qty = set.quantity || 0;
+        if (set.shape === 'birthdayBear') birthdayBearQty += qty;
+        if (set.customSticker) customStickerCount += 1; // 세트당 1회
+        if (set.heartMessage) heartMessageQty += qty;
+      });
+
+      if (birthdayBearQty > 0) {
+        items.push({ name: '└ 생일곰 추가', quantity: birthdayBearQty, price: birthdayBearQty * cookiePrices.brownieOptions.birthdayBear });
+      }
+      if (customStickerCount > 0) {
+        items.push({ name: '└ 커스텀 스티커', quantity: customStickerCount, price: customStickerCount * cookiePrices.brownieOptions.customSticker });
+      }
+      if (heartMessageQty > 0) {
+        items.push({ name: '└ 하트안 문구', quantity: heartMessageQty, price: heartMessageQty * cookiePrices.brownieOptions.heartMessage });
+      }
     }
 
     // 스콘
     const sconeQty = (orderData.sconeSets || []).reduce((sum: number, set: any) => sum + (set.quantity || 0), 0);
     if (sconeQty > 0) {
       items.push({ name: '스콘', quantity: sconeQty, price: sconeQty * cookiePrices.scone });
+
+      // 스콘 옵션 집계
+      let strawberryJamQty = 0;
+      (orderData.sconeSets || []).forEach((set: any) => {
+        if (set.strawberryJam) strawberryJamQty += (set.quantity || 0);
+      });
+
+      if (strawberryJamQty > 0) {
+        items.push({ name: '└ 딸기잼 추가', quantity: strawberryJamQty, price: strawberryJamQty * cookiePrices.sconeOptions.strawberryJam });
+      }
     }
 
     // 행운쿠키
