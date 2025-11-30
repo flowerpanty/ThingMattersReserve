@@ -66,7 +66,15 @@ export function QuotePreview({ formData, pricing }: QuotePreviewProps) {
       formData.brownieCookieSets.forEach((set: any, index: number) => {
         const quantity = set.quantity || 1;
         let details_text = `브라우니쿠키 ${quantity}개`;
-        if (set.shape) details_text += ` (${set.shape})`;
+        if (set.shape) {
+          const shapeName = {
+            'bear': '곰돌이',
+            'rabbit': '토끼',
+            'tiger': '호랑이',
+            'birthdayBear': '생일곰'
+          }[set.shape as string] || set.shape;
+          details_text += ` (${shapeName})`;
+        }
         if (set.customSticker) details_text += ' + 커스텀스티커';
         if (set.heartMessage) details_text += ' + 하트메시지';
         if (set.customTopper) details_text += ' + 커스텀토퍼';
