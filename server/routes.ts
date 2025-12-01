@@ -6,6 +6,7 @@ import { ExcelGenerator } from "./services/excel-generator";
 import { EmailService } from "./services/email-service";
 import { KakaoTemplateService } from "./services/kakao-template";
 import { pushNotificationService } from "./services/push-notification-service";
+import { kakaoAlimtalkService } from "./services/kakao-alimtalk-service";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   const excelGenerator = new ExcelGenerator();
@@ -305,6 +306,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
             })
             .catch((error) => {
               console.error('❌ 푸시 알림 전송 실패:', error);
+            });
+        }
+
+        // 카카오톡 알림톡 전송 (백그라운드에서 실행)
+        if (kakaoAlimtalkService.isEnabled()) {
+          // 관리자 알림
+          kakaoAlimtalkService.sendAdminNotification({
+            customerName: orderData.customerName,
+            customerContact: orderData.customerContact,
+            deliveryDate: orderData.deliveryDate,
+            deliveryMethod: orderData.deliveryMethod || 'pickup',
+            totalPrice,
+          })
+            .then((success) => {
+              if (success) {
+                console.log('✅ 관리자 알림톡 전송 완료');
+              }
+            })
+            .catch((error) => {
+              console.error('❌ 관리자 알림톡 전송 실패:', error);
+            });
+
+          // 고객 알림 (선택사항)
+          const orderItemsText = orderItems.map(item => `${item.name} x${item.quantity}`).join(', ');
+          kakaoAlimtalkService.sendCustomerNotification({
+            customerName: orderData.customerName,
+            customerContact: orderData.customerContact,
+            orderItems: orderItemsText,
+            deliveryDate: orderData.deliveryDate,
+            totalPrice,
+          })
+            .then((success) => {
+              if (success) {
+                console.log('✅ 고객 알림톡 전송 완료');
+              }
+            })
+            .catch((error) => {
+              console.error('❌ 고객 알림톡 전송 실패:', error);
             });
         }
 
