@@ -8,92 +8,16 @@
   "theme_color": "#4F46E5",
   "orientation": "portrait",
   "scope": "/",
-  "id": "/",
-  "dir": "ltr",
-  "lang": "ko-KR",
-  "prefer_related_applications": false,
-  "categories": [
-    "shopping",
-    "food"
-  ],
   "icons": [
     {
-      "src": "/icon-72x72.png",
-      "sizes": "72x72",
-      "type": "image/png"
-    },
-    {
-      "src": "/icon-96x96.png",
-      "sizes": "96x96",
-      "type": "image/png"
-    },
-    {
-      "src": "/icon-128x128.png",
-      "sizes": "128x128",
-      "type": "image/png"
-    },
-    {
-      "src": "/icon-144x144.png",
-      "sizes": "144x144",
-      "type": "image/png"
-    },
-    {
-      "src": "/icon-152x152.png",
-      "sizes": "152x152",
-      "type": "image/png"
-    },
-    {
       "src": "/icon-192x192.png",
       "sizes": "192x192",
-      "type": "image/png"
-    },
-    {
-      "src": "/icon-384x384.png",
-      "sizes": "384x384",
       "type": "image/png"
     },
     {
       "src": "/icon-512x512.png",
       "sizes": "512x512",
       "type": "image/png"
-    },
-    {
-      "src": "/icon-192x192.png",
-      "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "maskable"
-    },
-    {
-      "src": "/icon-512x512.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "maskable"
-    }
-  ],
-  "shortcuts": [
-    {
-      "name": "새 주문",
-      "short_name": "주문",
-      "description": "새로운 쿠키 주문하기",
-      "url": "/",
-      "icons": [
-        {
-          "src": "/icon-96x96.png",
-          "sizes": "96x96"
-        }
-      ]
-    },
-    {
-      "name": "주문 관리",
-      "short_name": "관리",
-      "description": "주문 현황 확인",
-      "url": "/dashboard",
-      "icons": [
-        {
-          "src": "/icon-96x96.png",
-          "sizes": "96x96"
-        }
-      ]
     }
   ]
 }
