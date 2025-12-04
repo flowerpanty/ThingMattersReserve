@@ -60,6 +60,7 @@
     "express-session": "^1.18.1",
     "framer-motion": "^11.13.1",
     "googleapis": "^148.0.0",
+    "html2canvas": "^1.4.1",
     "input-otp": "^1.4.2",
     "lucide-react": "^0.462.0",
     "mailgun.js": "^10.2.3",

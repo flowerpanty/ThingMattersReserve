@@ -2,12 +2,14 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Calendar, Mail, Package, MapPin, Clock, DollarSign, Download, Trash2 } from "lucide-react";
+import { Calendar, Mail, Package, MapPin, Clock, DollarSign, Download, Trash2, Image as ImageIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
 import { ko } from "date-fns/locale";
 import React from "react";
-import { useState } from 'react';
+import { useState, useRef } from 'react';
+import html2canvas from 'html2canvas';
+import { QuoteImageTemplate } from './quote-image-template';
 
 interface OrderItem {
     type: string;
@@ -40,6 +42,8 @@ export function OrderDetailModal({ order, isOpen, onClose, onDelete }: OrderDeta
     if (!order) return null;
 
     const [isDeleting, setIsDeleting] = useState(false);
+    const [isDownloadingImage, setIsDownloadingImage] = useState(false);
+    const quoteTemplateRef = useRef<HTMLDivElement>(null);
 
     const handleDelete = async () => {
         if (!order || !onDelete) return;
@@ -52,6 +56,42 @@ export function OrderDetailModal({ order, isOpen, onClose, onDelete }: OrderDeta
             console.error('주문 삭제 오류:', error);
         } finally {
             setIsDeleting(false);
+        }
+    };
+
+    const handleDownloadImage = async () => {
+        if (!quoteTemplateRef.current) return;
+
+        setIsDownloadingImage(true);
+        try {
+            const canvas = await html2canvas(quoteTemplateRef.current, {
+                backgroundColor: '#ffffff',
+                scale: 2, // 고해상도
+                logging: false,
+                useCORS: true,
+            });
+
+            // Canvas를 Blob으로 변환
+            canvas.toBlob((blob) => {
+                if (!blob) {
+                    throw new Error('이미지 생성 실패');
+                }
+
+                // 다운로드
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `견적서_${order.customerName}_${order.id.slice(0, 8)}.png`;
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                window.URL.revokeObjectURL(url);
+            }, 'image/png');
+        } catch (error) {
+            console.error('이미지 다운로드 오류:', error);
+            alert('이미지 다운로드에 실패했습니다. 오류: ' + (error instanceof Error ? error.message : String(error)));
+        } finally {
+            setIsDownloadingImage(false);
         }
     };
 
@@ -307,6 +347,16 @@ export function OrderDetailModal({ order, isOpen, onClose, onDelete }: OrderDeta
                     {/* 견적서 다운로드 및 삭제 버튼 */}
                     <div className="pt-4 border-t space-y-2">
                         <Button
+                            onClick={handleDownloadImage}
+                            className="w-full"
+                            variant="default"
+                            disabled={isDownloadingImage}
+                        >
+                            <ImageIcon className="w-4 h-4 mr-2" />
+                            {isDownloadingImage ? '이미지 생성 중...' : '견적서 이미지 저장 (PNG)'}
+                        </Button>
+
+                        <Button
                             onClick={handleDownloadQuote}
                             className="w-full"
                             variant="outline"
@@ -346,6 +396,11 @@ export function OrderDetailModal({ order, isOpen, onClose, onDelete }: OrderDeta
                                 </AlertDialogContent>
                             </AlertDialog>
                         )}
+                    </div>
+
+                    {/* 숨겨진 견적서 템플릿 (이미지 생성용) */}
+                    <div style={{ position: 'absolute', left: '-9999px', top: '-9999px' }}>
+                        <QuoteImageTemplate ref={quoteTemplateRef} order={order} />
                     </div>
                 </div>
             </DialogContent>
