@@ -847,12 +847,12 @@ export function OrderDetailModal({ order, isOpen, onClose, onDelete }: OrderDeta
                                 {(() => {
                                     const allItems = [];
                                     const packagingItems = order.orderItems.filter(item => item.type === 'packaging');
+                                    const regularItems = order.orderItems.filter(item => item.type === 'regular');
+                                    const otherItems = order.orderItems.filter(item => item.type !== 'meta' && item.type !== 'packaging' && item.type !== 'regular');
 
-                                    order.orderItems.filter(item => item.type !== 'meta' && item.type !== 'packaging').forEach((item, index) => {
-                                        const items = [];
-
-                                        // Main item
-                                        items.push(
+                                    // Display all regular cookies first
+                                    regularItems.forEach((item, index) => {
+                                        allItems.push(
                                             <div key={`${index}-main`} className="flex items-center justify-between text-sm">
                                                 <span className="text-muted-foreground">
                                                     {item.name} × {item.quantity}
@@ -860,20 +860,35 @@ export function OrderDetailModal({ order, isOpen, onClose, onDelete }: OrderDeta
                                                 <span>{formatCurrency(item.price * item.quantity)}</span>
                                             </div>
                                         );
+                                    });
 
-                                        // Add packaging as sub-items after regular cookies
-                                        if (item.type === 'regular' && packagingItems.length > 0) {
-                                            packagingItems.forEach((pkgItem, pkgIndex) => {
-                                                items.push(
-                                                    <div key={`${index}-pkg-${pkgIndex}`} className="flex items-center justify-between text-sm">
-                                                        <span className="text-muted-foreground ml-4">
-                                                            ㄴ{pkgItem.name} × {pkgItem.quantity}
-                                                        </span>
-                                                        <span>{formatCurrency(pkgItem.price * pkgItem.quantity)}</span>
-                                                    </div>
-                                                );
-                                            });
-                                        }
+                                    // Add packaging ONCE after all regular cookies
+                                    if (regularItems.length > 0 && packagingItems.length > 0) {
+                                        packagingItems.forEach((pkgItem, pkgIndex) => {
+                                            allItems.push(
+                                                <div key={`pkg-${pkgIndex}`} className="flex items-center justify-between text-sm">
+                                                    <span className="text-muted-foreground ml-4">
+                                                        ㄴ{pkgItem.name} × {pkgItem.quantity}
+                                                    </span>
+                                                    <span>{formatCurrency(pkgItem.price * pkgItem.quantity)}</span>
+                                                </div>
+                                            );
+                                        });
+                                    }
+
+                                    // Display other items (brownie, scone, etc.)
+                                    otherItems.forEach((item, index) => {
+                                        const items = [];
+
+                                        // Main item
+                                        items.push(
+                                            <div key={`${index}-other-main`} className="flex items-center justify-between text-sm">
+                                                <span className="text-muted-foreground">
+                                                    {item.name} × {item.quantity}
+                                                </span>
+                                                <span>{formatCurrency(item.price * item.quantity)}</span>
+                                            </div>
+                                        );
 
                                         // Add brownie options as sub-items
                                         if (item.type === 'brownie' && item.options) {
