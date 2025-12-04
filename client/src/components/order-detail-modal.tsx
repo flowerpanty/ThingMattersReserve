@@ -64,11 +64,20 @@ export function OrderDetailModal({ order, isOpen, onClose, onDelete }: OrderDeta
 
         setIsDownloadingImage(true);
         try {
-            const canvas = await html2canvas(quoteTemplateRef.current, {
+            const element = quoteTemplateRef.current;
+
+            // 전체 높이 확보
+            const canvas = await html2canvas(element, {
                 backgroundColor: '#ffffff',
                 scale: 2, // 고해상도
                 logging: false,
                 useCORS: true,
+                scrollY: -window.scrollY,
+                scrollX: -window.scrollX,
+                windowWidth: element.scrollWidth,
+                windowHeight: element.scrollHeight,
+                width: element.scrollWidth,
+                height: element.scrollHeight,
             });
 
             // Canvas를 Blob으로 변환
