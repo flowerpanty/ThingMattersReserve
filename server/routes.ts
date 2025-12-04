@@ -242,7 +242,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Dynamic import for ExcelJS to avoid module issues
-      const ExcelJS = await import('exceljs');
+      const ExcelJSModule = await import('exceljs');
+      const ExcelJS = ExcelJSModule.default || ExcelJSModule;
       const workbook = new ExcelJS.Workbook();
       const worksheet = workbook.addWorksheet('견적서');
 
