@@ -243,8 +243,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Dynamic import for ExcelJS to avoid module issues
       const ExcelJSModule = await import('exceljs');
-      const ExcelJS = ExcelJSModule.default || ExcelJSModule;
-      const workbook = new ExcelJS.Workbook();
+      // ExcelJS exports Workbook directly, not as .default.Workbook
+      const Workbook = ExcelJSModule.default?.Workbook || ExcelJSModule.Workbook || (ExcelJSModule.default as any) || ExcelJSModule;
+      const workbook = new Workbook();
       const worksheet = workbook.addWorksheet('견적서');
 
       // Set column widths
