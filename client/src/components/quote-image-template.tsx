@@ -256,7 +256,7 @@ export const QuoteImageTemplate = React.forwardRef<HTMLDivElement, QuoteImageTem
                             </tr>
                         </thead>
                         <tbody>
-                            {order.orderItems.map((item, index) => {
+                            {order.orderItems.filter(item => item.type !== 'meta').map((item, index) => {
                                 const optionText = renderOptionDetails(item);
                                 return (
                                     <tr key={index} style={{ borderBottom: '1px solid #e5e7eb' }}>
