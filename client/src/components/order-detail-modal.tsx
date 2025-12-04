@@ -3,6 +3,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Calendar, Mail, Package, MapPin, Clock, DollarSign, Download, Trash2, Image as ImageIcon, FileSpreadsheet } from "lucide-react";
+import { cookiePrices } from "@shared/schema";
 import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
 import { ko } from "date-fns/locale";
@@ -808,7 +809,7 @@ export function OrderDetailModal({ order, isOpen, onClose, onDelete }: OrderDeta
                             주문 항목 ({order.orderItems.length}개)
                         </h3>
                         <div className="space-y-2">
-                            {order.orderItems.filter(item => item.type !== 'meta').map((item, index) => (
+                            {order.orderItems.filter(item => item.type !== 'meta' && item.type !== 'packaging').map((item, index) => (
                                 <div key={index} className="bg-muted/30 rounded-lg p-4">
                                     <div className="flex items-start justify-between">
                                         <div className="flex-1">
@@ -843,14 +844,56 @@ export function OrderDetailModal({ order, isOpen, onClose, onDelete }: OrderDeta
                         <div className="bg-primary/5 rounded-lg p-4 space-y-3">
                             {/* 항목별 소계 */}
                             <div className="space-y-2">
-                                {order.orderItems.filter(item => item.type !== 'meta').map((item, index) => (
-                                    <div key={index} className="flex items-center justify-between text-sm">
-                                        <span className="text-muted-foreground">
-                                            {item.name} × {item.quantity}
-                                        </span>
-                                        <span>{formatCurrency(item.price * item.quantity)}</span>
-                                    </div>
-                                ))}
+                                {order.orderItems.filter(item => item.type !== 'meta').map((item, index) => {
+                                    const items = [];
+
+                                    // Main item
+                                    items.push(
+                                        <div key={`${index}-main`} className="flex items-center justify-between text-sm">
+                                            <span className="text-muted-foreground">
+                                                {item.name} × {item.quantity}
+                                            </span>
+                                            <span>{formatCurrency(item.price * item.quantity)}</span>
+                                        </div>
+                                    );
+
+                                    // Add brownie options as sub-items
+                                    if (item.type === 'brownie' && item.options) {
+                                        if (item.options.customSticker) {
+                                            items.push(
+                                                <div key={`${index}-sticker`} className="flex items-center justify-between text-sm">
+                                                    <span className="text-muted-foreground ml-4">
+                                                        ㄴ하단 커스텀 스티커 × 1
+                                                    </span>
+                                                    <span>{formatCurrency(cookiePrices.brownieOptions.customSticker)}</span>
+                                                </div>
+                                            );
+                                        }
+                                        if (item.options.heartMessage) {
+                                            const heartMessagePrice = item.quantity * cookiePrices.brownieOptions.heartMessage;
+                                            items.push(
+                                                <div key={`${index}-heart`} className="flex items-center justify-between text-sm">
+                                                    <span className="text-muted-foreground ml-4">
+                                                        ㄴ하트안 문구 추가 × {item.quantity}
+                                                    </span>
+                                                    <span>{formatCurrency(heartMessagePrice)}</span>
+                                                </div>
+                                            );
+                                        }
+                                        if (item.options.customTopper) {
+                                            items.push(
+                                                <div key={`${index}-topper`} className="flex items-center justify-between text-sm">
+                                                    <span className="text-muted-foreground ml-4">
+                                                        ㄴ커스텀 토퍼
+                                                    </span>
+                                                    <span></span>
+                                                </div>
+                                            );
+                                        }
+                                    }
+
+                                    return items;
+                                })}
                             </div>
 
                             <Separator />
