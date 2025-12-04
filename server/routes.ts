@@ -568,6 +568,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
           });
         }
 
+        // 메타 데이터 저장 (DB 스키마 변경 없이 원본 데이터 보존)
+        orderItems.push({
+          type: 'meta' as const,
+          name: 'metadata',
+          quantity: 0,
+          price: 0,
+          options: orderData
+        });
+
         const order = await storage.createOrder({
           customerName: orderData.customerName,
           customerContact: orderData.customerContact,
@@ -576,7 +585,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
           pickupTime: orderData.pickupTime,
           orderItems,
           totalPrice,
-          originalOrderData: orderData,
         });
         console.log(`[API] 주문 생성 완료: ID=${order.id}, PickupTime=${orderData.pickupTime}`);
 

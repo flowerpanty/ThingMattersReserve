@@ -16,11 +16,10 @@ export const orders = pgTable("orders", {
   paymentConfirmed: integer("payment_confirmed").notNull().default(0), // 0 = false, 1 = true (boolean in SQLite style)
   quoteFileUrl: text("quote_file_url"), // 견적서 파일 저장 경로 (optional)
   createdAt: timestamp("created_at").defaultNow(),
-  originalOrderData: json("original_order_data"), // 원본 주문 데이터 (모든 상세 정보 포함)
 });
 
 export const orderItemSchema = z.object({
-  type: z.enum(['regular', 'brownie', 'fortune', 'airplane']),
+  type: z.enum(['regular', 'brownie', 'fortune', 'airplane', 'meta']),
   name: z.string(),
   quantity: z.number().min(0),
   price: z.number().min(0),

@@ -262,7 +262,9 @@ export function OrderDetailModal({ order, isOpen, onClose, onDelete }: OrderDeta
 
     const handleCopyToSheet = async () => {
         const orderAny = order as any;
-        const orderData = orderAny.originalOrderData; // 원본 데이터 (DB에 저장된 경우)
+        // 메타 데이터 아이템에서 원본 데이터 추출 (DB 스키마 변경 없는 방식)
+        const metaItem = order.orderItems.find((item: any) => item.type === 'meta');
+        const orderData = metaItem ? metaItem.options : orderAny.originalOrderData;
 
         // 가격 상수
         const PRICES = {
