@@ -66,28 +66,43 @@ export function OrderDetailModal({ order, isOpen, onClose, onDelete }: OrderDeta
         try {
             const element = quoteTemplateRef.current;
 
-            // 캡처 전 일시적으로 스타일 조정
+            // 캡처 전 일시적으로 스타일 조정 (더 공격적으로)
             const originalStyle = {
                 maxHeight: element.style.maxHeight,
                 overflow: element.style.overflow,
                 height: element.style.height,
+                position: element.style.position,
+                transform: element.style.transform,
             };
+
             element.style.maxHeight = 'none';
             element.style.overflow = 'visible';
             element.style.height = 'auto';
+            element.style.position = 'relative';
+            element.style.transform = 'none';
 
-            // 스타일 변경 후 렌더링을 위해 잠시 대기
-            await new Promise(resolve => setTimeout(resolve, 100));
+            // 모든 자식 요소도 overflow visible로 설정
+            const children = element.querySelectorAll('*');
+            const childrenOriginalOverflow: string[] = [];
+            children.forEach((child: any, index: number) => {
+                childrenOriginalOverflow[index] = child.style.overflow;
+                child.style.overflow = 'visible';
+            });
+
+            // 스타일 변경 후 충분한 렌더링 시간 대기
+            await new Promise(resolve => setTimeout(resolve, 300));
 
             // 실제 높이 계산
             const actualHeight = element.scrollHeight;
             const actualWidth = element.scrollWidth;
 
+            console.log('Capturing with dimensions:', { actualWidth, actualHeight });
+
             // 전체 높이 확보
             const canvas = await html2canvas(element, {
                 backgroundColor: '#ffffff',
                 scale: 2, // 고해상도
-                logging: false,
+                logging: true, // 디버깅용
                 useCORS: true,
                 allowTaint: true,
                 scrollY: 0,
@@ -98,12 +113,22 @@ export function OrderDetailModal({ order, isOpen, onClose, onDelete }: OrderDeta
                 height: actualHeight,
                 y: 0,
                 x: 0,
+                foreignObjectRendering: false, // 더 안정적인 렌더링
             });
+
+            console.log('Canvas created:', { width: canvas.width, height: canvas.height });
 
             // 원래 스타일로 복구
             element.style.maxHeight = originalStyle.maxHeight;
             element.style.overflow = originalStyle.overflow;
             element.style.height = originalStyle.height;
+            element.style.position = originalStyle.position;
+            element.style.transform = originalStyle.transform;
+
+            // 자식 요소 복구
+            children.forEach((child: any, index: number) => {
+                child.style.overflow = childrenOriginalOverflow[index];
+            });
 
             // Canvas를 Blob으로 변환
             canvas.toBlob(async (blob) => {
