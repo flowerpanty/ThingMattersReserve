@@ -101,7 +101,7 @@ export const QuoteImageTemplate = React.forwardRef<HTMLDivElement, QuoteImageTem
             <div ref={ref} style={{
                 width: '100%',
                 backgroundColor: '#ffffff',
-                padding: '20px',
+                padding: '12px',
                 boxSizing: 'border-box',
                 fontFamily: 'Inter, system-ui, -apple-system, sans-serif',
                 color: '#1a1a1a'
