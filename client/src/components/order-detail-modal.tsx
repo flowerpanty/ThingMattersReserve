@@ -260,7 +260,81 @@ export function OrderDetailModal({ order, isOpen, onClose, onDelete }: OrderDeta
         }
     };
 
-    const handleCopyToSheet = () => {
+    const handleCopyToSheet = async () => {
+        const orderAny = order as any;
+
+        // 1. HTML 콘텐츠 생성 (이메일 견적서 스타일)
+        const htmlContent = `
+            <table style="border-collapse: collapse; width: 100%; font-family: sans-serif;">
+                <!-- 제목 -->
+                <tr>
+                    <td colspan="4" style="background-color: #4F46E5; color: white; padding: 15px; text-align: center; font-size: 24px; font-weight: bold;">
+                        nothingmatters 견적서
+                    </td>
+                </tr>
+                <!-- 고객 정보 -->
+                <tr>
+                    <td colspan="4" style="border: 1px solid #000; padding: 10px;">
+                        고객명: ${order.customerName} | 연락처: ${order.customerContact} ${orderAny.customerPhone ? `| 핸드폰: ${orderAny.customerPhone}` : ''}
+                    </td>
+                </tr>
+                <tr>
+                    <td colspan="4" style="border: 1px solid #000; padding: 10px;">
+                        수령 방법: ${order.deliveryMethod === 'quick' ? '퀵 배송' : '픽업'} | 수령 희망일: ${order.deliveryDate} ${order.pickupTime ? `(${order.pickupTime})` : ''}<br>
+                        ${orderAny.deliveryAddress ? `배송 주소: ${orderAny.deliveryAddress} ${orderAny.deliveryDetailAddress || ''}` : ''}
+                    </td>
+                </tr>
+                <!-- 테이블 헤더 -->
+                <tr style="background-color: #E5E7EB; font-weight: bold; text-align: center;">
+                    <td style="border: 1px solid #000; padding: 10px;">제품명</td>
+                    <td style="border: 1px solid #000; padding: 10px;">수량</td>
+                    <td style="border: 1px solid #000; padding: 10px;">단가</td>
+                    <td style="border: 1px solid #000; padding: 10px;">합계</td>
+                </tr>
+                <!-- 주문 항목 -->
+                ${order.orderItems.map(item => `
+                    <tr>
+                        <td style="border: 1px solid #000; padding: 10px;">${item.name}</td>
+                        <td style="border: 1px solid #000; padding: 10px; text-align: center;">${item.quantity}</td>
+                        <td style="border: 1px solid #000; padding: 10px; text-align: right;">${item.price.toLocaleString()}원</td>
+                        <td style="border: 1px solid #000; padding: 10px; text-align: right;">${(item.price * item.quantity).toLocaleString()}원</td>
+                    </tr>
+                `).join('')}
+                <!-- 총 합계 -->
+                <tr style="background-color: #4F46E5; color: white; font-weight: bold;">
+                    <td colspan="3" style="border: 1px solid #000; padding: 15px; text-align: center;">총 합계</td>
+                    <td style="border: 1px solid #000; padding: 15px; text-align: right;">${order.totalPrice.toLocaleString()}원</td>
+                </tr>
+                <!-- 공백 -->
+                <tr><td colspan="4" style="height: 20px;"></td></tr>
+                <!-- 주문 상세 옵션 -->
+                <tr>
+                    <td colspan="4" style="border: 1px solid #000; padding: 10px; font-weight: bold; background-color: #f3f4f6;">주문 상세 옵션</td>
+                </tr>
+                <tr>
+                    <td colspan="4" style="border: 1px solid #000; padding: 10px;">
+                        ${order.orderItems.map(item => {
+            // 옵션 정보 포맷팅 (단순화)
+            return `• ${item.name} (${item.quantity}개)`;
+        }).join('<br>')}
+                    </td>
+                </tr>
+                <!-- 입금 계좌 -->
+                <tr>
+                    <td colspan="4" style="border: 1px solid #000; padding: 15px; background-color: #FEF3C7; text-align: center; font-weight: bold;">
+                        입금 계좌: 83050104204736 국민은행 (낫띵매터스)
+                    </td>
+                </tr>
+                <!-- 문의 -->
+                <tr>
+                    <td colspan="4" style="padding: 10px; text-align: center;">
+                        주문 문의: 카카오톡 @nothingmatters 또는 010-2866-7976
+                    </td>
+                </tr>
+            </table>
+        `;
+
+        // 2. 텍스트 콘텐츠 생성 (기존 TSV)
         const headers = ['날짜', '고객명', '연락처', '상품명', '수량', '단가', '금액'];
         const rows = order.orderItems.map(item => [
             format(new Date(), 'yyyy-MM-dd'),
@@ -279,13 +353,35 @@ export function OrderDetailModal({ order, isOpen, onClose, onDelete }: OrderDeta
             ['', '', '', '', '', '총 합계', order.totalPrice].join('\t')
         ].join('\n');
 
-        navigator.clipboard.writeText(tsvContent).then(() => {
+        try {
+            const blobHtml = new Blob([htmlContent], { type: 'text/html' });
+            const blobText = new Blob([tsvContent], { type: 'text/plain' });
+
+            // ClipboardItem 타입 우회
+            const ClipboardItem = (window as any).ClipboardItem;
+            const data = [new ClipboardItem({
+                'text/html': blobHtml,
+                'text/plain': blobText,
+            })];
+
+            await navigator.clipboard.write(data);
+
             toast({
-                title: "클립보드에 복사되었습니다",
-                description: "새로 열린 스프레드시트에 붙여넣기(Ctrl+V) 하세요.",
+                title: "견적서 서식이 복사되었습니다",
+                description: "스프레드시트에 붙여넣기(Ctrl+V) 하세요.",
             });
             window.open('https://sheets.new', '_blank');
-        });
+        } catch (err) {
+            console.error('Clipboard write failed:', err);
+            // 실패 시 텍스트만 복사 시도
+            navigator.clipboard.writeText(tsvContent).then(() => {
+                toast({
+                    title: "텍스트만 복사되었습니다",
+                    description: "서식 복사에 실패하여 데이터만 복사했습니다.",
+                });
+                window.open('https://sheets.new', '_blank');
+            });
+        }
     };
 
     const formatCurrency = (amount: number) => {
