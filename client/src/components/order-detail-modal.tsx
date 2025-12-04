@@ -66,19 +66,32 @@ export function OrderDetailModal({ order, isOpen, onClose, onDelete }: OrderDeta
         try {
             const element = quoteTemplateRef.current;
 
+            // 캡처 전 일시적으로 스타일 조정
+            const originalStyle = {
+                maxHeight: element.style.maxHeight,
+                overflow: element.style.overflow,
+            };
+            element.style.maxHeight = 'none';
+            element.style.overflow = 'visible';
+
             // 전체 높이 확보
             const canvas = await html2canvas(element, {
                 backgroundColor: '#ffffff',
                 scale: 2, // 고해상도
                 logging: false,
                 useCORS: true,
-                scrollY: -window.scrollY,
-                scrollX: -window.scrollX,
+                allowTaint: true,
+                scrollY: 0,
+                scrollX: 0,
                 windowWidth: element.scrollWidth,
                 windowHeight: element.scrollHeight,
                 width: element.scrollWidth,
                 height: element.scrollHeight,
             });
+
+            // 원래 스타일로 복구
+            element.style.maxHeight = originalStyle.maxHeight;
+            element.style.overflow = originalStyle.overflow;
 
             // Canvas를 Blob으로 변환
             canvas.toBlob(async (blob) => {
