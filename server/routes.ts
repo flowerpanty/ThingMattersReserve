@@ -127,6 +127,84 @@ export async function registerRoutes(app: Express): Promise<Server> {
     return { totalPrice, breakdown };
   };
 
+
+  // Dynamic manifest for PWA - supports different start URLs
+  app.get("/api/manifest.json", (req, res) => {
+    const startUrl = req.query.startUrl as string || "/";
+    const isAdmin = startUrl.includes('/dashboard');
+
+    const manifest = {
+      name: isAdmin ? "낫띵메터스 관리자" : "낫띵메터스 쿠키 주문",
+      short_name: isAdmin ? "관리자" : "낫띵메터스",
+      description: isAdmin ? "주문 관리 시스템" : "수제 쿠키 예약 주문 시스템",
+      start_url: startUrl,
+      display: "standalone",
+      background_color: "#ffffff",
+      theme_color: isAdmin ? "#DC2626" : "#4F46E5",
+      orientation: "portrait",
+      scope: "/",
+      icons: [
+        {
+          src: "/icon-72x72.png",
+          sizes: "72x72",
+          type: "image/png",
+          purpose: "any"
+        },
+        {
+          src: "/icon-96x96.png",
+          sizes: "96x96",
+          type: "image/png",
+          purpose: "any"
+        },
+        {
+          src: "/icon-128x128.png",
+          sizes: "128x128",
+          type: "image/png",
+          purpose: "any"
+        },
+        {
+          src: "/icon-144x144.png",
+          sizes: "144x144",
+          type: "image/png",
+          purpose: "any"
+        },
+        {
+          src: "/icon-152x152.png",
+          sizes: "152x152",
+          type: "image/png",
+          purpose: "any"
+        },
+        {
+          src: "/icon-180x180.png",
+          sizes: "180x180",
+          type: "image/png",
+          purpose: "any"
+        },
+        {
+          src: "/icon-192x192.png",
+          sizes: "192x192",
+          type: "image/png",
+          purpose: "any maskable"
+        },
+        {
+          src: "/icon-384x384.png",
+          sizes: "384x384",
+          type: "image/png",
+          purpose: "any"
+        },
+        {
+          src: "/icon-512x512.png",
+          sizes: "512x512",
+          type: "image/png",
+          purpose: "any maskable"
+        }
+      ]
+    };
+
+    res.setHeader('Content-Type', 'application/json');
+    res.json(manifest);
+  });
+
   // Get all orders endpoint
   app.get("/api/orders", async (req, res) => {
     try {
