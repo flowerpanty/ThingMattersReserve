@@ -64,71 +64,57 @@ export function OrderDetailModal({ order, isOpen, onClose, onDelete }: OrderDeta
 
         setIsDownloadingImage(true);
         try {
-            const element = quoteTemplateRef.current;
+            const originalElement = quoteTemplateRef.current;
 
-            // 캡처 전 일시적으로 스타일 조정 (더 공격적으로)
-            const originalStyle = {
-                maxHeight: element.style.maxHeight,
-                overflow: element.style.overflow,
-                height: element.style.height,
-                position: element.style.position,
-                transform: element.style.transform,
-            };
+            // 1. 요소를 복제 (Deep clone)
+            const clonedElement = originalElement.cloneNode(true) as HTMLElement;
 
-            element.style.maxHeight = 'none';
-            element.style.overflow = 'visible';
-            element.style.height = 'auto';
-            element.style.position = 'relative';
-            element.style.transform = 'none';
-
-            // 모든 자식 요소도 overflow visible로 설정
-            const children = element.querySelectorAll('*');
-            const childrenOriginalOverflow: string[] = [];
-            children.forEach((child: any, index: number) => {
-                childrenOriginalOverflow[index] = child.style.overflow;
-                child.style.overflow = 'visible';
+            // 2. 복제된 요소 스타일 설정 (화면 밖으로 이동, 전체 너비/높이 확보)
+            // 모바일에서도 데스크탑 너비(800px)로 강제 렌더링하여 레이아웃 유지
+            Object.assign(clonedElement.style, {
+                position: 'fixed',
+                left: '-9999px',
+                top: '0',
+                width: '800px', // 고정 너비로 레이아웃 안정화
+                height: 'auto',
+                maxHeight: 'none',
+                overflow: 'visible',
+                zIndex: '-1',
+                transform: 'none',
+                backgroundColor: '#ffffff' // 배경색 명시
             });
 
-            // 스타일 변경 후 충분한 렌더링 시간 대기
-            await new Promise(resolve => setTimeout(resolve, 300));
+            // 3. DOM에 추가
+            document.body.appendChild(clonedElement);
 
-            // 실제 높이 계산
-            const actualHeight = element.scrollHeight;
-            const actualWidth = element.scrollWidth;
+            // 4. 이미지 로딩 등 렌더링 대기 (충분한 시간 확보)
+            await new Promise(resolve => setTimeout(resolve, 500));
 
-            console.log('Capturing with dimensions:', { actualWidth, actualHeight });
+            // 실제 렌더링된 높이 계산
+            const captureHeight = clonedElement.scrollHeight;
 
-            // 전체 높이 확보
-            const canvas = await html2canvas(element, {
+            console.log('Capturing cloned element:', { width: 800, height: captureHeight });
+
+            // 5. 캡처 수행
+            const canvas = await html2canvas(clonedElement, {
                 backgroundColor: '#ffffff',
                 scale: 2, // 고해상도
-                logging: true, // 디버깅용
+                logging: false,
                 useCORS: true,
                 allowTaint: true,
+                width: 800,
+                height: captureHeight,
+                windowWidth: 800,
+                windowHeight: captureHeight,
                 scrollY: 0,
                 scrollX: 0,
-                windowWidth: actualWidth,
-                windowHeight: actualHeight,
-                width: actualWidth,
-                height: actualHeight,
-                y: 0,
                 x: 0,
-                foreignObjectRendering: false, // 더 안정적인 렌더링
+                y: 0,
+                foreignObjectRendering: false
             });
 
-            console.log('Canvas created:', { width: canvas.width, height: canvas.height });
-
-            // 원래 스타일로 복구
-            element.style.maxHeight = originalStyle.maxHeight;
-            element.style.overflow = originalStyle.overflow;
-            element.style.height = originalStyle.height;
-            element.style.position = originalStyle.position;
-            element.style.transform = originalStyle.transform;
-
-            // 자식 요소 복구
-            children.forEach((child: any, index: number) => {
-                child.style.overflow = childrenOriginalOverflow[index];
-            });
+            // 6. 복제된 요소 제거
+            document.body.removeChild(clonedElement);
 
             // Canvas를 Blob으로 변환
             canvas.toBlob(async (blob) => {

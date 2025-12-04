@@ -241,11 +241,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
         throw new Error('필수 데이터가 누락되었습니다.');
       }
 
-      // Dynamic import for ExcelJS to avoid module issues
-      const ExcelJSModule = await import('exceljs');
-      // ExcelJS exports Workbook directly, not as .default.Workbook
-      const Workbook = ExcelJSModule.default?.Workbook || ExcelJSModule.Workbook || (ExcelJSModule.default as any) || ExcelJSModule;
-      const workbook = new Workbook();
+      // Dynamic import for ExcelJS with robust fallback
+      let ExcelJS;
+      try {
+        const mod = await import('exceljs');
+        ExcelJS = mod.default || mod;
+      } catch (e) {
+        console.error('Failed to import exceljs:', e);
+        throw new Error('Excel 라이브러리 로드 실패');
+      }
+
+      let workbook;
+      try {
+        if (typeof ExcelJS.Workbook === 'function') {
+          workbook = new ExcelJS.Workbook();
+        } else if (ExcelJS.default && typeof ExcelJS.default.Workbook === 'function') {
+          workbook = new ExcelJS.default.Workbook();
+        } else {
+          console.error('ExcelJS structure:', ExcelJS);
+          throw new Error('Workbook 생성자를 찾을 수 없습니다.');
+        }
+      } catch (e) {
+        console.error('Workbook creation error:', e);
+        throw new Error('Excel 워크북 생성 실패');
+      }
+
       const worksheet = workbook.addWorksheet('견적서');
 
       // Set column widths
