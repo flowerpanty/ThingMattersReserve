@@ -549,6 +549,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
           });
         }
 
+        // Add scone sets (multiple sets)
+        if (orderData.sconeSets?.length > 0) {
+          orderData.sconeSets.forEach((set, index) => {
+            orderItems.push({
+              type: 'scone' as const,
+              name: `스콘 세트 ${index + 1}`,
+              quantity: set.quantity || 1,
+              price: cookiePrices.scone,
+              options: {
+                flavor: set.flavor,
+                strawberryJam: set.strawberryJam,
+              },
+            });
+          });
+        }
+
+        // Add packaging
+        if (orderData.packaging) {
+          const packagingName = orderData.packaging === 'single_box' ? '1구박스' :
+            orderData.packaging === 'plastic_wrap' ? '비닐탭포장' : '유산지';
+          const packagingPrice = cookiePrices.packaging[orderData.packaging];
+
+          // 포장 수량 계산 (일반 쿠키 수량과 동일하거나 1개)
+          let packagingQuantity = 1;
+          if (orderData.packaging === 'single_box' || orderData.packaging === 'plastic_wrap') {
+            const regularQty = Object.values(orderData.regularCookies || {}).reduce((sum, q) => sum + q, 0);
+            packagingQuantity = regularQty > 0 ? regularQty : 1;
+          }
+
+          if (packagingPrice > 0 || orderData.packaging === 'oil_paper') {
+            orderItems.push({
+              type: 'packaging' as const,
+              name: packagingName,
+              quantity: packagingQuantity,
+              price: packagingPrice,
+            });
+          }
+        }
+
         // Add other products
         if (orderData.fortuneCookie > 0) {
           orderItems.push({

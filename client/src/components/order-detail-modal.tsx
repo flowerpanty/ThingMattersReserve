@@ -299,6 +299,14 @@ export function OrderDetailModal({ order, isOpen, onClose, onDelete }: OrderDeta
             const regularQty = Object.values(orderData.regularCookies || {}).reduce((sum: number, q: any) => sum + q, 0);
             if (regularQty > 0) {
                 detailedRows.push({ name: '일반쿠키', quantity: regularQty, price: PRICES.regular, total: regularQty * PRICES.regular });
+
+                // 포장 옵션 (일반 쿠키 하위로 이동 및 그룹화)
+                if (orderData.packaging && (orderData.packaging === 'single_box' || orderData.packaging === 'plastic_wrap')) {
+                    const pkgName = orderData.packaging === 'single_box' ? '1구박스' : '비닐탭포장';
+                    const pkgPrice = PRICES.packaging[orderData.packaging as keyof typeof PRICES.packaging];
+                    // 'ㄴ' 접두어로 하위 항목임을 표시
+                    detailedRows.push({ name: `ㄴ ${pkgName}`, quantity: regularQty, price: pkgPrice, total: regularQty * pkgPrice });
+                }
             }
 
             // 2구 패키지
@@ -336,14 +344,6 @@ export function OrderDetailModal({ order, isOpen, onClose, onDelete }: OrderDeta
             // 비행기샌드쿠키
             if (orderData.airplaneSandwich > 0) {
                 detailedRows.push({ name: '비행기샌드쿠키', quantity: `${orderData.airplaneSandwich}박스`, price: PRICES.airplane, total: orderData.airplaneSandwich * PRICES.airplane });
-            }
-
-            // 1구박스 / 포장
-            if (orderData.packaging && (orderData.packaging === 'single_box' || orderData.packaging === 'plastic_wrap')) {
-                const pkgName = orderData.packaging === 'single_box' ? '1구박스' : '비닐탭포장';
-                const pkgPrice = PRICES.packaging[orderData.packaging as keyof typeof PRICES.packaging];
-                // 포장 수량은 일반 쿠키 수량과 동일하다고 가정 (ExcelGenerator 로직)
-                detailedRows.push({ name: pkgName, quantity: regularQty, price: pkgPrice, total: regularQty * pkgPrice });
             }
 
             // 브라우니 쿠키 (옵션별 분해)

@@ -19,7 +19,7 @@ export const orders = pgTable("orders", {
 });
 
 export const orderItemSchema = z.object({
-  type: z.enum(['regular', 'brownie', 'fortune', 'airplane', 'meta']),
+  type: z.enum(['regular', 'brownie', 'fortune', 'airplane', 'meta', 'scone', 'packaging']),
   name: z.string(),
   quantity: z.number().min(0),
   price: z.number().min(0),
