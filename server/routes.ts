@@ -576,6 +576,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           pickupTime: orderData.pickupTime,
           orderItems,
           totalPrice,
+          originalOrderData: orderData,
         });
         console.log(`[API] 주문 생성 완료: ID=${order.id}, PickupTime=${orderData.pickupTime}`);
 
