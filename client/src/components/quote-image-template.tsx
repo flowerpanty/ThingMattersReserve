@@ -99,9 +99,12 @@ export const QuoteImageTemplate = React.forwardRef<HTMLDivElement, QuoteImageTem
 
         return (
             <div ref={ref} style={{
-                width: '800px',
+                width: '100%',
+                maxWidth: '800px',
                 backgroundColor: '#ffffff',
-                padding: '48px',
+                padding: '24px 20px',
+                margin: '0 auto',
+                boxSizing: 'border-box',
                 fontFamily: 'Inter, system-ui, -apple-system, sans-serif',
                 color: '#1a1a1a'
             }}>
@@ -142,22 +145,42 @@ export const QuoteImageTemplate = React.forwardRef<HTMLDivElement, QuoteImageTem
                         borderRadius: '8px',
                         fontSize: '14px'
                     }}>
-                        <div style={{ clear: 'both', marginBottom: '10px', minHeight: '20px' }}>
-                            <strong style={{ display: 'inline-block', minWidth: '80px' }}>고객명:</strong>
-                            <span>{order.customerName}</span>
-                        </div>
-                        <div style={{ clear: 'both', marginBottom: '10px', minHeight: '20px' }}>
-                            <strong style={{ display: 'inline-block', minWidth: '80px' }}>연락처:</strong>
-                            <span>{order.customerContact}</span>
-                        </div>
-                        <div style={{ clear: 'both', marginBottom: '10px', minHeight: '20px' }}>
-                            <strong style={{ display: 'inline-block', minWidth: '80px' }}>주문번호:</strong>
-                            <span style={{ wordBreak: 'break-all' }}>{order.id.slice(0, 12)}</span>
-                        </div>
-                        <div style={{ clear: 'both', minHeight: '20px' }}>
-                            <strong style={{ display: 'inline-block', minWidth: '80px' }}>주문일:</strong>
-                            <span>{formatDateTime(order.createdAt)}</span>
-                        </div>
+                        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                            <tbody>
+                                <tr>
+                                    <td style={{ padding: '6px 0', verticalAlign: 'top', width: '90px' }}>
+                                        <strong>고객명:</strong>
+                                    </td>
+                                    <td style={{ padding: '6px 0', verticalAlign: 'top' }}>
+                                        {order.customerName}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style={{ padding: '6px 0', verticalAlign: 'top', width: '90px' }}>
+                                        <strong>연락처:</strong>
+                                    </td>
+                                    <td style={{ padding: '6px 0', verticalAlign: 'top', wordBreak: 'break-all' }}>
+                                        {order.customerContact}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style={{ padding: '6px 0', verticalAlign: 'top', width: '90px' }}>
+                                        <strong>주문번호:</strong>
+                                    </td>
+                                    <td style={{ padding: '6px 0', verticalAlign: 'top', wordBreak: 'break-all' }}>
+                                        {order.id.slice(0, 12)}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style={{ padding: '6px 0', verticalAlign: 'top', width: '90px' }}>
+                                        <strong>주문일:</strong>
+                                    </td>
+                                    <td style={{ padding: '6px 0', verticalAlign: 'top' }}>
+                                        {formatDateTime(order.createdAt)}
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
                     </div>
                 </div>
 
@@ -178,20 +201,36 @@ export const QuoteImageTemplate = React.forwardRef<HTMLDivElement, QuoteImageTem
                         borderRadius: '8px',
                         fontSize: '14px'
                     }}>
-                        <div style={{ clear: 'both', marginBottom: '10px', minHeight: '20px' }}>
-                            <strong style={{ display: 'inline-block', minWidth: '60px' }}>방법:</strong>
-                            <span>{getDeliveryMethodText(order.deliveryMethod)}</span>
-                        </div>
-                        <div style={{ clear: 'both', marginBottom: '10px', minHeight: '20px' }}>
-                            <strong style={{ display: 'inline-block', minWidth: '60px' }}>날짜:</strong>
-                            <span>{order.deliveryDate}</span>
-                        </div>
-                        {order.pickupTime && (
-                            <div style={{ clear: 'both', minHeight: '20px' }}>
-                                <strong style={{ display: 'inline-block', minWidth: '60px' }}>시간:</strong>
-                                <span>{order.pickupTime}</span>
-                            </div>
-                        )}
+                        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                            <tbody>
+                                <tr>
+                                    <td style={{ padding: '6px 0', verticalAlign: 'top', width: '70px' }}>
+                                        <strong>방법:</strong>
+                                    </td>
+                                    <td style={{ padding: '6px 0', verticalAlign: 'top' }}>
+                                        {getDeliveryMethodText(order.deliveryMethod)}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style={{ padding: '6px 0', verticalAlign: 'top', width: '70px' }}>
+                                        <strong>날짜:</strong>
+                                    </td>
+                                    <td style={{ padding: '6px 0', verticalAlign: 'top' }}>
+                                        {order.deliveryDate}
+                                    </td>
+                                </tr>
+                                {order.pickupTime && (
+                                    <tr>
+                                        <td style={{ padding: '6px 0', verticalAlign: 'top', width: '70px' }}>
+                                            <strong>시간:</strong>
+                                        </td>
+                                        <td style={{ padding: '6px 0', verticalAlign: 'top' }}>
+                                            {order.pickupTime}
+                                        </td>
+                                    </tr>
+                                )}
+                            </tbody>
+                        </table>
                     </div>
                 </div>
 
@@ -212,10 +251,10 @@ export const QuoteImageTemplate = React.forwardRef<HTMLDivElement, QuoteImageTem
                     }}>
                         <thead>
                             <tr style={{ backgroundColor: '#f3f4f6', borderBottom: '2px solid #d1d5db' }}>
-                                <th style={{ padding: '12px', textAlign: 'left', fontWeight: '600' }}>품목</th>
-                                <th style={{ padding: '12px', textAlign: 'center', fontWeight: '600' }}>수량</th>
-                                <th style={{ padding: '12px', textAlign: 'right', fontWeight: '600' }}>단가</th>
-                                <th style={{ padding: '12px', textAlign: 'right', fontWeight: '600' }}>금액</th>
+                                <th style={{ padding: '12px 8px', textAlign: 'left', fontWeight: '600', width: '40%' }}>품목</th>
+                                <th style={{ padding: '12px 8px', textAlign: 'center', fontWeight: '600', width: '15%' }}>수량</th>
+                                <th style={{ padding: '12px 8px', textAlign: 'right', fontWeight: '600', width: '20%' }}>단가</th>
+                                <th style={{ padding: '12px 8px', textAlign: 'right', fontWeight: '600', width: '25%' }}>금액</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -223,7 +262,7 @@ export const QuoteImageTemplate = React.forwardRef<HTMLDivElement, QuoteImageTem
                                 const optionText = renderOptionDetails(item);
                                 return (
                                     <tr key={index} style={{ borderBottom: '1px solid #e5e7eb' }}>
-                                        <td style={{ padding: '12px', verticalAlign: 'top' }}>
+                                        <td style={{ padding: '12px 8px', verticalAlign: 'top', width: '40%' }}>
                                             <div style={{ fontWeight: '500', marginBottom: '4px' }}>{item.name}</div>
                                             {optionText && (
                                                 <div style={{
@@ -237,9 +276,9 @@ export const QuoteImageTemplate = React.forwardRef<HTMLDivElement, QuoteImageTem
                                                 </div>
                                             )}
                                         </td>
-                                        <td style={{ padding: '12px', textAlign: 'center', verticalAlign: 'top' }}>{item.quantity}개</td>
-                                        <td style={{ padding: '12px', textAlign: 'right', verticalAlign: 'top', whiteSpace: 'nowrap' }}>{formatCurrency(item.price)}</td>
-                                        <td style={{ padding: '12px', textAlign: 'right', fontWeight: '500', verticalAlign: 'top', whiteSpace: 'nowrap' }}>
+                                        <td style={{ padding: '12px 8px', textAlign: 'center', verticalAlign: 'top', width: '15%' }}>{item.quantity}개</td>
+                                        <td style={{ padding: '12px 8px', textAlign: 'right', verticalAlign: 'top', whiteSpace: 'nowrap', width: '20%' }}>{formatCurrency(item.price)}</td>
+                                        <td style={{ padding: '12px 8px', textAlign: 'right', fontWeight: '500', verticalAlign: 'top', whiteSpace: 'nowrap', width: '25%' }}>
                                             {formatCurrency(item.price * item.quantity)}
                                         </td>
                                     </tr>
