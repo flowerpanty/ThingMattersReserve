@@ -1,8 +1,8 @@
 import webpush from 'web-push';
 
 // VAPID 키 설정 (실제 운영시에는 환경변수로 관리)
-const VAPID_PUBLIC_KEY = 'BEl62iUYgUivxIkv69yViEuiBIa40HcCWLEw0VjAOoozm0VB-9o4IfKjM6cMElcI_FjmOJ2Y7Udt5Cc-D4W2xNk';
-const VAPID_PRIVATE_KEY = 'k-EjEI_p90WLb0bMT46LgIc0Wg7ePRn7sY8G2xHMGaI';
+const VAPID_PUBLIC_KEY = 'BNqrcbFlP-aBmpUF_puabPTb2sjQYVq6NAy5zLng9JmDGRjlK7WXpRLZbYwhqnDOFCYRLd2MEmNJp14j9qw_6UY';
+const VAPID_PRIVATE_KEY = '6dsIMeeh4xDW0HjXL7B3YCYHK8C5Ggnztd1eUNf4jCc';
 
 export interface PushSubscription {
   endpoint: string;

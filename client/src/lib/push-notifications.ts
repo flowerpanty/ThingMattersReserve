@@ -1,6 +1,6 @@
 // 웹 푸시 알림 관리 서비스
 
-const VAPID_PUBLIC_KEY = 'BEl62iUYgUivxIkv69yViEuiBIa40HcCWLEw0VjAOoozm0VB-9o4IfKjM6cMElcI_FjmOJ2Y7Udt5Cc-D4W2xNk';
+const VAPID_PUBLIC_KEY = 'BNqrcbFlP-aBmpUF_puabPTb2sjQYVq6NAy5zLng9JmDGRjlK7WXpRLZbYwhqnDOFCYRLd2MEmNJp14j9qw_6UY';
 
 export class PushNotificationService {
   private registration: ServiceWorkerRegistration | null = null;
