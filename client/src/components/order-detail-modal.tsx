@@ -72,25 +72,48 @@ export function OrderDetailModal({ order, isOpen, onClose, onDelete }: OrderDeta
             });
 
             // Canvas를 Blob으로 변환
-            canvas.toBlob((blob) => {
+            canvas.toBlob(async (blob) => {
                 if (!blob) {
                     throw new Error('이미지 생성 실패');
                 }
 
-                // 다운로드
+                const fileName = `견적서_${order.customerName}_${order.id.slice(0, 8)}.png`;
+
+                // Web Share API 지원 확인 (모바일 기기)
+                if (navigator.share && navigator.canShare) {
+                    try {
+                        const file = new File([blob], fileName, { type: 'image/png' });
+
+                        // 공유 가능 여부 확인
+                        if (navigator.canShare({ files: [file] })) {
+                            await navigator.share({
+                                files: [file],
+                                title: '견적서',
+                                text: `${order.customerName} 견적서`
+                            });
+                            setIsDownloadingImage(false);
+                            return;
+                        }
+                    } catch (shareError) {
+                        // 사용자가 공유를 취소하거나 오류 발생 시 다운로드로 폴백
+                        console.log('공유 취소 또는 오류:', shareError);
+                    }
+                }
+
+                // 폴백: 기존 다운로드 방식
                 const url = window.URL.createObjectURL(blob);
                 const a = document.createElement('a');
                 a.href = url;
-                a.download = `견적서_${order.customerName}_${order.id.slice(0, 8)}.png`;
+                a.download = fileName;
                 document.body.appendChild(a);
                 a.click();
                 a.remove();
                 window.URL.revokeObjectURL(url);
+                setIsDownloadingImage(false);
             }, 'image/png');
         } catch (error) {
             console.error('이미지 다운로드 오류:', error);
             alert('이미지 다운로드에 실패했습니다. 오류: ' + (error instanceof Error ? error.message : String(error)));
-        } finally {
             setIsDownloadingImage(false);
         }
     };
