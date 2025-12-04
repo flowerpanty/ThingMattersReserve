@@ -130,7 +130,8 @@ export function OrderDetailModal({ order, isOpen, onClose, onDelete }: OrderDeta
                 orderItems: order.orderItems,
             };
 
-            const response = await fetch('/api/generate-quote', {
+            // 주문 생성 없이 Excel 파일만 다운로드
+            const response = await fetch('/api/download-quote-excel', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(quoteData),

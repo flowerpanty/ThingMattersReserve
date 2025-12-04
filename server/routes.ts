@@ -152,6 +152,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Download quote Excel (주문 생성 없이 Excel만 다운로드)
+  app.post("/api/download-quote-excel", async (req, res) => {
+    try {
+      console.log('Excel 견적서 다운로드 요청 받음');
+      const orderData = orderDataSchema.parse(req.body);
+
+      // Generate Excel quote only (no order creation)
+      const quoteBuffer = await excelGenerator.generateQuote(orderData);
+
+      // Send Excel file
+      res.setHeader(
+        "Content-Type",
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+      );
+      res.setHeader(
+        "Content-Disposition",
+        `attachment; filename="견적서_${orderData.customerName}_${new Date().getTime()}.xlsx"`
+      );
+      res.send(quoteBuffer);
+    } catch (error) {
+      console.error('Excel 다운로드 오류:', error);
+      res.status(500).json({
+        message: "견적서 다운로드 중 오류가 발생했습니다.",
+        error: error instanceof Error ? error.message : String(error)
+      });
+    }
+  });
+
   // Generate and send quote
   app.post("/api/generate-quote", async (req, res) => {
     try {
