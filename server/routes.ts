@@ -156,10 +156,161 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/download-quote-excel", async (req, res) => {
     try {
       console.log('Excel 견적서 다운로드 요청 받음');
-      const orderData = orderDataSchema.parse(req.body);
 
-      // Generate Excel quote only (no order creation)
-      const quoteBuffer = await excelGenerator.generateQuote(orderData);
+      const { customerName, customerContact, deliveryDate, deliveryMethod, pickupTime, orderItems } = req.body;
+
+      if (!customerName || !customerContact || !orderItems) {
+        throw new Error('필수 데이터가 누락되었습니다.');
+      }
+
+      // Create a simple Excel workbook
+      const workbook = new (await import('exceljs')).Workbook();
+      const worksheet = workbook.addWorksheet('견적서');
+
+      // Set column widths
+      worksheet.getColumn(1).width = 30;
+      worksheet.getColumn(2).width = 10;
+      worksheet.getColumn(3).width = 15;
+      worksheet.getColumn(4).width = 15;
+
+      // Border style
+      const borderStyle = {
+        top: { style: 'thin' as const },
+        left: { style: 'thin' as const },
+        bottom: { style: 'thin' as const },
+        right: { style: 'thin' as const }
+      };
+
+      // Header
+      worksheet.mergeCells('A1:D1');
+      worksheet.getCell('A1').value = 'nothingmatters 견적서';
+      worksheet.getCell('A1').style = {
+        font: { bold: true, size: 16, color: { argb: 'FFFFFFFF' } },
+        alignment: { horizontal: 'center', vertical: 'middle' },
+        fill: { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF4F46E5' } },
+        border: borderStyle
+      };
+      worksheet.getRow(1).height = 35;
+
+      // Customer info
+      worksheet.mergeCells('A2:D2');
+      worksheet.getCell('A2').value = `고객명: ${customerName} | 연락처: ${customerContact}`;
+      worksheet.getCell('A2').style = {
+        font: { size: 10 },
+        alignment: { horizontal: 'left', vertical: 'middle' },
+        border: borderStyle
+      };
+      worksheet.getRow(2).height = 25;
+
+      // Delivery info
+      worksheet.mergeCells('A3:D3');
+      const deliveryMethodText = deliveryMethod === 'pickup' ? '매장 픽업' : '퀵 배송';
+      let deliveryText = `수령 방법: ${deliveryMethodText} | 수령 희망일: ${deliveryDate}`;
+      if (pickupTime) {
+        deliveryText += ` | 시간: ${pickupTime}`;
+      }
+      worksheet.getCell('A3').value = deliveryText;
+      worksheet.getCell('A3').style = {
+        font: { size: 10 },
+        alignment: { horizontal: 'left', vertical: 'middle' },
+        border: borderStyle
+      };
+      worksheet.getRow(3).height = 25;
+
+      // Empty row
+      worksheet.getRow(4).height = 10;
+
+      // Table headers
+      const headers = ['제품명', '수량', '단가', '합계'];
+      headers.forEach((header, index) => {
+        const cell = worksheet.getCell(5, index + 1);
+        cell.value = header;
+        cell.style = {
+          font: { bold: true, size: 11 },
+          alignment: { horizontal: 'center', vertical: 'middle' },
+          fill: { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE5E7EB' } },
+          border: borderStyle
+        };
+      });
+      worksheet.getRow(5).height = 30;
+
+      // Order items
+      let currentRow = 6;
+      let totalAmount = 0;
+
+      orderItems.forEach((item: any) => {
+        const itemTotal = item.price * item.quantity;
+        totalAmount += itemTotal;
+
+        worksheet.getCell(currentRow, 1).value = item.name;
+        worksheet.getCell(currentRow, 1).style = {
+          font: { size: 10 },
+          alignment: { horizontal: 'left', vertical: 'middle' },
+          border: borderStyle
+        };
+
+        worksheet.getCell(currentRow, 2).value = `${item.quantity}개`;
+        worksheet.getCell(currentRow, 2).style = {
+          font: { size: 10 },
+          alignment: { horizontal: 'center', vertical: 'middle' },
+          border: borderStyle
+        };
+
+        worksheet.getCell(currentRow, 3).value = item.price;
+        worksheet.getCell(currentRow, 3).style = {
+          font: { size: 10 },
+          alignment: { horizontal: 'right', vertical: 'middle' },
+          border: borderStyle,
+          numFmt: '#,##0"원"'
+        };
+
+        worksheet.getCell(currentRow, 4).value = itemTotal;
+        worksheet.getCell(currentRow, 4).style = {
+          font: { size: 10 },
+          alignment: { horizontal: 'right', vertical: 'middle' },
+          border: borderStyle,
+          numFmt: '#,##0"원"'
+        };
+
+        worksheet.getRow(currentRow).height = 30;
+        currentRow++;
+      });
+
+      // Total
+      currentRow += 1;
+      worksheet.mergeCells(`A${currentRow}:C${currentRow}`);
+      worksheet.getCell(currentRow, 1).value = '총 합계';
+      worksheet.getCell(currentRow, 1).style = {
+        font: { bold: true, size: 12, color: { argb: 'FFFFFFFF' } },
+        alignment: { horizontal: 'center', vertical: 'middle' },
+        fill: { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF4F46E5' } },
+        border: borderStyle
+      };
+
+      worksheet.getCell(currentRow, 4).value = totalAmount;
+      worksheet.getCell(currentRow, 4).style = {
+        font: { bold: true, size: 12, color: { argb: 'FFFFFFFF' } },
+        alignment: { horizontal: 'right', vertical: 'middle' },
+        fill: { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF4F46E5' } },
+        border: borderStyle,
+        numFmt: '#,##0"원"'
+      };
+      worksheet.getRow(currentRow).height = 35;
+
+      // Account info
+      currentRow += 2;
+      worksheet.mergeCells(`A${currentRow}:D${currentRow}`);
+      worksheet.getCell(currentRow, 1).value = '입금 계좌: 83050104204736 국민은행 (낫띵메터스)';
+      worksheet.getCell(currentRow, 1).style = {
+        font: { bold: true, size: 11 },
+        alignment: { horizontal: 'center', vertical: 'middle' },
+        fill: { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFEF3C7' } },
+        border: borderStyle
+      };
+      worksheet.getRow(currentRow).height = 35;
+
+      // Generate buffer
+      const buffer = await workbook.xlsx.writeBuffer();
 
       // Send Excel file
       res.setHeader(
@@ -168,9 +319,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       );
       res.setHeader(
         "Content-Disposition",
-        `attachment; filename="견적서_${orderData.customerName}_${new Date().getTime()}.xlsx"`
+        `attachment; filename="견적서_${customerName}_${new Date().getTime()}.xlsx"`
       );
-      res.send(quoteBuffer);
+      res.send(Buffer.from(buffer));
+      console.log('Excel 파일 전송 완료');
     } catch (error) {
       console.error('Excel 다운로드 오류:', error);
       res.status(500).json({
