@@ -844,56 +844,77 @@ export function OrderDetailModal({ order, isOpen, onClose, onDelete }: OrderDeta
                         <div className="bg-primary/5 rounded-lg p-4 space-y-3">
                             {/* 항목별 소계 */}
                             <div className="space-y-2">
-                                {order.orderItems.filter(item => item.type !== 'meta').map((item, index) => {
-                                    const items = [];
+                                {(() => {
+                                    const allItems = [];
+                                    const packagingItems = order.orderItems.filter(item => item.type === 'packaging');
 
-                                    // Main item
-                                    items.push(
-                                        <div key={`${index}-main`} className="flex items-center justify-between text-sm">
-                                            <span className="text-muted-foreground">
-                                                {item.name} × {item.quantity}
-                                            </span>
-                                            <span>{formatCurrency(item.price * item.quantity)}</span>
-                                        </div>
-                                    );
+                                    order.orderItems.filter(item => item.type !== 'meta' && item.type !== 'packaging').forEach((item, index) => {
+                                        const items = [];
 
-                                    // Add brownie options as sub-items
-                                    if (item.type === 'brownie' && item.options) {
-                                        if (item.options.customSticker) {
-                                            items.push(
-                                                <div key={`${index}-sticker`} className="flex items-center justify-between text-sm">
-                                                    <span className="text-muted-foreground ml-4">
-                                                        ㄴ하단 커스텀 스티커 × 1
-                                                    </span>
-                                                    <span>{formatCurrency(cookiePrices.brownieOptions.customSticker)}</span>
-                                                </div>
-                                            );
-                                        }
-                                        if (item.options.heartMessage) {
-                                            const heartMessagePrice = item.quantity * cookiePrices.brownieOptions.heartMessage;
-                                            items.push(
-                                                <div key={`${index}-heart`} className="flex items-center justify-between text-sm">
-                                                    <span className="text-muted-foreground ml-4">
-                                                        ㄴ하트안 문구 추가 × {item.quantity}
-                                                    </span>
-                                                    <span>{formatCurrency(heartMessagePrice)}</span>
-                                                </div>
-                                            );
-                                        }
-                                        if (item.options.customTopper) {
-                                            items.push(
-                                                <div key={`${index}-topper`} className="flex items-center justify-between text-sm">
-                                                    <span className="text-muted-foreground ml-4">
-                                                        ㄴ커스텀 토퍼
-                                                    </span>
-                                                    <span></span>
-                                                </div>
-                                            );
-                                        }
-                                    }
+                                        // Main item
+                                        items.push(
+                                            <div key={`${index}-main`} className="flex items-center justify-between text-sm">
+                                                <span className="text-muted-foreground">
+                                                    {item.name} × {item.quantity}
+                                                </span>
+                                                <span>{formatCurrency(item.price * item.quantity)}</span>
+                                            </div>
+                                        );
 
-                                    return items;
-                                })}
+                                        // Add packaging as sub-items after regular cookies
+                                        if (item.type === 'regular' && packagingItems.length > 0) {
+                                            packagingItems.forEach((pkgItem, pkgIndex) => {
+                                                items.push(
+                                                    <div key={`${index}-pkg-${pkgIndex}`} className="flex items-center justify-between text-sm">
+                                                        <span className="text-muted-foreground ml-4">
+                                                            ㄴ{pkgItem.name} × {pkgItem.quantity}
+                                                        </span>
+                                                        <span>{formatCurrency(pkgItem.price * pkgItem.quantity)}</span>
+                                                    </div>
+                                                );
+                                            });
+                                        }
+
+                                        // Add brownie options as sub-items
+                                        if (item.type === 'brownie' && item.options) {
+                                            if (item.options.customSticker) {
+                                                items.push(
+                                                    <div key={`${index}-sticker`} className="flex items-center justify-between text-sm">
+                                                        <span className="text-muted-foreground ml-4">
+                                                            ㄴ하단 커스텀 스티커 × 1
+                                                        </span>
+                                                        <span>{formatCurrency(cookiePrices.brownieOptions.customSticker)}</span>
+                                                    </div>
+                                                );
+                                            }
+                                            if (item.options.heartMessage) {
+                                                const heartMessagePrice = item.quantity * cookiePrices.brownieOptions.heartMessage;
+                                                items.push(
+                                                    <div key={`${index}-heart`} className="flex items-center justify-between text-sm">
+                                                        <span className="text-muted-foreground ml-4">
+                                                            ㄴ하트안 문구 추가 × {item.quantity}
+                                                        </span>
+                                                        <span>{formatCurrency(heartMessagePrice)}</span>
+                                                    </div>
+                                                );
+                                            }
+                                            if (item.options.customTopper) {
+                                                items.push(
+                                                    <div key={`${index}-topper`} className="flex items-center justify-between text-sm">
+                                                        <span className="text-muted-foreground ml-4">
+                                                            ㄴ커스텀 토퍼
+                                                        </span>
+                                                        <span></span>
+                                                    </div>
+                                                );
+                                            }
+                                        }
+
+                                        allItems.push(...items);
+                                    });
+
+                                    return allItems;
+                                })()}
                             </div>
 
                             <Separator />
