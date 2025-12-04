@@ -120,6 +120,9 @@ export function OrderDetailModal({ order, isOpen, onClose, onDelete }: OrderDeta
                 {item.options.selectedCookies && (
                     <div>📦 선택: {item.options.selectedCookies.join(', ')}</div>
                 )}
+                {item.options.packaging && (
+                    <div>📦 포장옵션: {item.options.packaging}</div>
+                )}
 
                 {/* 1구 + 음료 옵션 */}
                 {item.options.selectedCookie && (
