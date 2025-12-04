@@ -808,7 +808,7 @@ export function OrderDetailModal({ order, isOpen, onClose, onDelete }: OrderDeta
                             주문 항목 ({order.orderItems.length}개)
                         </h3>
                         <div className="space-y-2">
-                            {order.orderItems.map((item, index) => (
+                            {order.orderItems.filter(item => item.type !== 'meta').map((item, index) => (
                                 <div key={index} className="bg-muted/30 rounded-lg p-4">
                                     <div className="flex items-start justify-between">
                                         <div className="flex-1">
@@ -843,7 +843,7 @@ export function OrderDetailModal({ order, isOpen, onClose, onDelete }: OrderDeta
                         <div className="bg-primary/5 rounded-lg p-4 space-y-3">
                             {/* 항목별 소계 */}
                             <div className="space-y-2">
-                                {order.orderItems.map((item, index) => (
+                                {order.orderItems.filter(item => item.type !== 'meta').map((item, index) => (
                                     <div key={index} className="flex items-center justify-between text-sm">
                                         <span className="text-muted-foreground">
                                             {item.name} × {item.quantity}
