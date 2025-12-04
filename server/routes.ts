@@ -164,7 +164,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Create a simple Excel workbook
-      const workbook = new (await import('exceljs')).Workbook();
+      const ExcelJS = require('exceljs');
+      const workbook = new ExcelJS.Workbook();
       const worksheet = workbook.addWorksheet('견적서');
 
       // Set column widths
