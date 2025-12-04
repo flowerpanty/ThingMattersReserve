@@ -70,9 +70,18 @@ export function OrderDetailModal({ order, isOpen, onClose, onDelete }: OrderDeta
             const originalStyle = {
                 maxHeight: element.style.maxHeight,
                 overflow: element.style.overflow,
+                height: element.style.height,
             };
             element.style.maxHeight = 'none';
             element.style.overflow = 'visible';
+            element.style.height = 'auto';
+
+            // 스타일 변경 후 렌더링을 위해 잠시 대기
+            await new Promise(resolve => setTimeout(resolve, 100));
+
+            // 실제 높이 계산
+            const actualHeight = element.scrollHeight;
+            const actualWidth = element.scrollWidth;
 
             // 전체 높이 확보
             const canvas = await html2canvas(element, {
@@ -83,15 +92,18 @@ export function OrderDetailModal({ order, isOpen, onClose, onDelete }: OrderDeta
                 allowTaint: true,
                 scrollY: 0,
                 scrollX: 0,
-                windowWidth: element.scrollWidth,
-                windowHeight: element.scrollHeight,
-                width: element.scrollWidth,
-                height: element.scrollHeight,
+                windowWidth: actualWidth,
+                windowHeight: actualHeight,
+                width: actualWidth,
+                height: actualHeight,
+                y: 0,
+                x: 0,
             });
 
             // 원래 스타일로 복구
             element.style.maxHeight = originalStyle.maxHeight;
             element.style.overflow = originalStyle.overflow;
+            element.style.height = originalStyle.height;
 
             // Canvas를 Blob으로 변환
             canvas.toBlob(async (blob) => {
