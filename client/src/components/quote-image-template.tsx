@@ -140,20 +140,23 @@ export const QuoteImageTemplate = React.forwardRef<HTMLDivElement, QuoteImageTem
                         backgroundColor: '#f9fafb',
                         padding: '16px',
                         borderRadius: '8px',
-                        fontSize: '14px',
-                        lineHeight: '2'
+                        fontSize: '14px'
                     }}>
-                        <div style={{ display: 'block', marginBottom: '8px', wordBreak: 'break-word' }}>
-                            <strong>고객명:</strong> {order.customerName}
+                        <div style={{ clear: 'both', marginBottom: '10px', minHeight: '20px' }}>
+                            <strong style={{ display: 'inline-block', minWidth: '80px' }}>고객명:</strong>
+                            <span>{order.customerName}</span>
                         </div>
-                        <div style={{ display: 'block', marginBottom: '8px', wordBreak: 'break-word' }}>
-                            <strong>연락처:</strong> {order.customerContact}
+                        <div style={{ clear: 'both', marginBottom: '10px', minHeight: '20px' }}>
+                            <strong style={{ display: 'inline-block', minWidth: '80px' }}>연락처:</strong>
+                            <span>{order.customerContact}</span>
                         </div>
-                        <div style={{ display: 'block', marginBottom: '8px', wordBreak: 'break-all' }}>
-                            <strong>주문번호:</strong> {order.id.slice(0, 12)}
+                        <div style={{ clear: 'both', marginBottom: '10px', minHeight: '20px' }}>
+                            <strong style={{ display: 'inline-block', minWidth: '80px' }}>주문번호:</strong>
+                            <span style={{ wordBreak: 'break-all' }}>{order.id.slice(0, 12)}</span>
                         </div>
-                        <div style={{ display: 'block', wordBreak: 'keep-all' }}>
-                            <strong>주문일:</strong> {formatDateTime(order.createdAt)}
+                        <div style={{ clear: 'both', minHeight: '20px' }}>
+                            <strong style={{ display: 'inline-block', minWidth: '80px' }}>주문일:</strong>
+                            <span>{formatDateTime(order.createdAt)}</span>
                         </div>
                     </div>
                 </div>
@@ -173,18 +176,20 @@ export const QuoteImageTemplate = React.forwardRef<HTMLDivElement, QuoteImageTem
                         backgroundColor: '#f9fafb',
                         padding: '16px',
                         borderRadius: '8px',
-                        fontSize: '14px',
-                        lineHeight: '2'
+                        fontSize: '14px'
                     }}>
-                        <div style={{ display: 'block', marginBottom: '8px', wordBreak: 'keep-all' }}>
-                            <strong>방법:</strong> {getDeliveryMethodText(order.deliveryMethod)}
+                        <div style={{ clear: 'both', marginBottom: '10px', minHeight: '20px' }}>
+                            <strong style={{ display: 'inline-block', minWidth: '60px' }}>방법:</strong>
+                            <span>{getDeliveryMethodText(order.deliveryMethod)}</span>
                         </div>
-                        <div style={{ display: 'block', marginBottom: '8px', wordBreak: 'keep-all' }}>
-                            <strong>날짜:</strong> {order.deliveryDate}
+                        <div style={{ clear: 'both', marginBottom: '10px', minHeight: '20px' }}>
+                            <strong style={{ display: 'inline-block', minWidth: '60px' }}>날짜:</strong>
+                            <span>{order.deliveryDate}</span>
                         </div>
                         {order.pickupTime && (
-                            <div style={{ display: 'block', wordBreak: 'keep-all' }}>
-                                <strong>시간:</strong> {order.pickupTime}
+                            <div style={{ clear: 'both', minHeight: '20px' }}>
+                                <strong style={{ display: 'inline-block', minWidth: '60px' }}>시간:</strong>
+                                <span>{order.pickupTime}</span>
                             </div>
                         )}
                     </div>
