@@ -95,7 +95,44 @@ export function OrderDetailModal({ order, isOpen, onClose, onDelete }: OrderDeta
         }
     };
 
+    const handleDownloadQuote = async () => {
+        try {
+            // 주문 데이터를 API 형식에 맞게 변환
+            const quoteData = {
+                customerName: order.customerName,
+                customerContact: order.customerContact,
+                deliveryDate: order.deliveryDate,
+                deliveryMethod: order.deliveryMethod || 'pickup',
+                pickupTime: order.pickupTime,
+                orderItems: order.orderItems,
+            };
 
+            const response = await fetch('/api/generate-quote', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(quoteData),
+            });
+
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.error('견적서 생성 실패:', errorText);
+                throw new Error(`견적서 생성 실패: ${response.status}`);
+            }
+
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `견적서_${order.customerName}_${order.id.slice(0, 8)}.xlsx`;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            window.URL.revokeObjectURL(url);
+        } catch (error) {
+            console.error('견적서 다운로드 오류:', error);
+            alert('견적서 다운로드에 실패했습니다. 오류: ' + (error instanceof Error ? error.message : String(error)));
+        }
+    };
 
     const formatCurrency = (amount: number) => {
         return `${amount.toLocaleString('ko-KR')}원`;
@@ -319,6 +356,14 @@ export function OrderDetailModal({ order, isOpen, onClose, onDelete }: OrderDeta
                             {isDownloadingImage ? '이미지 생성 중...' : '견적서 이미지 저장 (PNG)'}
                         </Button>
 
+                        <Button
+                            onClick={handleDownloadQuote}
+                            className="w-full"
+                            variant="outline"
+                        >
+                            <Download className="w-4 h-4 mr-2" />
+                            견적서 다운로드 (Excel)
+                        </Button>
 
                         {onDelete && (
                             <AlertDialog>
