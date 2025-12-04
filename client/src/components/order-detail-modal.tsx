@@ -263,6 +263,106 @@ export function OrderDetailModal({ order, isOpen, onClose, onDelete }: OrderDeta
     const handleCopyToSheet = async () => {
         const orderAny = order as any;
 
+        // 가격 상수 (서버 로직 기반)
+        const PRICES = {
+            regular: 4500,
+            brownie: 7800,
+            scone: 5000,
+            brownieOptions: {
+                birthdayBear: 500,
+                customSticker: 15000,
+                heartMessage: 500,
+            },
+            sconeOptions: {
+                strawberryJam: 500,
+            }
+        };
+
+        // 상세 항목 생성
+        const detailedRows: any[] = [];
+
+        order.orderItems.forEach(item => {
+            let basePrice = item.price;
+            let itemName = item.name;
+            let isOptionSeparated = false;
+
+            // 브라우니 쿠키 분해 로직
+            if (item.type === 'brownie' || (item.name && item.name.includes('브라우니'))) {
+                basePrice = PRICES.brownie;
+                itemName = '브라우니쿠키';
+                isOptionSeparated = true;
+            }
+            // 스콘 분해 로직
+            else if (item.type === 'scone' || (item.name && item.name.includes('스콘'))) {
+                basePrice = PRICES.scone;
+                itemName = '스콘';
+                isOptionSeparated = true;
+            }
+
+            // 분해 대상이 아니면 그대로 출력
+            if (!isOptionSeparated) {
+                detailedRows.push({
+                    name: item.name,
+                    quantity: item.quantity,
+                    price: item.price,
+                    total: item.price * item.quantity
+                });
+                return;
+            }
+
+            // 기본 아이템 추가
+            detailedRows.push({
+                name: itemName,
+                quantity: item.quantity,
+                price: basePrice,
+                total: basePrice * item.quantity
+            });
+
+            // 옵션 추가
+            if (item.options) {
+                if (item.options.shape === 'birthdayBear') {
+                    detailedRows.push({
+                        name: 'ㄴ 생일곰 추가', // 들여쓰기 표현
+                        quantity: item.quantity,
+                        price: PRICES.brownieOptions.birthdayBear,
+                        total: PRICES.brownieOptions.birthdayBear * item.quantity
+                    });
+                }
+                if (item.options.heartMessage) {
+                    detailedRows.push({
+                        name: 'ㄴ 하트안 문구 추가',
+                        quantity: item.quantity,
+                        price: PRICES.brownieOptions.heartMessage,
+                        total: PRICES.brownieOptions.heartMessage * item.quantity
+                    });
+                }
+                if (item.options.customSticker) {
+                    detailedRows.push({
+                        name: 'ㄴ 하단 커스텀 스티커',
+                        quantity: 1,
+                        price: PRICES.brownieOptions.customSticker,
+                        total: PRICES.brownieOptions.customSticker
+                    });
+                }
+                if (item.options.strawberryJam) {
+                    detailedRows.push({
+                        name: 'ㄴ 딸기잼 추가',
+                        quantity: item.quantity,
+                        price: PRICES.sconeOptions.strawberryJam,
+                        total: PRICES.sconeOptions.strawberryJam * item.quantity
+                    });
+                }
+            }
+        });
+
+        // 배송비 행 추가 (빈 칸으로)
+        detailedRows.push({
+            name: '배송비',
+            quantity: '',
+            price: '',
+            total: ''
+        });
+
         // 1. HTML 콘텐츠 생성 (이메일 견적서 스타일)
         const htmlContent = `
             <table style="border-collapse: collapse; width: 100%; font-family: sans-serif;">
@@ -280,7 +380,7 @@ export function OrderDetailModal({ order, isOpen, onClose, onDelete }: OrderDeta
                 </tr>
                 <tr>
                     <td colspan="4" style="border: 1px solid #000; padding: 10px;">
-                        수령 방법: ${order.deliveryMethod === 'quick' ? '퀵 배송' : '픽업'} | 수령 희망일: ${order.deliveryDate} ${order.pickupTime ? `(${order.pickupTime})` : ''}<br>
+                        수령 방법: ${order.deliveryMethod === 'quick' ? '퀵 배송' : '픽업'} | 수령 희망일: ${order.deliveryDate} ${order.pickupTime ? `| 시간: ${order.pickupTime}` : ''}<br>
                         ${orderAny.deliveryAddress ? `배송 주소: ${orderAny.deliveryAddress} ${orderAny.deliveryDetailAddress || ''}` : ''}
                     </td>
                 </tr>
@@ -291,13 +391,13 @@ export function OrderDetailModal({ order, isOpen, onClose, onDelete }: OrderDeta
                     <td style="border: 1px solid #000; padding: 10px;">단가</td>
                     <td style="border: 1px solid #000; padding: 10px;">합계</td>
                 </tr>
-                <!-- 주문 항목 -->
-                ${order.orderItems.map(item => `
+                <!-- 주문 항목 (상세 분해) -->
+                ${detailedRows.map(item => `
                     <tr>
-                        <td style="border: 1px solid #000; padding: 10px;">${item.name}</td>
+                        <td style="border: 1px solid #000; padding: 10px; ${item.name.startsWith('ㄴ') ? 'padding-left: 20px;' : ''}">${item.name}</td>
                         <td style="border: 1px solid #000; padding: 10px; text-align: center;">${item.quantity}</td>
-                        <td style="border: 1px solid #000; padding: 10px; text-align: right;">${item.price.toLocaleString()}원</td>
-                        <td style="border: 1px solid #000; padding: 10px; text-align: right;">${(item.price * item.quantity).toLocaleString()}원</td>
+                        <td style="border: 1px solid #000; padding: 10px; text-align: right;">${typeof item.price === 'number' ? item.price.toLocaleString() + '원' : ''}</td>
+                        <td style="border: 1px solid #000; padding: 10px; text-align: right;">${typeof item.total === 'number' ? item.total.toLocaleString() + '원' : ''}</td>
                     </tr>
                 `).join('')}
                 <!-- 총 합계 -->
@@ -314,8 +414,19 @@ export function OrderDetailModal({ order, isOpen, onClose, onDelete }: OrderDeta
                 <tr>
                     <td colspan="4" style="border: 1px solid #000; padding: 10px;">
                         ${order.orderItems.map(item => {
-            // 옵션 정보 포맷팅 (단순화)
-            return `• ${item.name} (${item.quantity}개)`;
+            let optionsText = '';
+            if (item.options) {
+                const parts = [];
+                if (item.options.shape) {
+                    const shapeMap: any = { bear: '곰', rabbit: '토끼', birthdayBear: '생일곰', tiger: '호랑이' };
+                    parts.push(`${shapeMap[item.options.shape] || item.options.shape} 모양`);
+                }
+                if (item.options.customSticker) parts.push('커스텀스티커');
+                if (item.options.heartMessage) parts.push(`하트메시지: ${item.options.heartMessage}`);
+                if (item.options.strawberryJam) parts.push('딸기잼');
+                optionsText = parts.join(', ');
+            }
+            return `• ${item.name} (${item.quantity}개)${optionsText ? `: ${optionsText}` : ''}`;
         }).join('<br>')}
                     </td>
                 </tr>
@@ -336,14 +447,14 @@ export function OrderDetailModal({ order, isOpen, onClose, onDelete }: OrderDeta
 
         // 2. 텍스트 콘텐츠 생성 (기존 TSV)
         const headers = ['날짜', '고객명', '연락처', '상품명', '수량', '단가', '금액'];
-        const rows = order.orderItems.map(item => [
+        const rows = detailedRows.map(item => [
             format(new Date(), 'yyyy-MM-dd'),
             order.customerName,
             order.customerContact,
             item.name,
             item.quantity,
             item.price,
-            item.price * item.quantity
+            item.total
         ]);
 
         const tsvContent = [
