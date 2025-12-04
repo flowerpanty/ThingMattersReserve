@@ -7,7 +7,7 @@ import { EmailService } from "./services/email-service";
 import { KakaoTemplateService } from "./services/kakao-template";
 import { pushNotificationService } from "./services/push-notification-service";
 import { kakaoAlimtalkService } from "./services/kakao-alimtalk-service";
-import ExcelJS from 'exceljs';
+import * as ExcelJS from 'exceljs';
 
 export async function registerRoutes(app: Express): Promise<Server> {
   const excelGenerator = new ExcelGenerator();
@@ -242,8 +242,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         throw new Error('필수 데이터가 누락되었습니다.');
       }
 
-      // Create workbook directly
-      const workbook = new ExcelJS.Workbook();
+      // Create workbook with robust fallback for different import styles
+      const WorkbookClass = ExcelJS.Workbook || (ExcelJS as any).default?.Workbook;
+      if (!WorkbookClass) {
+        throw new Error('ExcelJS Workbook class not found');
+      }
+      const workbook = new WorkbookClass();
 
       const worksheet = workbook.addWorksheet('견적서');
 

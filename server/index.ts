@@ -86,7 +86,7 @@ app.use((req, res, next) => {
       }
 
       console.log('✅ 데이터베이스 테이블 준비 완료!');
-      console.log('🔄 시스템 재시작 및 스키마 동기화 완료 (v3)');
+      console.log('🔄 시스템 재시작 및 스키마 동기화 완료 (v4)');
     } else {
       console.log('⚠️  DATABASE_URL이 설정되지 않았습니다.');
     }
