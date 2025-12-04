@@ -268,6 +268,10 @@ export function OrderDetailModal({ order, isOpen, onClose, onDelete }: OrderDeta
             regular: 4500,
             brownie: 7800,
             scone: 5000,
+            twoPackSet: 10500,
+            singleWithDrink: 11000,
+            fortune: 15000,
+            airplane: 22000,
             brownieOptions: {
                 birthdayBear: 500,
                 customSticker: 15000,
@@ -278,90 +282,115 @@ export function OrderDetailModal({ order, isOpen, onClose, onDelete }: OrderDeta
             }
         };
 
-        // 상세 항목 생성
+        // 집계 데이터 초기화
+        const summary = {
+            regular: { count: 0, amount: 0 },
+            twoPack: { count: 0, amount: 0 },
+            singleDrink: { count: 0, amount: 0 },
+            brownie: { count: 0, amount: 0 },
+            brownieOptions: {
+                birthdayBear: { count: 0, amount: 0 },
+                customSticker: { count: 0, amount: 0 },
+                heartMessage: { count: 0, amount: 0 },
+                customTopper: { count: 0, amount: 0 }
+            },
+            scone: { count: 0, amount: 0 },
+            sconeOptions: {
+                strawberryJam: { count: 0, amount: 0 }
+            },
+            fortune: { count: 0, amount: 0 },
+            airplane: { count: 0, amount: 0 },
+            others: [] as any[]
+        };
+
+        // orderItems 순회 및 집계
+        order.orderItems.forEach(item => {
+            const qty = item.quantity;
+
+            if (item.type === 'regular') {
+                summary.regular.count += qty;
+                summary.regular.amount += qty * PRICES.regular;
+            } else if (item.type === 'twopack' || (item.name && item.name.includes('2구 패키지'))) {
+                summary.twoPack.count += qty;
+                summary.twoPack.amount += qty * PRICES.twoPackSet;
+            } else if (item.type === 'singledrink' || (item.name && item.name.includes('1구 + 음료'))) {
+                summary.singleDrink.count += qty;
+                summary.singleDrink.amount += qty * PRICES.singleWithDrink;
+            } else if (item.type === 'brownie' || (item.name && item.name.includes('브라우니'))) {
+                summary.brownie.count += qty;
+                summary.brownie.amount += qty * PRICES.brownie;
+
+                if (item.options) {
+                    if (item.options.shape === 'birthdayBear') {
+                        summary.brownieOptions.birthdayBear.count += qty;
+                        summary.brownieOptions.birthdayBear.amount += qty * PRICES.brownieOptions.birthdayBear;
+                    }
+                    if (item.options.customSticker) {
+                        summary.brownieOptions.customSticker.count += 1; // 세트당 1개로 가정
+                        summary.brownieOptions.customSticker.amount += PRICES.brownieOptions.customSticker;
+                    }
+                    if (item.options.heartMessage) {
+                        summary.brownieOptions.heartMessage.count += qty;
+                        summary.brownieOptions.heartMessage.amount += qty * PRICES.brownieOptions.heartMessage;
+                    }
+                    if (item.options.customTopper) {
+                        summary.brownieOptions.customTopper.count += 1;
+                    }
+                }
+            } else if (item.type === 'scone' || (item.name && item.name.includes('스콘'))) {
+                summary.scone.count += qty;
+                summary.scone.amount += qty * PRICES.scone;
+                if (item.options && item.options.strawberryJam) {
+                    summary.sconeOptions.strawberryJam.count += qty;
+                    summary.sconeOptions.strawberryJam.amount += qty * PRICES.sconeOptions.strawberryJam;
+                }
+            } else if (item.type === 'fortune' || (item.name && item.name.includes('행운쿠키'))) {
+                summary.fortune.count += qty;
+                summary.fortune.amount += qty * PRICES.fortune;
+            } else if (item.type === 'airplane' || (item.name && item.name.includes('비행기'))) {
+                summary.airplane.count += qty;
+                summary.airplane.amount += qty * PRICES.airplane;
+            } else {
+                summary.others.push(item);
+            }
+        });
+
+        // 상세 행 생성
         const detailedRows: any[] = [];
 
-        order.orderItems.forEach(item => {
-            let basePrice = item.price;
-            let itemName = item.name;
-            let isOptionSeparated = false;
+        if (summary.regular.count > 0) detailedRows.push({ name: '일반쿠키', quantity: summary.regular.count, price: PRICES.regular, total: summary.regular.amount });
+        if (summary.twoPack.count > 0) detailedRows.push({ name: '2구 패키지', quantity: summary.twoPack.count, price: PRICES.twoPackSet, total: summary.twoPack.amount });
+        if (summary.singleDrink.count > 0) detailedRows.push({ name: '1구 + 음료', quantity: summary.singleDrink.count, price: PRICES.singleWithDrink, total: summary.singleDrink.amount });
 
-            // 브라우니 쿠키 분해 로직
-            if (item.type === 'brownie' || (item.name && item.name.includes('브라우니'))) {
-                basePrice = PRICES.brownie;
-                itemName = '브라우니쿠키';
-                isOptionSeparated = true;
-            }
-            // 스콘 분해 로직
-            else if (item.type === 'scone' || (item.name && item.name.includes('스콘'))) {
-                basePrice = PRICES.scone;
-                itemName = '스콘';
-                isOptionSeparated = true;
-            }
+        if (summary.brownie.count > 0) {
+            detailedRows.push({ name: '브라우니쿠키', quantity: summary.brownie.count, price: PRICES.brownie, total: summary.brownie.amount });
+            if (summary.brownieOptions.customTopper.count > 0) detailedRows.push({ name: 'ㄴ 커스텀토퍼', quantity: '', price: '', total: '' });
+            if (summary.brownieOptions.birthdayBear.count > 0) detailedRows.push({ name: 'ㄴ 생일곰 추가', quantity: summary.brownieOptions.birthdayBear.count, price: PRICES.brownieOptions.birthdayBear, total: summary.brownieOptions.birthdayBear.amount });
+            if (summary.brownieOptions.customSticker.count > 0) detailedRows.push({ name: 'ㄴ 하단 커스텀 스티커', quantity: summary.brownieOptions.customSticker.count, price: PRICES.brownieOptions.customSticker, total: summary.brownieOptions.customSticker.amount });
+            if (summary.brownieOptions.heartMessage.count > 0) detailedRows.push({ name: 'ㄴ 하트안 문구 추가', quantity: summary.brownieOptions.heartMessage.count, price: PRICES.brownieOptions.heartMessage, total: summary.brownieOptions.heartMessage.amount });
+        }
 
-            // 분해 대상이 아니면 그대로 출력
-            if (!isOptionSeparated) {
-                detailedRows.push({
-                    name: item.name,
-                    quantity: item.quantity,
-                    price: item.price,
-                    total: item.price * item.quantity
-                });
-                return;
-            }
+        if (summary.scone.count > 0) {
+            detailedRows.push({ name: '스콘', quantity: summary.scone.count, price: PRICES.scone, total: summary.scone.amount });
+            if (summary.sconeOptions.strawberryJam.count > 0) detailedRows.push({ name: 'ㄴ 딸기잼 추가', quantity: summary.sconeOptions.strawberryJam.count, price: PRICES.sconeOptions.strawberryJam, total: summary.sconeOptions.strawberryJam.amount });
+        }
 
-            // 기본 아이템 추가
-            detailedRows.push({
-                name: itemName,
-                quantity: item.quantity,
-                price: basePrice,
-                total: basePrice * item.quantity
-            });
+        if (summary.fortune.count > 0) detailedRows.push({ name: '행운쿠키', quantity: summary.fortune.count, price: PRICES.fortune, total: summary.fortune.amount });
+        if (summary.airplane.count > 0) detailedRows.push({ name: '비행기샌드쿠키', quantity: summary.airplane.count, price: PRICES.airplane, total: summary.airplane.amount });
 
-            // 옵션 추가
-            if (item.options) {
-                if (item.options.shape === 'birthdayBear') {
-                    detailedRows.push({
-                        name: 'ㄴ 생일곰 추가', // 들여쓰기 표현
-                        quantity: item.quantity,
-                        price: PRICES.brownieOptions.birthdayBear,
-                        total: PRICES.brownieOptions.birthdayBear * item.quantity
-                    });
-                }
-                if (item.options.heartMessage) {
-                    detailedRows.push({
-                        name: 'ㄴ 하트안 문구 추가',
-                        quantity: item.quantity,
-                        price: PRICES.brownieOptions.heartMessage,
-                        total: PRICES.brownieOptions.heartMessage * item.quantity
-                    });
-                }
-                if (item.options.customSticker) {
-                    detailedRows.push({
-                        name: 'ㄴ 하단 커스텀 스티커',
-                        quantity: 1,
-                        price: PRICES.brownieOptions.customSticker,
-                        total: PRICES.brownieOptions.customSticker
-                    });
-                }
-                if (item.options.strawberryJam) {
-                    detailedRows.push({
-                        name: 'ㄴ 딸기잼 추가',
-                        quantity: item.quantity,
-                        price: PRICES.sconeOptions.strawberryJam,
-                        total: PRICES.sconeOptions.strawberryJam * item.quantity
-                    });
-                }
-            }
+        summary.others.forEach(item => {
+            detailedRows.push({ name: item.name, quantity: item.quantity, price: item.price, total: item.price * item.quantity });
         });
 
-        // 배송비 행 추가 (빈 칸으로)
-        detailedRows.push({
-            name: '배송비',
-            quantity: '',
-            price: '',
-            total: ''
-        });
+        // 배송비 및 포장비 계산 (총액 차액)
+        const currentTotal = detailedRows.reduce((sum, row) => sum + (typeof row.total === 'number' ? row.total : 0), 0);
+        const diff = order.totalPrice - currentTotal;
+
+        if (diff > 0) {
+            detailedRows.push({ name: '배송비 및 포장비', quantity: 1, price: diff, total: diff });
+        } else {
+            detailedRows.push({ name: '배송비', quantity: '', price: '', total: '' });
+        }
 
         // 1. HTML 콘텐츠 생성 (이메일 견적서 스타일)
         const htmlContent = `
