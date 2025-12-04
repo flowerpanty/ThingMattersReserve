@@ -7,6 +7,7 @@ import { EmailService } from "./services/email-service";
 import { KakaoTemplateService } from "./services/kakao-template";
 import { pushNotificationService } from "./services/push-notification-service";
 import { kakaoAlimtalkService } from "./services/kakao-alimtalk-service";
+import ExcelJS from 'exceljs';
 
 export async function registerRoutes(app: Express): Promise<Server> {
   const excelGenerator = new ExcelGenerator();
@@ -242,7 +243,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Create a simple Excel workbook
-      const ExcelJS = require('exceljs');
       const workbook = new ExcelJS.Workbook();
       const worksheet = workbook.addWorksheet('견적서');
 
