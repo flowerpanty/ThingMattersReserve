@@ -403,7 +403,7 @@ export class EmailService {
       // 관리자에게 전송
       await this.mg.messages.create(domain, {
         from: `띵매러 <mailgun@${domain}>`,
-        to: ['flowerpanty@gmail.com'],
+        to: ['flowerpanty@gmail.com', 'betterbetters@kakao.com'],
         subject: `[주문 알림] ${orderData.customerName} 님의 새로운 쿠키 주문`,
         html: adminHTML,
         attachment: {
