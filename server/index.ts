@@ -49,52 +49,55 @@ app.use((req, res, next) => {
   next();
 });
 
-(async () => {
-  // 서버 시작 전에 데이터베이스 스키마 동기화
-  try {
-    if (process.env.DATABASE_URL) {
-      console.log('🔄 데이터베이스 연결 중...');
-      const { db } = await import('./db');
-      const { sql } = await import('drizzle-orm');
-
-      // Drizzle ORM이 인식할 수 있도록 스키마 import
-      const { orders } = await import('../shared/schema');
-
-      // orders 테이블 생성 - ID는 애플리케이션에서 생성
-      await db.execute(sql`
-        CREATE TABLE IF NOT EXISTS orders (
-          id VARCHAR PRIMARY KEY,
-          customer_name TEXT NOT NULL,
-          customer_contact TEXT NOT NULL,
-          delivery_date TEXT NOT NULL,
-          delivery_method TEXT NOT NULL DEFAULT 'pickup',
-          pickup_time TEXT,
-          order_items JSON NOT NULL,
-          total_price INTEGER NOT NULL,
-          order_status TEXT NOT NULL DEFAULT 'pending',
-          payment_confirmed INTEGER NOT NULL DEFAULT 0,
-          quote_file_url TEXT,
-          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-      `);
-
-      // 기존 테이블에 pickup_time 컬럼 추가 (이미 존재하는 경우를 대비해 별도 실행)
-      try {
-        await db.execute(sql`ALTER TABLE orders ADD COLUMN IF NOT EXISTS pickup_time TEXT`);
-      } catch (e) {
-        console.log('ℹ️ pickup_time 컬럼 추가 건너뜀 (이미 존재하거나 오류 발생)');
-      }
-
-      console.log('✅ 데이터베이스 테이블 준비 완료!');
-      console.log('🔄 시스템 재시작 및 스키마 동기화 완료 (v4)');
-    } else {
-      console.log('⚠️  DATABASE_URL이 설정되지 않았습니다.');
-    }
-  } catch (error) {
-    console.error('❌ 데이터베이스 초기화 오류:', error);
-    console.error('상세:', error instanceof Error ? error.message : String(error));
+// Database initialization function - runs in background after server starts
+async function initializeDatabase() {
+  if (!process.env.DATABASE_URL) {
+    console.log('⚠️  DATABASE_URL not set, skipping database initialization');
+    return;
   }
 
+  try {
+    console.log('🔄 Initializing database...');
+    const { db } = await import('./db');
+    const { sql } = await import('drizzle-orm');
+
+    // Drizzle ORM이 인식할 수 있도록 스키마 import
+    const { orders } = await import('../shared/schema');
+
+    // orders 테이블 생성 - ID는 애플리케이션에서 생성
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS orders (
+        id VARCHAR PRIMARY KEY,
+        customer_name TEXT NOT NULL,
+        customer_contact TEXT NOT NULL,
+        delivery_date TEXT NOT NULL,
+        delivery_method TEXT NOT NULL DEFAULT 'pickup',
+        pickup_time TEXT,
+        order_items JSON NOT NULL,
+        total_price INTEGER NOT NULL,
+        order_status TEXT NOT NULL DEFAULT 'pending',
+        payment_confirmed INTEGER NOT NULL DEFAULT 0,
+        quote_file_url TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    // 기존 테이블에 pickup_time 컬럼 추가 (이미 존재하는 경우를 대비해 별도 실행)
+    try {
+      await db.execute(sql`ALTER TABLE orders ADD COLUMN IF NOT EXISTS pickup_time TEXT`);
+    } catch (e) {
+      console.log('ℹ️ pickup_time 컬럼 추가 건너뜀 (이미 존재하거나 오류 발생)');
+    }
+
+    console.log('✅ Database initialized successfully (v5)');
+  } catch (error) {
+    console.error('❌ Database initialization failed:', error);
+    console.error('Details:', error instanceof Error ? error.message : String(error));
+    throw error;
+  }
+}
+
+(async () => {
   const server = await registerRoutes(app);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
@@ -119,12 +122,20 @@ app.use((req, res, next) => {
   // this serves both the API and the client.
   // It is the only port that is not firewalled.
   const port = parseInt(process.env.PORT || '5001', 10);
+
+  // START SERVER FIRST - critical for healthcheck to succeed
   server.listen({
     port,
     host: "0.0.0.0",
     reusePort: true,
   }, () => {
-    log(`serving on port ${port}`);
+    log(`✅ Server listening on port ${port}`);
+
+    // Initialize database in background (non-blocking)
+    initializeDatabase().catch(err => {
+      console.error('❌ Database initialization failed, but server will continue running');
+      console.error('Error:', err);
+    });
   });
 })();
 
