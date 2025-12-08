@@ -735,7 +735,7 @@ export function OrderDetailModal({ order, isOpen, onClose, onDelete }: OrderDeta
                     </div>
                 )}
                 {item.options.strawberryJam && (
-                    <div>🍓 딸기잼 추가</div>
+                    <div>🍓 딸기잼 추가 (+500원)</div>
                 )}
             </div>
         );
@@ -920,6 +920,21 @@ export function OrderDetailModal({ order, isOpen, onClose, onDelete }: OrderDeta
                                                             ㄴ커스텀 토퍼
                                                         </span>
                                                         <span></span>
+                                                    </div>
+                                                );
+                                            }
+                                        }
+
+                                        // Add scone options as sub-items
+                                        if (item.type === 'scone' && item.options) {
+                                            if (item.options.strawberryJam) {
+                                                const strawberryJamPrice = item.quantity * cookiePrices.sconeOptions.strawberryJam;
+                                                items.push(
+                                                    <div key={`${index}-jam`} className="flex items-center justify-between text-sm">
+                                                        <span className="text-muted-foreground ml-4">
+                                                            ㄴ딸기잼 추가 × {item.quantity}
+                                                        </span>
+                                                        <span>{formatCurrency(strawberryJamPrice)}</span>
                                                     </div>
                                                 );
                                             }
