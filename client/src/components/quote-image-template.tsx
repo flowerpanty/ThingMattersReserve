@@ -1,6 +1,7 @@
 import React from 'react';
 import { format } from 'date-fns';
 import { ko } from 'date-fns/locale';
+import { cookiePrices } from '@shared/schema';
 
 interface OrderItem {
     type: string;
@@ -256,32 +257,155 @@ export const QuoteImageTemplate = React.forwardRef<HTMLDivElement, QuoteImageTem
                             </tr>
                         </thead>
                         <tbody>
-                            {order.orderItems.filter(item => item.type !== 'meta').map((item, index) => {
-                                const optionText = renderOptionDetails(item);
-                                return (
-                                    <tr key={index} style={{ borderBottom: '1px solid #e5e7eb' }}>
-                                        <td style={{ padding: '12px 8px', verticalAlign: 'top', width: '40%' }}>
-                                            <div style={{ fontWeight: '500', marginBottom: '4px' }}>{item.name}</div>
-                                            {optionText && (
-                                                <div style={{
-                                                    fontSize: '12px',
-                                                    color: '#6b7280',
-                                                    marginTop: '4px',
-                                                    wordBreak: 'break-word',
-                                                    whiteSpace: 'normal'
-                                                }}>
-                                                    {optionText}
-                                                </div>
-                                            )}
-                                        </td>
-                                        <td style={{ padding: '12px 8px', textAlign: 'center', verticalAlign: 'top', width: '15%' }}>{item.quantity}개</td>
-                                        <td style={{ padding: '12px 8px', textAlign: 'right', verticalAlign: 'top', whiteSpace: 'nowrap', width: '20%' }}>{formatCurrency(item.price)}</td>
-                                        <td style={{ padding: '12px 8px', textAlign: 'right', fontWeight: '500', verticalAlign: 'top', whiteSpace: 'nowrap', width: '25%' }}>
-                                            {formatCurrency(item.price * item.quantity)}
-                                        </td>
-                                    </tr>
-                                );
-                            })}
+                            {(() => {
+                                const allRows: JSX.Element[] = [];
+                                const packagingItems = order.orderItems.filter(item => item.type === 'packaging');
+                                const regularItems = order.orderItems.filter(item => item.type === 'regular');
+                                const otherItems = order.orderItems.filter(item => item.type !== 'meta' && item.type !== 'packaging' && item.type !== 'regular');
+
+                                let rowIndex = 0;
+
+                                // Display regular cookies first
+                                regularItems.forEach((item) => {
+                                    allRows.push(
+                                        <tr key={`${rowIndex}-main`} style={{ borderBottom: '1px solid #e5e7eb' }}>
+                                            <td style={{ padding: '12px 8px', verticalAlign: 'top', width: '40%' }}>
+                                                <div style={{ fontWeight: '500' }}>{item.name}</div>
+                                            </td>
+                                            <td style={{ padding: '12px 8px', textAlign: 'center', verticalAlign: 'top', width: '15%' }}>{item.quantity}개</td>
+                                            <td style={{ padding: '12px 8px', textAlign: 'right', verticalAlign: 'top', whiteSpace: 'nowrap', width: '20%' }}>{formatCurrency(item.price)}</td>
+                                            <td style={{ padding: '12px 8px', textAlign: 'right', fontWeight: '500', verticalAlign: 'top', whiteSpace: 'nowrap', width: '25%' }}>
+                                                {formatCurrency(item.price * item.quantity)}
+                                            </td>
+                                        </tr>
+                                    );
+                                    rowIndex++;
+                                });
+
+                                // Add packaging items as sub-items under regular cookies
+                                if (regularItems.length > 0 && packagingItems.length > 0) {
+                                    packagingItems.forEach((pkgItem) => {
+                                        allRows.push(
+                                            <tr key={`pkg-${rowIndex}`} style={{ borderBottom: '1px solid #e5e7eb' }}>
+                                                <td style={{ padding: '12px 8px', paddingLeft: '24px', verticalAlign: 'top', width: '40%' }}>
+                                                    <div style={{ fontWeight: '500' }}>ㄴ {pkgItem.name}</div>
+                                                </td>
+                                                <td style={{ padding: '12px 8px', textAlign: 'center', verticalAlign: 'top', width: '15%' }}>{pkgItem.quantity}개</td>
+                                                <td style={{ padding: '12px 8px', textAlign: 'right', verticalAlign: 'top', whiteSpace: 'nowrap', width: '20%' }}>{formatCurrency(pkgItem.price)}</td>
+                                                <td style={{ padding: '12px 8px', textAlign: 'right', fontWeight: '500', verticalAlign: 'top', whiteSpace: 'nowrap', width: '25%' }}>
+                                                    {formatCurrency(pkgItem.price * pkgItem.quantity)}
+                                                </td>
+                                            </tr>
+                                        );
+                                        rowIndex++;
+                                    });
+                                }
+
+                                // Display other items (brownie, scone, etc.)
+                                otherItems.forEach((item) => {
+                                    // Main item
+                                    allRows.push(
+                                        <tr key={`${rowIndex}-other-main`} style={{ borderBottom: '1px solid #e5e7eb' }}>
+                                            <td style={{ padding: '12px 8px', verticalAlign: 'top', width: '40%' }}>
+                                                <div style={{ fontWeight: '500' }}>{item.name}</div>
+                                            </td>
+                                            <td style={{ padding: '12px 8px', textAlign: 'center', verticalAlign: 'top', width: '15%' }}>{item.quantity}개</td>
+                                            <td style={{ padding: '12px 8px', textAlign: 'right', verticalAlign: 'top', whiteSpace: 'nowrap', width: '20%' }}>{formatCurrency(item.price)}</td>
+                                            <td style={{ padding: '12px 8px', textAlign: 'right', fontWeight: '500', verticalAlign: 'top', whiteSpace: 'nowrap', width: '25%' }}>
+                                                {formatCurrency(item.price * item.quantity)}
+                                            </td>
+                                        </tr>
+                                    );
+                                    rowIndex++;
+
+                                    // Add brownie options as sub-items
+                                    if (item.type === 'brownie' && item.options) {
+                                        if (item.options.customSticker) {
+                                            allRows.push(
+                                                <tr key={`${rowIndex}-sticker`} style={{ borderBottom: '1px solid #e5e7eb' }}>
+                                                    <td style={{ padding: '12px 8px', paddingLeft: '24px', verticalAlign: 'top', width: '40%' }}>
+                                                        <div style={{ fontWeight: '500' }}>ㄴ 하단 커스텀 스티커</div>
+                                                    </td>
+                                                    <td style={{ padding: '12px 8px', textAlign: 'center', verticalAlign: 'top', width: '15%' }}>1개</td>
+                                                    <td style={{ padding: '12px 8px', textAlign: 'right', verticalAlign: 'top', whiteSpace: 'nowrap', width: '20%' }}>{formatCurrency(cookiePrices.brownieOptions.customSticker)}</td>
+                                                    <td style={{ padding: '12px 8px', textAlign: 'right', fontWeight: '500', verticalAlign: 'top', whiteSpace: 'nowrap', width: '25%' }}>
+                                                        {formatCurrency(cookiePrices.brownieOptions.customSticker)}
+                                                    </td>
+                                                </tr>
+                                            );
+                                            rowIndex++;
+                                        }
+                                        if (item.options.heartMessage) {
+                                            const heartMessagePrice = item.quantity * cookiePrices.brownieOptions.heartMessage;
+                                            allRows.push(
+                                                <tr key={`${rowIndex}-heart`} style={{ borderBottom: '1px solid #e5e7eb' }}>
+                                                    <td style={{ padding: '12px 8px', paddingLeft: '24px', verticalAlign: 'top', width: '40%' }}>
+                                                        <div style={{ fontWeight: '500' }}>ㄴ 하트안 문구 추가</div>
+                                                    </td>
+                                                    <td style={{ padding: '12px 8px', textAlign: 'center', verticalAlign: 'top', width: '15%' }}>{item.quantity}개</td>
+                                                    <td style={{ padding: '12px 8px', textAlign: 'right', verticalAlign: 'top', whiteSpace: 'nowrap', width: '20%' }}>{formatCurrency(cookiePrices.brownieOptions.heartMessage)}</td>
+                                                    <td style={{ padding: '12px 8px', textAlign: 'right', fontWeight: '500', verticalAlign: 'top', whiteSpace: 'nowrap', width: '25%' }}>
+                                                        {formatCurrency(heartMessagePrice)}
+                                                    </td>
+                                                </tr>
+                                            );
+                                            rowIndex++;
+                                        }
+                                        if (item.options.customTopper) {
+                                            allRows.push(
+                                                <tr key={`${rowIndex}-topper`} style={{ borderBottom: '1px solid #e5e7eb' }}>
+                                                    <td style={{ padding: '12px 8px', paddingLeft: '24px', verticalAlign: 'top', width: '40%' }}>
+                                                        <div style={{ fontWeight: '500' }}>ㄴ 커스텀 토퍼</div>
+                                                    </td>
+                                                    <td style={{ padding: '12px 8px', textAlign: 'center', verticalAlign: 'top', width: '15%' }}></td>
+                                                    <td style={{ padding: '12px 8px', textAlign: 'right', verticalAlign: 'top', whiteSpace: 'nowrap', width: '20%' }}></td>
+                                                    <td style={{ padding: '12px 8px', textAlign: 'right', fontWeight: '500', verticalAlign: 'top', whiteSpace: 'nowrap', width: '25%' }}>
+                                                    </td>
+                                                </tr>
+                                            );
+                                            rowIndex++;
+                                        }
+                                        if (item.options.shape === 'birthdayBear') {
+                                            const birthdayBearPrice = item.quantity * cookiePrices.brownieOptions.birthdayBear;
+                                            allRows.push(
+                                                <tr key={`${rowIndex}-birthday`} style={{ borderBottom: '1px solid #e5e7eb' }}>
+                                                    <td style={{ padding: '12px 8px', paddingLeft: '24px', verticalAlign: 'top', width: '40%' }}>
+                                                        <div style={{ fontWeight: '500' }}>ㄴ 생일곰 추가</div>
+                                                    </td>
+                                                    <td style={{ padding: '12px 8px', textAlign: 'center', verticalAlign: 'top', width: '15%' }}>{item.quantity}개</td>
+                                                    <td style={{ padding: '12px 8px', textAlign: 'right', verticalAlign: 'top', whiteSpace: 'nowrap', width: '20%' }}>{formatCurrency(cookiePrices.brownieOptions.birthdayBear)}</td>
+                                                    <td style={{ padding: '12px 8px', textAlign: 'right', fontWeight: '500', verticalAlign: 'top', whiteSpace: 'nowrap', width: '25%' }}>
+                                                        {formatCurrency(birthdayBearPrice)}
+                                                    </td>
+                                                </tr>
+                                            );
+                                            rowIndex++;
+                                        }
+                                    }
+
+                                    // Add scone options as sub-items
+                                    if (item.type === 'scone' && item.options) {
+                                        if (item.options.strawberryJam) {
+                                            const strawberryJamPrice = item.quantity * cookiePrices.sconeOptions.strawberryJam;
+                                            allRows.push(
+                                                <tr key={`${rowIndex}-jam`} style={{ borderBottom: '1px solid #e5e7eb' }}>
+                                                    <td style={{ padding: '12px 8px', paddingLeft: '24px', verticalAlign: 'top', width: '40%' }}>
+                                                        <div style={{ fontWeight: '500' }}>ㄴ 딸기잼 추가</div>
+                                                    </td>
+                                                    <td style={{ padding: '12px 8px', textAlign: 'center', verticalAlign: 'top', width: '15%' }}>{item.quantity}개</td>
+                                                    <td style={{ padding: '12px 8px', textAlign: 'right', verticalAlign: 'top', whiteSpace: 'nowrap', width: '20%' }}>{formatCurrency(cookiePrices.sconeOptions.strawberryJam)}</td>
+                                                    <td style={{ padding: '12px 8px', textAlign: 'right', fontWeight: '500', verticalAlign: 'top', whiteSpace: 'nowrap', width: '25%' }}>
+                                                        {formatCurrency(strawberryJamPrice)}
+                                                    </td>
+                                                </tr>
+                                            );
+                                            rowIndex++;
+                                        }
+                                    }
+                                });
+
+                                return allRows;
+                            })()}
                         </tbody>
                     </table>
                 </div>
