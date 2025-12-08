@@ -7,6 +7,7 @@ import { EmailService } from "./services/email-service";
 import { KakaoTemplateService } from "./services/kakao-template";
 import { pushNotificationService } from "./services/push-notification-service";
 import { kakaoAlimtalkService } from "./services/kakao-alimtalk-service";
+import { googleSheetsService } from "./services/google-sheets-service";
 import * as ExcelJS from 'exceljs';
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -659,6 +660,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
             });
         }
 
+        // Google Sheets에 주문 저장 (백그라운드에서 실행)
+        if (googleSheetsService.isEnabled()) {
+          googleSheetsService.appendOrderToSheet(order)
+            .then((success) => {
+              if (success) {
+                console.log('✅ Google Sheets 주문 저장 완료');
+              }
+            })
+            .catch((error) => {
+              console.error('❌ Google Sheets 주문 저장 실패:', error);
+            });
+        }
+
         return {
           message: "견적서가 이메일로 전송되었습니다!",
           orderId: order.id
@@ -897,6 +911,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error('주문 삭제 오류:', error);
       res.status(500).json({
         message: '주문 삭제 중 오류가 발생했습니다.',
+        error: error instanceof Error ? error.message : String(error)
+      });
+    }
+  });
+
+  // Google Sheets 헤더 초기화 (선택사항 - 최초 1회만 실행)
+  app.post('/api/sheets/init-headers', async (req, res) => {
+    try {
+      if (!googleSheetsService.isEnabled()) {
+        return res.status(400).json({
+          message: 'Google Sheets 서비스가 비활성화되어 있습니다. 환경 변수를 확인하세요.'
+        });
+      }
+
+      const success = await googleSheetsService.initializeSheetHeaders();
+
+      if (success) {
+        res.json({
+          message: 'Google Sheets 헤더가 성공적으로 초기화되었습니다.',
+          success: true
+        });
+      } else {
+        res.status(500).json({
+          message: 'Google Sheets 헤더 초기화에 실패했습니다.',
+          success: false
+        });
+      }
+    } catch (error) {
+      console.error('Google Sheets 헤더 초기화 오류:', error);
+      res.status(500).json({
+        message: 'Google Sheets 헤더 초기화 중 오류가 발생했습니다.',
         error: error instanceof Error ? error.message : String(error)
       });
     }
