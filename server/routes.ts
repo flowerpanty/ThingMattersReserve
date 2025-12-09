@@ -947,6 +947,113 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Google Sheets 연동 테스트
+  app.get('/api/sheets/test', async (req, res) => {
+    try {
+      console.log('=== Google Sheets 테스트 시작 ===');
+
+      // 1. 환경 변수 확인
+      const config = {
+        spreadsheetId: process.env.GOOGLE_SHEETS_SPREADSHEET_ID,
+        serviceAccountEmail: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
+        privateKeyExists: !!process.env.GOOGLE_PRIVATE_KEY,
+        privateKeyLength: process.env.GOOGLE_PRIVATE_KEY?.length || 0,
+      };
+
+      console.log('환경 변수 상태:', {
+        spreadsheetId: config.spreadsheetId ? '설정됨' : '없음',
+        serviceAccountEmail: config.serviceAccountEmail ? '설정됨' : '없음',
+        privateKey: config.privateKeyExists ? `설정됨 (${config.privateKeyLength}자)` : '없음',
+      });
+
+      // 2. 서비스 활성화 상태 확인
+      const isEnabled = googleSheetsService.isEnabled();
+      console.log('Google Sheets 서비스 활성화:', isEnabled);
+
+      if (!isEnabled) {
+        return res.status(400).json({
+          success: false,
+          message: 'Google Sheets 서비스가 비활성화되어 있습니다.',
+          config: {
+            spreadsheetId: config.spreadsheetId ? '설정됨' : '❌ 없음',
+            serviceAccountEmail: config.serviceAccountEmail ? '설정됨' : '❌ 없음',
+            privateKey: config.privateKeyExists ? '설정됨' : '❌ 없음',
+          }
+        });
+      }
+
+      // 3. 테스트 주문 데이터 생성
+      const testOrder = {
+        id: 'TEST-' + Date.now(),
+        customerName: '테스트 고객',
+        customerContact: 'test@example.com',
+        deliveryDate: new Date().toISOString().split('T')[0],
+        deliveryMethod: 'pickup' as const,
+        pickupTime: '12:00',
+        totalPrice: 10000,
+        orderStatus: 'pending' as const,
+        paymentConfirmed: false,
+        createdAt: new Date().toISOString(),
+        orderItems: [{
+          type: 'meta' as const,
+          name: 'metadata',
+          quantity: 0,
+          price: 0,
+          options: {
+            customerName: '테스트 고객',
+            customerContact: 'test@example.com',
+            deliveryDate: new Date().toISOString().split('T')[0],
+            deliveryMethod: 'pickup' as const,
+            pickupTime: '12:00',
+            customerPhone: '010-1234-5678',
+            regularCookies: { '초코칩': 1 },
+            packaging: 'plastic_wrap' as const,
+          }
+        }]
+      };
+
+      // 4. 스프레드시트에 테스트 주문 저장
+      console.log('테스트 주문 저장 시도...');
+      const success = await googleSheetsService.appendOrderToSheet(testOrder as any);
+
+      if (success) {
+        console.log('✅ 테스트 주문 저장 성공');
+        res.json({
+          success: true,
+          message: '✅ Google Sheets 연동 테스트 성공!',
+          testOrder: {
+            id: testOrder.id,
+            customerName: testOrder.customerName,
+            spreadsheetId: config.spreadsheetId,
+          },
+          config: {
+            spreadsheetId: config.spreadsheetId,
+            serviceAccountEmail: config.serviceAccountEmail,
+          }
+        });
+      } else {
+        console.log('❌ 테스트 주문 저장 실패');
+        res.status(500).json({
+          success: false,
+          message: '❌ Google Sheets에 데이터 저장 실패',
+          config: {
+            spreadsheetId: config.spreadsheetId,
+            serviceAccountEmail: config.serviceAccountEmail,
+          }
+        });
+      }
+
+    } catch (error) {
+      console.error('❌ Google Sheets 테스트 오류:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Google Sheets 테스트 중 오류가 발생했습니다.',
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+      });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
