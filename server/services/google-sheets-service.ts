@@ -14,10 +14,22 @@ export class GoogleSheetsService {
 
     constructor() {
         // 환경 변수에서 설정 로드
+        let privateKey = process.env.GOOGLE_PRIVATE_KEY || '';
+
+        // Private key 포맷 정리: 이중 이스케이프와 단일 이스케이프 모두 처리
+        if (privateKey) {
+            // 따옴표 제거
+            privateKey = privateKey.replace(/^["']|["']$/g, '');
+            // \\n을 실제 개행 문자로 변환 (이중 이스케이프 처리)
+            privateKey = privateKey.replace(/\\\\n/g, '\n');
+            // \n을 실제 개행 문자로 변환 (단일 이스케이프 처리)
+            privateKey = privateKey.replace(/\\n/g, '\n');
+        }
+
         this.config = {
             spreadsheetId: process.env.GOOGLE_SHEETS_SPREADSHEET_ID || '',
             serviceAccountEmail: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL || '',
-            privateKey: process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, '\n') || '',
+            privateKey: privateKey,
         };
 
         // 모든 필수 설정이 있는지 확인
