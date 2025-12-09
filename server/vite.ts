@@ -50,8 +50,11 @@ export function serveStatic(app: Express) {
     res.sendFile(path.join(publicDir, 'index.html'))
   })
 
-  // SPA 라우팅: 모든 경로를 index.html로 리다이렉트
-  app.get('*', (_req, res) => {
+  // SPA 라우팅: /api 경로를 제외한 모든 경로를 index.html로 리다이렉트
+  app.get('*', (req, res, next) => {
+    if (req.path.startsWith('/api')) {
+      return next(); // API 라우트는 통과
+    }
     res.sendFile(path.join(publicDir, 'index.html'))
   })
 }
