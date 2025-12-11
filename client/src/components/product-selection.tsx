@@ -879,7 +879,7 @@ export function ProductSelection({
                 <div className="flex items-center gap-3">
                   <span className="text-2xl">🥐</span>
                   <div className="text-left">
-                    <div className="font-semibold">스콘</div>
+                    <div className="font-semibold">스콘 (최소수량 12개)</div>
                     <div className="text-sm text-muted-foreground">개당 5,000원 (딸기잼 +500원)</div>
                   </div>
                   {sconeSets && sconeSets.length > 0 && (

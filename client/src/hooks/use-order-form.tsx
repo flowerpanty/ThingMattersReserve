@@ -179,6 +179,17 @@ export function useOrderForm() {
         return;
       }
 
+      // Check minimum quantity for 스콘 (minimum 12)
+      const totalSconeQuantity = validatedData.sconeSets.reduce((sum, set) => sum + set.quantity, 0);
+      if (totalSconeQuantity > 0 && totalSconeQuantity < 12) {
+        toast({
+          title: "수량 확인",
+          description: "스콘은 최소 12개 이상 주문해주세요.",
+          variant: "destructive",
+        });
+        return;
+      }
+
       // Check if delivery date is not today
       const today = new Date().toISOString().split('T')[0];
       if (validatedData.deliveryDate <= today) {
