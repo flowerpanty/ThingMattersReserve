@@ -96,10 +96,14 @@ export function useOrderForm() {
     if (savedData) {
       try {
         const parsed = JSON.parse(savedData);
-        // 날짜 형식이 올바른지 확인
-        if (parsed.deliveryDate) {
-          setFormData(prev => ({ ...prev, ...parsed }));
+        // 날짜가 과거인 경우 무시
+        const today = new Date().toISOString().split('T')[0];
+        if (parsed.deliveryDate && parsed.deliveryDate <= today) {
+          // 과거 날짜는 제거
+          delete parsed.deliveryDate;
         }
+        // 유효한 데이터만 로드
+        setFormData(prev => ({ ...prev, ...parsed }));
       } catch (e) {
         console.error('Failed to load saved form data', e);
       }
