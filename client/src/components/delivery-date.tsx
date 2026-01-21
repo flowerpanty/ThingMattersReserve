@@ -93,12 +93,6 @@ export function DeliveryDate({ deliveryDate, onUpdate }: DeliveryDateProps) {
                   ⚠️ 최소 1일 전 주문 필요
                 </p>
               </div>
-
-              <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
-                <p className="text-red-800 text-xs text-center">
-                  🚫 12월 22일 ~ 27일은 수령 불가
-                </p>
-              </div>
             </div>
           </div>
         </div>
