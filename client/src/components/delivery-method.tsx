@@ -32,9 +32,8 @@ export function DeliveryMethod({ deliveryMethod, deliveryAddress, pickupTime, on
   return (
     <Card className="card-shadow">
       <CardContent className="p-6">
-        <h2 className="text-xl font-semibold mb-6 flex items-center gap-2">
-          <span className="w-8 h-8 bg-primary rounded-full flex items-center justify-center text-primary-foreground text-sm font-bold">3</span>
-          수령 방법
+        <h2 className="text-lg font-semibold mb-5 flex items-center gap-2">
+          🚗 수령 방법
         </h2>
 
         <RadioGroup

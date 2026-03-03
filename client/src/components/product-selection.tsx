@@ -159,13 +159,79 @@ export function ProductSelection({
   const hasRegularCookies = Object.values(regularCookies).some(qty => qty > 0);
   const regularCookieTotal = Object.values(regularCookies).reduce((sum, qty) => sum + qty, 0);
 
+  // Quick presets
+  const applyPreset = (preset: string) => {
+    switch (preset) {
+      case 'gift20':
+        // 답례품 세트 20개: 일반쿠키 각 종류 균등 + 1구박스
+        onUpdate('packaging', 'single_box');
+        const perType = Math.floor(20 / cookieTypes.length);
+        const remainder = 20 % cookieTypes.length;
+        const newCookies: Record<string, number> = {};
+        cookieTypes.forEach((type, i) => {
+          newCookies[type] = perType + (i < remainder ? 1 : 0);
+        });
+        onUpdate('regularCookies', newCookies);
+        break;
+      case 'brownie12':
+        // 브라우니 곰돌이 12개
+        onUpdate('brownieCookieSets', [{
+          quantity: 12,
+          shape: 'bear',
+          customSticker: false,
+          heartMessage: undefined,
+          customTopper: false,
+        }]);
+        break;
+      case 'twopack10':
+        // 2구패키지 10세트
+        const sets = Array.from({ length: 10 }, () => ({
+          selectedCookies: [],
+          quantity: 1,
+        }));
+        onUpdate('twoPackSets', sets);
+        break;
+    }
+  };
+
   return (
     <Card className="card-shadow">
       <CardContent className="p-6">
-        <h2 className="text-xl font-semibold mb-6 flex items-center gap-2">
-          <span className="w-8 h-8 bg-primary rounded-full flex items-center justify-center text-primary-foreground text-sm font-bold">4</span>
-          제품 선택
-        </h2>
+        {/* Quick Presets */}
+        <div className="mb-6">
+          <h3 className="text-sm font-semibold text-muted-foreground mb-3 flex items-center gap-2">
+            🔥 인기 조합 빠른 선택
+          </h3>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <button
+              type="button"
+              className="preset-card"
+              onClick={() => applyPreset('gift20')}
+            >
+              <div className="text-lg mb-1">🎁</div>
+              <div className="font-semibold text-sm">답례품 20개</div>
+              <div className="text-xs text-muted-foreground mt-0.5">일반쿠키 + 1구박스</div>
+            </button>
+            <button
+              type="button"
+              className="preset-card"
+              onClick={() => applyPreset('brownie12')}
+            >
+              <div className="text-lg mb-1">🧸</div>
+              <div className="font-semibold text-sm">브라우니 곰돌이 12개</div>
+              <div className="text-xs text-muted-foreground mt-0.5">기본 구성</div>
+            </button>
+            <button
+              type="button"
+              className="preset-card"
+              onClick={() => applyPreset('twopack10')}
+            >
+              <div className="text-lg mb-1">📦</div>
+              <div className="font-semibold text-sm">2구패키지 10세트</div>
+              <div className="text-xs text-muted-foreground mt-0.5">쿠키 직접 선택</div>
+            </button>
+          </div>
+        </div>
 
         <div className="space-y-4">
           {/* Regular Cookies */}

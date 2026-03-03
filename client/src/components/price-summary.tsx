@@ -25,11 +25,10 @@ export function PriceSummary({ pricing }: PriceSummaryProps) {
   return (
     <Card className="card-shadow price-highlight">
       <CardContent className="p-6">
-        <h2 className="text-xl font-semibold mb-6 flex items-center gap-2">
-          <span className="w-8 h-8 bg-primary rounded-full flex items-center justify-center text-primary-foreground text-sm font-bold">5</span>
-          견적 요약
+        <h2 className="text-lg font-semibold mb-5 flex items-center gap-2">
+          💰 견적 요약
         </h2>
-        
+
         <div className="space-y-3 mb-6">
           {pricing.regularCookies > 0 && (
             <div className="flex justify-between items-center py-2 border-b border-border/50">
@@ -80,14 +79,14 @@ export function PriceSummary({ pricing }: PriceSummaryProps) {
             </div>
           )}
         </div>
-        
+
         <div className="flex justify-between items-center text-lg font-bold py-3 border-t-2 border-primary/20 bg-primary/10 rounded-lg px-4">
           <span>총 금액</span>
           <span className="text-primary-foreground" data-testid="price-total">
             {formatPrice(pricing.total)}
           </span>
         </div>
-        
+
         <p className="text-sm text-muted-foreground mt-4 text-center">
           * 최종 금액은 카카오톡 상담 후 확정됩니다
         </p>

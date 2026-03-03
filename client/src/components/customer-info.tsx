@@ -13,11 +13,10 @@ export function CustomerInfo({ customerName, customerContact, customerPhone, onU
   return (
     <Card className="card-shadow">
       <CardContent className="p-6">
-        <h2 className="text-xl font-semibold mb-6 flex items-center gap-2">
-          <span className="w-8 h-8 bg-primary rounded-full flex items-center justify-center text-primary-foreground text-sm font-bold">1</span>
-          고객 정보
+        <h2 className="text-lg font-semibold mb-5 flex items-center gap-2">
+          👤 고객 정보
         </h2>
-        
+
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
             <Label htmlFor="customerName" className="block text-sm font-medium text-foreground mb-2">
@@ -34,7 +33,7 @@ export function CustomerInfo({ customerName, customerContact, customerPhone, onU
               data-testid="input-customer-name"
             />
           </div>
-          
+
           <div>
             <Label htmlFor="customerContact" className="block text-sm font-medium text-foreground mb-2">
               이메일 주소 *
@@ -50,7 +49,7 @@ export function CustomerInfo({ customerName, customerContact, customerPhone, onU
               data-testid="input-customer-contact"
             />
           </div>
-          
+
           <div>
             <Label htmlFor="customerPhone" className="block text-sm font-medium text-foreground mb-2">
               핸드폰번호
