@@ -1,39 +1,39 @@
 import { type OrderData } from "@shared/schema";
 
 export class KakaoTemplateService {
-  
+
   generateOrderConfirmMessage(orderData: OrderData, totalPrice: number): string {
     const { customerName, deliveryDate } = orderData;
-    
+
     // 주문 항목들을 정리
     const orderItems: string[] = [];
-    
+
     // 일반 쿠키
     const regularCookies = Object.entries(orderData.regularCookies || {})
       .filter(([_, qty]) => qty > 0)
       .map(([type, qty]) => `${type} ${qty}개`);
-    
+
     if (regularCookies.length > 0) {
       orderItems.push(`🍪 일반쿠키: ${regularCookies.join(', ')}`);
     }
-    
+
     // 2구 패키지
     if (orderData.twoPackSets?.length > 0) {
       const totalTwoPackQuantity = orderData.twoPackSets.reduce((sum, set) => sum + (set.quantity || 1), 0);
       orderItems.push(`📦 2구 패키지: ${totalTwoPackQuantity}세트`);
-      
+
       orderData.twoPackSets.forEach((set, index) => {
         if (set.selectedCookies?.length > 0) {
           orderItems.push(`  └ 세트${index + 1} (${set.quantity || 1}개): ${set.selectedCookies.join(', ')}`);
         }
       });
     }
-    
+
     // 1구 + 음료
     if (orderData.singleWithDrinkSets?.length > 0) {
       const totalSingleDrinkQuantity = orderData.singleWithDrinkSets.reduce((sum, set) => sum + (set.quantity || 1), 0);
       orderItems.push(`🍪☕ 1구+음료: ${totalSingleDrinkQuantity}세트`);
-      
+
       orderData.singleWithDrinkSets.forEach((set, index) => {
         if (set.selectedCookie || set.selectedDrink) {
           let setDetail = `  └ 세트${index + 1} (${set.quantity || 1}개):`;
@@ -43,36 +43,41 @@ export class KakaoTemplateService {
         }
       });
     }
-    
+
     // 브라우니 쿠키
-    if (orderData.brownieCookie?.quantity > 0) {
-      let brownieText = `🧁 브라우니쿠키: ${orderData.brownieCookie.quantity}개`;
-      if (orderData.brownieCookie.shape) {
-        const shapeText = orderData.brownieCookie.shape === 'bear' ? '곰' :
-                         orderData.brownieCookie.shape === 'rabbit' ? '토끼' : '생일곰';
-        brownieText += ` (${shapeText} 모양)`;
-      }
-      orderItems.push(brownieText);
+    if (orderData.brownieCookieSets?.length > 0) {
+      const totalBrownieQuantity = orderData.brownieCookieSets.reduce((sum, set) => sum + (set.quantity || 1), 0);
+      orderItems.push(`🧁 브라우니쿠키: 총 ${totalBrownieQuantity}개`);
+
+      orderData.brownieCookieSets.forEach((set, index) => {
+        let brownieText = `  └ 세트${index + 1} (${set.quantity || 1}개):`;
+        if (set.shape) {
+          const shapeText = set.shape === 'bear' ? '곰' :
+            set.shape === 'rabbit' ? '토끼' : '생일곰';
+          brownieText += ` ${shapeText} 모양`;
+        }
+        orderItems.push(brownieText);
+      });
     }
-    
+
     // 행운쿠키
     if (orderData.fortuneCookie > 0) {
       orderItems.push(`🥠 행운쿠키: ${orderData.fortuneCookie}박스`);
     }
-    
+
     // 비행기샌드쿠키
     if (orderData.airplaneSandwich > 0) {
       orderItems.push(`✈️ 비행기샌드쿠키: ${orderData.airplaneSandwich}박스`);
     }
-    
+
     // 포장 옵션
     let packagingText = '';
     if (orderData.packaging) {
-      const packagingName = orderData.packaging === 'single_box' ? '1구박스' : 
-                           orderData.packaging === 'plastic_wrap' ? '비닐탭포장' : '유산지';
+      const packagingName = orderData.packaging === 'single_box' ? '1구박스' :
+        orderData.packaging === 'plastic_wrap' ? '비닐탭포장' : '유산지';
       packagingText = `📦 포장: ${packagingName}`;
     }
-    
+
     // 메시지 템플릿 생성
     const message = `안녕하세요! ${customerName}님 ✨
 
@@ -98,7 +103,7 @@ ${packagingText ? packagingText + '\n' : ''}
 
     return message;
   }
-  
+
   generatePaymentConfirmMessage(customerName: string, deliveryDate: string): string {
     return `안녕하세요! ${customerName}님 😊
 
@@ -113,7 +118,7 @@ ${packagingText ? packagingText + '\n' : ''}
 
 오늘도 좋은 하루 되세요 🌸`;
   }
-  
+
   generateReadyForPickupMessage(customerName: string): string {
     return `안녕하세요! ${customerName}님 ✨
 
