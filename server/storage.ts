@@ -9,6 +9,7 @@ export interface IStorage {
   createOrder(order: InsertOrder): Promise<Order>;
   updateOrderStatus(id: string, status: string): Promise<Order | undefined>;
   updatePaymentStatus(id: string, confirmed: boolean): Promise<Order | undefined>;
+  updatePaymentMethod(id: string, method: string | null): Promise<Order | undefined>;
   deleteOrder(id: string): Promise<boolean>;
 }
 
@@ -83,6 +84,20 @@ export class PostgreStorage implements IStorage {
 
     if (result.length > 0) {
       console.log(`[Storage] 입금 상태 업데이트 완료: ID=${id}, 상태=${result[0].orderStatus}, PaymentConfirmed=${result[0].paymentConfirmed}`);
+      return result[0];
+    }
+    return undefined;
+  }
+
+  async updatePaymentMethod(id: string, method: string | null): Promise<Order | undefined> {
+    const result = await db
+      .update(orders)
+      .set({ paymentMethod: method })
+      .where(eq(orders.id, id))
+      .returning();
+
+    if (result.length > 0) {
+      console.log(`[Storage] 결제 방법 업데이트: ID=${id}, Method=${method}`);
       return result[0];
     }
     return undefined;

@@ -14,6 +14,7 @@ export const orders = pgTable("orders", {
   totalPrice: integer("total_price").notNull(),
   orderStatus: text("order_status").notNull().default('pending'), // pending, payment_confirmed, in_production, completed
   paymentConfirmed: integer("payment_confirmed").notNull().default(0), // 0 = false, 1 = true (boolean in SQLite style)
+  paymentMethod: text("payment_method"), // 'card' | 'cash' | 'transfer' | null
   quoteFileUrl: text("quote_file_url"), // 견적서 파일 저장 경로 (optional)
   createdAt: timestamp("created_at").defaultNow(),
 });

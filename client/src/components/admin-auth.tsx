@@ -25,10 +25,10 @@ export function AdminAuth({ onAuthenticated }: AdminAuthProps) {
     // 비밀번호 확인 시뮬레이션 (0.5초 딜레이)
     setTimeout(() => {
       if (password === ADMIN_PASSWORD) {
-        // 세션 스토리지에 인증 상태 저장
-        console.log('Authentication successful, setting sessionStorage...');
-        sessionStorage.setItem('admin_authenticated', 'true');
-        console.log('SessionStorage set, reloading page...');
+        // 로컬 스토리지에 인증 상태 저장 (영구 유지)
+        console.log('Authentication successful, setting localStorage...');
+        localStorage.setItem('admin_authenticated', 'true');
+        console.log('LocalStorage set, reloading page...');
 
         // 캐시 문제 해결을 위해 강제 새로고침
         window.location.reload();

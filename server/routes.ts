@@ -895,6 +895,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // 결제 방법 업데이트
+  app.patch('/api/orders/:id/payment-method', async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { method } = req.body;
+
+      if (method !== null && !['card', 'cash', 'transfer'].includes(method)) {
+        return res.status(400).json({ message: '올바른 결제 방법이 아닙니다. (card, cash, transfer)' });
+      }
+
+      const updatedOrder = await storage.updatePaymentMethod(id, method);
+
+      if (!updatedOrder) {
+        return res.status(404).json({ message: '주문을 찾을 수 없습니다.' });
+      }
+
+      res.json(updatedOrder);
+    } catch (error) {
+      console.error('결제 방법 업데이트 오류:', error);
+      res.status(500).json({
+        message: '결제 방법 업데이트 중 오류가 발생했습니다.',
+        error: error instanceof Error ? error.message : String(error)
+      });
+    }
+  });
+
   // 주문 삭제
   app.delete('/api/orders/:id', async (req, res) => {
     try {

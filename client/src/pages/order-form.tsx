@@ -32,10 +32,10 @@ function StepIndicator({ currentStep }: { currentStep: number }) {
               <div className="flex flex-col items-center">
                 <div
                   className={`step-circle ${isCompleted
-                      ? "step-completed"
-                      : isCurrent
-                        ? "step-current"
-                        : "step-upcoming"
+                    ? "step-completed"
+                    : isCurrent
+                      ? "step-current"
+                      : "step-upcoming"
                     }`}
                 >
                   {isCompleted ? (
@@ -46,10 +46,10 @@ function StepIndicator({ currentStep }: { currentStep: number }) {
                 </div>
                 <span
                   className={`text-xs mt-1.5 font-medium ${isCurrent
-                      ? "text-primary"
-                      : isCompleted
-                        ? "text-green-600"
-                        : "text-muted-foreground"
+                    ? "text-primary"
+                    : isCompleted
+                      ? "text-green-600"
+                      : "text-muted-foreground"
                     }`}
                 >
                   {step.label}
@@ -165,7 +165,7 @@ export default function OrderForm() {
                 수제 쿠키 주문
               </p>
             </div>
-            {sessionStorage.getItem("admin_authenticated") === "true" && (
+            {localStorage.getItem("admin_authenticated") === "true" && (
               <Link href="/dashboard">
                 <div
                   className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors cursor-pointer"
