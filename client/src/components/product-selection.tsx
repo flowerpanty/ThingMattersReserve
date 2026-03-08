@@ -731,7 +731,7 @@ export function ProductSelection({
                             />
                             <Label htmlFor={`customSticker-${index}`} className="cursor-pointer text-xs">
                               <div className="font-medium">하단 스티커 제작</div>
-                              <div className="text-xs text-muted-foreground">+15,000원</div>
+                              <div className="text-xs text-muted-foreground">+20,000원</div>
                             </Label>
                           </div>
 

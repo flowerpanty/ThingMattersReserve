@@ -103,7 +103,7 @@ export const cookiePrices = {
   },
   brownieOptions: {
     birthdayBear: 500, // 생일곰 추가 비용 (+500원, 총 8,300원)
-    customSticker: 15000,
+    customSticker: 20000,
     heartMessage: 500,
   },
   sconeOptions: {
