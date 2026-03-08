@@ -77,16 +77,23 @@ async function initializeDatabase() {
         total_price INTEGER NOT NULL,
         order_status TEXT NOT NULL DEFAULT 'pending',
         payment_confirmed INTEGER NOT NULL DEFAULT 0,
+        payment_method TEXT,
         quote_file_url TEXT,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
     `);
 
-    // 기존 테이블에 pickup_time 컬럼 추가 (이미 존재하는 경우를 대비해 별도 실행)
+    // 기존 테이블에 pickup_time 및 payment_method 컬럼 추가 (이미 존재하는 경우를 대비해 별도 실행)
     try {
       await db.execute(sql`ALTER TABLE orders ADD COLUMN IF NOT EXISTS pickup_time TEXT`);
     } catch (e) {
       console.log('ℹ️ pickup_time 컬럼 추가 건너뜀 (이미 존재하거나 오류 발생)');
+    }
+
+    try {
+      await db.execute(sql`ALTER TABLE orders ADD COLUMN IF NOT EXISTS payment_method TEXT`);
+    } catch (e) {
+      console.log('ℹ️ payment_method 컬럼 추가 건너뜀 (이미 존재하거나 오류 발생)');
     }
 
     console.log('✅ Database initialized successfully (v5)');
