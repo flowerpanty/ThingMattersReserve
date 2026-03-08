@@ -8,7 +8,7 @@ import {
   CalendarDays, Package, TrendingUp, RefreshCw, ShoppingCart,
   MessageCircle, Copy, Check, Search, Truck, Store, Bell,
   CreditCard, Banknote, ArrowRight, Clock, CheckCircle2,
-  ChefHat, BarChart3, Filter, ChevronDown, ChevronUp, LogOut
+  ChefHat, BarChart3, Filter, ChevronDown, ChevronUp, LogOut, Trash2
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { ko } from 'date-fns/locale';
@@ -187,6 +187,7 @@ function OrderCard({
   onUpdateStatus,
   onGenerateMessage,
   isGeneratingMessage,
+  onDelete,
 }: {
   order: Order;
   onView: (order: Order) => void;
@@ -195,6 +196,7 @@ function OrderCard({
   onUpdateStatus: (id: string, status: string) => void;
   onGenerateMessage: (id: string, type: string) => void;
   isGeneratingMessage: boolean;
+  onDelete: (id: string) => void;
 }) {
   const [expanded, setExpanded] = useState(false);
 
@@ -317,6 +319,19 @@ function OrderCard({
             >
               <MessageCircle className="w-3.5 h-3.5 mr-1" />
               카톡
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => {
+                if (window.confirm('삭제된 주문 데이터는 복구할 수 없습니다.\\n정말 삭제하시겠습니까?')) {
+                  onDelete(order.id);
+                }
+              }}
+              className="h-9 text-xs text-red-500 hover:text-red-600 hover:bg-red-50 border-red-200"
+            >
+              <Trash2 className="w-3.5 h-3.5 mr-1" />
+              삭제
             </Button>
           </div>
         </div>
@@ -624,6 +639,7 @@ export function Dashboard() {
                     onUpdateStatus={updateOrderStatus}
                     onGenerateMessage={generateKakaoMessage}
                     isGeneratingMessage={isGeneratingMessage}
+                    onDelete={handleDeleteOrder}
                   />
                 ))}
               </div>

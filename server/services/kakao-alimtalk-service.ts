@@ -182,13 +182,13 @@ export class KakaoAlimtalkService {
 
         // 템플릿 코드에 따라 메시지 포맷 생성
         if (message.templateCode === this.config.templateAdmin) {
-            text = `[낫띵메터스] 새로운 주문이 접수되었습니다.\n\n`;
-            text += `고객명: ${params.customerName}\n`;
-            text += `연락처: ${params.customerContact}\n`;
-            text += `배송일: ${params.deliveryDate}\n`;
-            text += `배송방법: ${params.deliveryMethod}\n`;
-            text += `금액: ${params.totalPrice}원\n\n`;
-            text += `주문 내역을 확인해주세요.`;
+            text = `🚨 🍪 [새로운 주문 접수] 🍪 🚨\n\n`;
+            text += `👤 고객명: ${params.customerName}\n`;
+            text += `📞 연락처: ${params.customerContact}\n`;
+            text += `📅 배송일: ${params.deliveryDate}\n`;
+            text += `📦 배송방법: ${params.deliveryMethod}\n`;
+            text += `💰 결제금액: ${params.totalPrice}원\n\n`;
+            text += `➡️ 스마트폰이나 PC에서 주문 내역을 바로 확인해보세요! 🔥`;
         } else if (message.templateCode === this.config.templateCustomer) {
             text = `[낫띵메터스] 주문이 접수되었습니다.\n\n`;
             text += `${params.customerName}님, 주문해 주셔서 감사합니다!\n\n`;

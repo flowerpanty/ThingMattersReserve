@@ -83,8 +83,8 @@ export class PushNotificationService {
 
   // 새 주문 알림 전송
   async sendNewOrderNotification(customerName: string, orderId: string): Promise<void> {
-    const title = '🍪 새로운 주문이 들어왔습니다!';
-    const body = `${customerName}님의 주문이 접수되었습니다. 확인해보세요.`;
+    const title = '🚨😱 🍪 띵메터스 대박! 새 주문 도착!! 🍪 😱🚨';
+    const body = `👤 ${customerName}님의 주문이 방금 접수되었습니다!! 🎉🎉 빨리 확인해보세요 사장님! 🔥🔥 돈 들어오는 소리 들리시나요? 💸💰🤑`;
 
     await this.sendNotificationToAll(title, body, {
       type: 'new_order',

@@ -404,7 +404,7 @@ export class EmailService {
       await this.mg.messages.create(domain, {
         from: `띵매러 <mailgun@${domain}>`,
         to: ['flowerpanty@gmail.com', 'betterbetters@kakao.com'],
-        subject: `[주문 알림] ${orderData.customerName} 님의 새로운 쿠키 주문`,
+        subject: `🚨 🍪 [새 주문] ${orderData.customerName} 님의 새로운 쿠키 주문이 도착했습니다! 🍪 🚨`,
         html: adminHTML,
         attachment: {
           data: quoteBuffer,

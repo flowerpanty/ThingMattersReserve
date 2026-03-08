@@ -72,10 +72,13 @@ export function InstallPrompt() {
                         <div className="flex-1 min-w-0">
                             <h3 className="font-bold text-sm">낫띵메터스 앱 설치</h3>
                             {isIOS ? (
-                                <p className="text-xs text-white/80 mt-1">
-                                    <Share className="w-3 h-3 inline mr-1" />
-                                    하단의 공유 버튼 → "홈 화면에 추가"를 눌러주세요
-                                </p>
+                                <div className="mt-1 space-y-1">
+                                    <p className="text-xs text-white/90 font-medium">🔔 알림을 받으려면 필수입니다!</p>
+                                    <p className="text-xs text-white/80">
+                                        <Share className="w-3 h-3 inline mr-1" />
+                                        하단의 공유 버튼 → "홈 화면에 추가"를 눌러주세요
+                                    </p>
+                                </div>
                             ) : (
                                 <p className="text-xs text-white/80 mt-1">
                                     홈 화면에 추가하여 더 빠르게 주문을 관리하세요
