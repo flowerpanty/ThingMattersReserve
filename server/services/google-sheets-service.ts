@@ -5,12 +5,14 @@ interface GoogleSheetsConfig {
     spreadsheetId: string;
     serviceAccountEmail: string;
     privateKey: string;
+    sheetName: string;
 }
 
 export class GoogleSheetsService {
     private config: GoogleSheetsConfig;
     private enabled: boolean;
     private sheets: any;
+    private resolvedSheetName: string | null = null;
 
     constructor() {
         // 환경 변수에서 설정 로드
@@ -30,6 +32,7 @@ export class GoogleSheetsService {
             spreadsheetId: process.env.GOOGLE_SHEETS_SPREADSHEET_ID || '',
             serviceAccountEmail: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL || '',
             privateKey: privateKey,
+            sheetName: process.env.GOOGLE_SHEETS_SHEET_NAME || process.env.GOOGLE_SHEETS_TAB_NAME || '주문목록',
         };
 
         // 모든 필수 설정이 있는지 확인
@@ -66,6 +69,166 @@ export class GoogleSheetsService {
         }
     }
 
+    private formatSheetRange(sheetName: string, range: string): string {
+        const escapedName = sheetName.replace(/'/g, "''");
+        return `'${escapedName}'!${range}`;
+    }
+
+    private async resolveSheetName(): Promise<string> {
+        if (this.resolvedSheetName) {
+            return this.resolvedSheetName;
+        }
+
+        if (!this.sheets) {
+            return this.config.sheetName;
+        }
+
+        try {
+            const response = await this.sheets.spreadsheets.get({
+                spreadsheetId: this.config.spreadsheetId,
+            });
+
+            const sheetTitles = (response.data.sheets || [])
+                .map((sheet: any) => sheet.properties?.title)
+                .filter((title: any): title is string => Boolean(title));
+
+            if (sheetTitles.includes(this.config.sheetName)) {
+                this.resolvedSheetName = this.config.sheetName;
+            } else if (sheetTitles.length > 0) {
+                this.resolvedSheetName = sheetTitles[0];
+                console.warn(
+                    `[Google Sheets] 시트 "${this.config.sheetName}"를 찾지 못해 "${this.resolvedSheetName}" 시트를 사용합니다.`
+                );
+            } else {
+                this.resolvedSheetName = this.config.sheetName;
+            }
+        } catch (error) {
+            console.warn('[Google Sheets] 시트 목록 조회 실패, 기본 시트명을 사용합니다:', error);
+            this.resolvedSheetName = this.config.sheetName;
+        }
+
+        return this.resolvedSheetName ?? this.config.sheetName;
+    }
+
+    private buildOrderData(order: Order): Record<string, any> {
+        const orderItems = Array.isArray(order.orderItems) ? (order.orderItems as any[]) : [];
+        const metaItem = orderItems.find((item: any) => item.type === 'meta');
+        const metaOptions = (metaItem?.options || {}) as Record<string, any>;
+
+        const regularCookies: Record<string, number> = {};
+        const twoPackSets: Array<{ selectedCookies: string[]; quantity: number }> = [];
+        const singleWithDrinkSets: Array<{ selectedCookie: string; selectedDrink: string; quantity: number }> = [];
+        const brownieCookieSets: Array<{
+            quantity: number;
+            shape?: 'bear' | 'rabbit' | 'birthdayBear' | 'tiger';
+            customSticker: boolean;
+            heartMessage?: string;
+            customTopper: boolean;
+        }> = [];
+        const sconeSets: Array<{
+            quantity: number;
+            flavor: 'chocolate' | 'gourmetButter';
+            strawberryJam: boolean;
+        }> = [];
+
+        let packaging: 'single_box' | 'plastic_wrap' | 'oil_paper' | undefined;
+        let fortuneCookie = 0;
+        let airplaneSandwich = 0;
+
+        if (metaOptions.packaging) {
+            packaging = metaOptions.packaging;
+        }
+
+        for (const item of orderItems) {
+            if (!item || item.type === 'meta') {
+                continue;
+            }
+
+            const quantity = Number(item.quantity || 0);
+            const itemName = typeof item.name === 'string' ? item.name : '';
+
+            if (item.type === 'regular' && itemName && itemName !== 'metadata') {
+                regularCookies[itemName] = (regularCookies[itemName] || 0) + quantity;
+                continue;
+            }
+
+            if (item.type === 'twopack' || item.type === 'twoPack' || itemName.includes('2구 패키지')) {
+                twoPackSets.push({
+                    selectedCookies: item.options?.selectedCookies || [],
+                    quantity: quantity || 1,
+                });
+                continue;
+            }
+
+            if (item.type === 'singledrink' || item.type === 'singleDrink' || itemName.includes('1구 + 음료')) {
+                singleWithDrinkSets.push({
+                    selectedCookie: item.options?.selectedCookie || '',
+                    selectedDrink: item.options?.selectedDrink || '',
+                    quantity: quantity || 1,
+                });
+                continue;
+            }
+
+            if (item.type === 'brownie' || itemName.includes('브라우니')) {
+                brownieCookieSets.push({
+                    quantity: quantity || 1,
+                    shape: item.options?.shape,
+                    customSticker: !!item.options?.customSticker,
+                    heartMessage: item.options?.heartMessage,
+                    customTopper: !!item.options?.customTopper,
+                });
+                continue;
+            }
+
+            if (item.type === 'scone' || itemName.includes('스콘')) {
+                sconeSets.push({
+                    quantity: quantity || 1,
+                    flavor: item.options?.flavor || 'chocolate',
+                    strawberryJam: !!item.options?.strawberryJam,
+                });
+                continue;
+            }
+
+            if (item.type === 'fortune' || itemName.includes('행운쿠키')) {
+                fortuneCookie += quantity;
+                continue;
+            }
+
+            if (item.type === 'airplane' || itemName.includes('비행기')) {
+                airplaneSandwich += quantity;
+                continue;
+            }
+
+            if (item.type === 'packaging' || itemName.includes('1구박스') || itemName.includes('비닐탭포장') || itemName.includes('유산지')) {
+                if (itemName.includes('1구박스')) {
+                    packaging = 'single_box';
+                } else if (itemName.includes('비닐탭포장')) {
+                    packaging = 'plastic_wrap';
+                } else if (itemName.includes('유산지')) {
+                    packaging = 'oil_paper';
+                }
+            }
+        }
+
+        return {
+            customerName: order.customerName,
+            customerContact: order.customerContact,
+            customerPhone: metaOptions.customerPhone || '',
+            deliveryDate: order.deliveryDate,
+            deliveryMethod: order.deliveryMethod || metaOptions.deliveryMethod || 'pickup',
+            pickupTime: order.pickupTime || metaOptions.pickupTime || '',
+            deliveryAddress: metaOptions.deliveryAddress || '',
+            regularCookies: metaOptions.regularCookies || regularCookies,
+            packaging,
+            brownieCookieSets: metaOptions.brownieCookieSets || brownieCookieSets,
+            twoPackSets: metaOptions.twoPackSets || twoPackSets,
+            singleWithDrinkSets: metaOptions.singleWithDrinkSets || singleWithDrinkSets,
+            sconeSets: metaOptions.sconeSets || sconeSets,
+            fortuneCookie: metaOptions.fortuneCookie ?? fortuneCookie,
+            airplaneSandwich: metaOptions.airplaneSandwich ?? airplaneSandwich,
+        };
+    }
+
     /**
      * 서비스 활성화 여부 확인
      */
@@ -87,11 +250,12 @@ export class GoogleSheetsService {
 
             // 주문 데이터를 행 데이터로 변환
             const rowData = this.orderToRowData(order);
+            const sheetName = await this.resolveSheetName();
 
             // 스프레드시트에 행 추가
             await this.sheets.spreadsheets.values.append({
                 spreadsheetId: this.config.spreadsheetId,
-                range: '주문목록!A:Z', // '주문목록' 시트의 A부터 Z 컬럼까지
+                range: this.formatSheetRange(sheetName, 'A:Z'),
                 valueInputOption: 'USER_ENTERED',
                 requestBody: {
                     values: [rowData],
@@ -113,11 +277,7 @@ export class GoogleSheetsService {
      * Order 객체를 Google Sheets 행 데이터로 변환
      */
     private orderToRowData(order: Order): any[] {
-        const orderItems = order.orderItems as any[];
-
-        // 메타 데이터에서 원본 주문 정보 추출
-        const metaItem = orderItems.find(item => item.type === 'meta');
-        const orderData = metaItem?.options || {};
+        const orderData = this.buildOrderData(order);
 
         // 일반 쿠키 수량 계산
         const regularCookieQuantity = Object.values(orderData.regularCookies || {})
@@ -256,6 +416,7 @@ export class GoogleSheetsService {
         }
 
         try {
+            const sheetName = await this.resolveSheetName();
             const headers = [
                 '주문 시간',
                 '주문 ID',
@@ -287,7 +448,7 @@ export class GoogleSheetsService {
 
             await this.sheets.spreadsheets.values.update({
                 spreadsheetId: this.config.spreadsheetId,
-                range: '주문목록!A1:Z1',
+                range: this.formatSheetRange(sheetName, 'A1:Z1'),
                 valueInputOption: 'USER_ENTERED',
                 requestBody: {
                     values: [headers],

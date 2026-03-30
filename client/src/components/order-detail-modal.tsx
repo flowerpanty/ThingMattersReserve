@@ -11,6 +11,7 @@ import React from "react";
 import { useState, useRef } from 'react';
 import html2canvas from 'html2canvas';
 import { QuoteImageTemplate } from './quote-image-template';
+import { apiRequest } from "@/lib/queryClient";
 
 interface OrderItem {
     type: string;
@@ -49,6 +50,7 @@ export function OrderDetailModal({ order, isOpen, onClose, onDelete }: OrderDeta
     const quoteTemplateRef = useRef<HTMLDivElement>(null);
     const [isDownloadingImage, setIsDownloadingImage] = useState(false);
     const [isDownloadingQuote, setIsDownloadingQuote] = useState(false);
+    const [isCopyingToSheet, setIsCopyingToSheet] = useState(false);
     const { toast } = useToast();
 
     const handleDelete = async () => {
@@ -170,6 +172,7 @@ export function OrderDetailModal({ order, isOpen, onClose, onDelete }: OrderDeta
     };
 
     const handleDownloadQuote = async () => {
+        setIsDownloadingQuote(true);
         try {
             // 주문 데이터를 API 형식에 맞게 변환
             const quoteData = {
@@ -262,38 +265,58 @@ export function OrderDetailModal({ order, isOpen, onClose, onDelete }: OrderDeta
     };
 
     const handleCopyToSheet = async () => {
-        const orderAny = order as any;
-        // 메타 데이터 아이템에서 원본 데이터 추출 (DB 스키마 변경 없는 방식)
-        const metaItem = order.orderItems.find((item: any) => item.type === 'meta');
-        const orderData = metaItem ? metaItem.options : orderAny.originalOrderData;
+        setIsCopyingToSheet(true);
 
-        // 가격 상수
-        const PRICES = {
-            regular: 4500,
-            brownie: 7800,
-            scone: 5000,
-            twoPackSet: 10500,
-            singleWithDrink: 11000,
-            fortune: 15000,
-            airplane: 22000,
-            brownieOptions: {
-                birthdayBear: 500,
-                customSticker: 15000,
-                heartMessage: 500,
-            },
-            sconeOptions: {
-                strawberryJam: 500,
-            },
-            packaging: {
-                single_box: 600,
-                plastic_wrap: 500,
+        try {
+            try {
+                const response = await apiRequest('POST', `/api/sheets/orders/${order.id}/append`);
+                const result = await response.json();
+
+                toast({
+                    title: "스프레드시트에 저장되었습니다",
+                    description: result.message || "Google Sheets로 주문이 전송되었습니다.",
+                });
+
+                if (result.sheetUrl) {
+                    window.open(result.sheetUrl, '_blank', 'noopener,noreferrer');
+                }
+                return;
+            } catch (sheetError) {
+                console.warn('Google Sheets 저장 실패, 복사 방식으로 대체합니다.', sheetError);
             }
-        };
 
-        const detailedRows: any[] = [];
-        let detailOptionText = '';
+            const orderAny = order as any;
+            // 메타 데이터 아이템에서 원본 데이터 추출 (DB 스키마 변경 없는 방식)
+            const metaItem = order.orderItems.find((item: any) => item.type === 'meta');
+            const orderData = metaItem ? metaItem.options : orderAny.originalOrderData;
 
-        if (orderData) {
+            // 가격 상수
+            const PRICES = {
+                regular: 4500,
+                brownie: 7800,
+                scone: 5000,
+                twoPackSet: 10500,
+                singleWithDrink: 11000,
+                fortune: 15000,
+                airplane: 22000,
+                brownieOptions: {
+                    birthdayBear: 500,
+                    customSticker: 15000,
+                    heartMessage: 500,
+                },
+                sconeOptions: {
+                    strawberryJam: 500,
+                },
+                packaging: {
+                    single_box: 600,
+                    plastic_wrap: 500,
+                }
+            };
+
+            const detailedRows: any[] = [];
+            let detailOptionText = '';
+
+            if (orderData) {
             // 1. orderData가 있는 경우 (신규 주문) - 완벽한 복원 가능
 
             // 일반 쿠키
@@ -637,34 +660,37 @@ export function OrderDetailModal({ order, isOpen, onClose, onDelete }: OrderDeta
             ['', '', '', '', '', '총 합계', order.totalPrice].join('\t')
         ].join('\n');
 
-        try {
-            const blobHtml = new Blob([htmlContent], { type: 'text/html' });
-            const blobText = new Blob([tsvContent], { type: 'text/plain' });
+            try {
+                const blobHtml = new Blob([htmlContent], { type: 'text/html' });
+                const blobText = new Blob([tsvContent], { type: 'text/plain' });
 
-            // ClipboardItem 타입 우회
-            const ClipboardItem = (window as any).ClipboardItem;
-            const data = [new ClipboardItem({
-                'text/html': blobHtml,
-                'text/plain': blobText,
-            })];
+                // ClipboardItem 타입 우회
+                const ClipboardItem = (window as any).ClipboardItem;
+                const data = [new ClipboardItem({
+                    'text/html': blobHtml,
+                    'text/plain': blobText,
+                })];
 
-            await navigator.clipboard.write(data);
+                await navigator.clipboard.write(data);
 
-            toast({
-                title: "견적서 서식이 복사되었습니다",
-                description: "스프레드시트에 붙여넣기(Ctrl+V) 하세요.",
-            });
-            window.open('https://sheets.new', '_blank');
-        } catch (err) {
-            console.error('Clipboard write failed:', err);
-            // 실패 시 텍스트만 복사 시도
-            navigator.clipboard.writeText(tsvContent).then(() => {
                 toast({
-                    title: "텍스트만 복사되었습니다",
-                    description: "서식 복사에 실패하여 데이터만 복사했습니다.",
+                    title: "견적서 서식이 복사되었습니다",
+                    description: "스프레드시트에 붙여넣기(Ctrl+V) 하세요.",
                 });
                 window.open('https://sheets.new', '_blank');
-            });
+            } catch (err) {
+                console.error('Clipboard write failed:', err);
+                // 실패 시 텍스트만 복사 시도
+                navigator.clipboard.writeText(tsvContent).then(() => {
+                    toast({
+                        title: "텍스트만 복사되었습니다",
+                        description: "서식 복사에 실패하여 데이터만 복사했습니다.",
+                    });
+                    window.open('https://sheets.new', '_blank');
+                });
+            }
+        } finally {
+            setIsCopyingToSheet(false);
         }
     };
 
@@ -845,7 +871,7 @@ export function OrderDetailModal({ order, isOpen, onClose, onDelete }: OrderDeta
                             {/* 항목별 소계 */}
                             <div className="space-y-2">
                                 {(() => {
-                                    const allItems = [];
+                                    const allItems: JSX.Element[] = [];
                                     const packagingItems = order.orderItems.filter(item => item.type === 'packaging');
                                     const regularItems = order.orderItems.filter(item => item.type === 'regular');
                                     const otherItems = order.orderItems.filter(item => item.type !== 'meta' && item.type !== 'packaging' && item.type !== 'regular');
@@ -987,18 +1013,20 @@ export function OrderDetailModal({ order, isOpen, onClose, onDelete }: OrderDeta
                             onClick={handleDownloadQuote}
                             className="w-full"
                             variant="outline"
+                            disabled={isDownloadingQuote}
                         >
                             <Download className="w-4 h-4 mr-2" />
-                            견적서 다운로드 (Excel)
+                            {isDownloadingQuote ? '견적서 생성 중...' : '견적서 다운로드 (Excel)'}
                         </Button>
 
                         <Button
                             onClick={handleCopyToSheet}
                             className="w-full"
                             variant="outline"
+                            disabled={isCopyingToSheet}
                         >
                             <FileSpreadsheet className="w-4 h-4 mr-2" />
-                            스프레드시트로 복사
+                            {isCopyingToSheet ? '스프레드시트 저장 중...' : '스프레드시트로 복사'}
                         </Button>
 
                         {onDelete && (

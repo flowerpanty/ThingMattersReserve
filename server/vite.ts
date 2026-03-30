@@ -22,7 +22,6 @@ export function log(message: string, source = 'express') {
 // 개발 모드에서만 Vite 미들웨어 사용
 export async function setupVite(app: Express, server: any) {
   const vite = await createViteServer({
-    configFile: true,         // 루트의 vite.config.ts 자동 로드
     server: {
       middlewareMode: true,
       hmr: { server },
@@ -58,4 +57,3 @@ export function serveStatic(app: Express) {
     res.sendFile(path.join(publicDir, 'index.html'))
   })
 }
-

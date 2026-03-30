@@ -942,6 +942,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // 기존 주문을 Google Sheets에 저장
+  app.post('/api/sheets/orders/:id/append', async (req, res) => {
+    try {
+      const { id } = req.params;
+
+      if (!googleSheetsService.isEnabled()) {
+        return res.status(400).json({
+          success: false,
+          message: 'Google Sheets 서비스가 비활성화되어 있습니다. 환경 변수를 확인하세요.'
+        });
+      }
+
+      const order = await storage.getOrder(id);
+      if (!order) {
+        return res.status(404).json({
+          success: false,
+          message: '주문을 찾을 수 없습니다.'
+        });
+      }
+
+      const success = await googleSheetsService.appendOrderToSheet(order);
+
+      if (!success) {
+        return res.status(500).json({
+          success: false,
+          message: 'Google Sheets에 주문을 저장하지 못했습니다. 시트 탭 이름과 서비스 계정을 확인해주세요.'
+        });
+      }
+
+      const spreadsheetId = process.env.GOOGLE_SHEETS_SPREADSHEET_ID;
+      res.json({
+        success: true,
+        message: 'Google Sheets에 주문이 저장되었습니다.',
+        orderId: id,
+        sheetUrl: spreadsheetId ? `https://docs.google.com/spreadsheets/d/${spreadsheetId}` : undefined
+      });
+    } catch (error) {
+      console.error('Google Sheets 주문 저장 오류:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Google Sheets 주문 저장 중 오류가 발생했습니다.',
+        error: error instanceof Error ? error.message : String(error)
+      });
+    }
+  });
+
   // Google Sheets 헤더 초기화 (선택사항 - 최초 1회만 실행)
   app.post('/api/sheets/init-headers', async (req, res) => {
     try {

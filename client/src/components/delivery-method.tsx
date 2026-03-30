@@ -15,7 +15,7 @@ interface DeliveryMethodProps {
   deliveryMethod: string;
   deliveryAddress: string;
   pickupTime?: string;
-  onUpdate: (field: string, value: string) => void;
+  onUpdate: (field: 'deliveryMethod' | 'deliveryAddress' | 'pickupTime', value: string) => void;
 }
 
 export function DeliveryMethod({ deliveryMethod, deliveryAddress, pickupTime, onUpdate }: DeliveryMethodProps) {

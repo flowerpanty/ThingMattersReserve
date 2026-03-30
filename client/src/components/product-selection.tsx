@@ -7,7 +7,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { ChevronDown, ChevronRight } from "lucide-react";
 import { useState, useCallback } from "react";
-import { cookieTypes, drinkTypes } from "@shared/schema";
+import { cookieTypes, drinkTypes, type OrderData } from "@shared/schema";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface ProductSelectionProps {
@@ -36,7 +36,7 @@ interface ProductSelectionProps {
   }[];
   fortuneCookie: number;
   airplaneSandwich: number;
-  onUpdate: (field: string, value: any) => void;
+  onUpdate: (field: keyof OrderData, value: any) => void;
 }
 
 export function ProductSelection({

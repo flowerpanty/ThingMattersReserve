@@ -69,12 +69,14 @@ export const QuoteImageTemplate = React.forwardRef<HTMLDivElement, QuoteImageTem
 
             // 브라우니 쿠키 옵션
             if (item.options.shape) {
-                const shapeName = {
+                const shapeMap: Record<string, string> = {
                     'bear': '곰돌이',
                     'rabbit': '토끼',
                     'tiger': '호랑이',
                     'birthdayBear': '생일곰'
-                }[item.options.shape] || item.options.shape;
+                };
+                const shapeKey = String(item.options.shape);
+                const shapeName = shapeMap[shapeKey] || shapeKey;
                 details.push(`모양: ${shapeName}`);
             }
             if (item.options.customSticker) {

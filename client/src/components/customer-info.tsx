@@ -6,7 +6,7 @@ interface CustomerInfoProps {
   customerName: string;
   customerContact: string;
   customerPhone?: string;
-  onUpdate: (field: string, value: string) => void;
+  onUpdate: (field: 'customerName' | 'customerContact' | 'customerPhone', value: string) => void;
 }
 
 export function CustomerInfo({ customerName, customerContact, customerPhone, onUpdate }: CustomerInfoProps) {
