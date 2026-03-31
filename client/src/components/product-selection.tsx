@@ -178,6 +178,81 @@ export function ProductSelection({
   const hasRegularCookies = Object.values(regularCookies).some(qty => qty > 0);
   const regularCookieTotal = Object.values(regularCookies).reduce((sum, qty) => sum + qty, 0);
 
+  const summarizeItems = (items: string[], emptyLabel = '아직 선택 없음', limit = 2) => {
+    if (items.length === 0) return emptyLabel;
+    if (items.length <= limit) return items.join(', ');
+    return `${items.slice(0, limit).join(', ')} 외 ${items.length - limit}`;
+  };
+
+  const packagingLabels: Record<string, string> = {
+    single_box: '1구박스',
+    plastic_wrap: '비닐탭포장',
+    oil_paper: '유산지',
+  };
+
+  const regularSummary = regularCookieTotal > 0
+    ? `${packaging ? `${packagingLabels[packaging] || packaging} · ` : ''}${summarizeItems(
+      Object.entries(regularCookies)
+        .filter(([, qty]) => qty > 0)
+        .map(([type, qty]) => `${type} ${qty}개`),
+      '',
+      2
+    )}`
+    : packaging
+      ? `${packagingLabels[packaging] || packaging} 선택됨`
+      : '아직 선택 없음';
+
+  const twoPackTotalQuantity = twoPackSets.reduce((sum, set) => sum + (set.quantity || 1), 0);
+  const twoPackSummary = twoPackSets.length > 0
+    ? `${twoPackTotalQuantity}개 분량 · ${summarizeItems(
+      twoPackSets.map((set, index) =>
+        set.selectedCookies.length > 0
+          ? `세트${index + 1} ${set.selectedCookies.join('+')}`
+          : `세트${index + 1} 미선택`
+      ),
+      '',
+      1
+    )}`
+    : '세트 없음';
+
+  const singleWithDrinkTotalQuantity = singleWithDrinkSets.reduce((sum, set) => sum + (set.quantity || 1), 0);
+  const singleWithDrinkSummary = singleWithDrinkSets.length > 0
+    ? `${singleWithDrinkTotalQuantity}개 분량 · ${summarizeItems(
+      singleWithDrinkSets.map((set, index) =>
+        `세트${index + 1} ${set.selectedCookie || '쿠키 미선택'} + ${set.selectedDrink || '음료 미선택'}`
+      ),
+      '',
+      1
+    )}`
+    : '세트 없음';
+
+  const brownieTotalQuantity = brownieCookieSets.reduce((sum, set) => sum + set.quantity, 0);
+  const brownieSummaryParts = [
+    brownieTotalQuantity > 0 ? `${brownieTotalQuantity}개` : '',
+    brownieCookieSets.some((set) => set.customSticker) ? `스티커 ${brownieCookieSets.filter((set) => set.customSticker).length}세트` : '',
+    brownieCookieSets.some((set) => set.heartMessage) ? `문구 ${brownieCookieSets.filter((set) => set.heartMessage).length}세트` : '',
+  ].filter(Boolean);
+  const brownieSummary = brownieSummaryParts.length > 0
+    ? summarizeItems(brownieSummaryParts, '세트 없음', 2)
+    : '세트 없음';
+
+  const sconeTotalQuantity = sconeSets.reduce((sum, set) => sum + set.quantity, 0);
+  const sconeFlavorLabels: Record<string, string> = {
+    chocolate: '초코맛',
+    gourmetButter: '고메버터맛',
+  };
+  const sconeSummaryParts = [
+    sconeTotalQuantity > 0 ? `${sconeTotalQuantity}개` : '',
+    ...sconeSets.map((set, index) => `세트${index + 1} ${sconeFlavorLabels[set.flavor] || set.flavor}`),
+    sconeSets.some((set) => set.strawberryJam) ? `딸기잼 ${sconeSets.filter((set) => set.strawberryJam).length}세트` : '',
+  ].filter(Boolean);
+  const sconeSummary = sconeSummaryParts.length > 0
+    ? summarizeItems(sconeSummaryParts, '세트 없음', 2)
+    : '세트 없음';
+
+  const fortuneSummary = fortuneCookie > 0 ? `${fortuneCookie}박스 선택됨` : '아직 선택 없음';
+  const airplaneSummary = airplaneSandwich > 0 ? `${airplaneSandwich}박스 선택됨` : '아직 선택 없음';
+
   // Quick presets
   const applyPreset = (preset: string) => {
     switch (preset) {
@@ -268,6 +343,9 @@ export function ProductSelection({
                   <div className="text-left">
                     <div className="font-semibold">일반 쿠키</div>
                     <div className="text-sm text-muted-foreground">개당 4,500원</div>
+                    <div className="text-xs text-muted-foreground mt-1 max-w-[15rem] truncate sm:max-w-[26rem]" title={regularSummary}>
+                      현재 선택: {regularSummary}
+                    </div>
                   </div>
                   {regularCookieTotal > 0 && (
                     <div className="bg-primary text-primary-foreground text-xs px-2 py-1 rounded-full ml-2">
@@ -389,6 +467,9 @@ export function ProductSelection({
                   <div className="text-left">
                     <div className="font-semibold">2구 패키지</div>
                     <div className="text-sm text-muted-foreground">세트당 10,500원</div>
+                    <div className="text-xs text-muted-foreground mt-1 max-w-[15rem] truncate sm:max-w-[26rem]" title={twoPackSummary}>
+                      현재 선택: {twoPackSummary}
+                    </div>
                   </div>
                   {twoPackSets.length > 0 && (
                     <div className="bg-primary text-primary-foreground text-xs px-2 py-1 rounded-full ml-2">
@@ -514,6 +595,9 @@ export function ProductSelection({
                   <div className="text-left">
                     <div className="font-semibold">1구+음료 (최소수량 12개)</div>
                     <div className="text-sm text-muted-foreground">세트당 11,000원</div>
+                    <div className="text-xs text-muted-foreground mt-1 max-w-[15rem] truncate sm:max-w-[26rem]" title={singleWithDrinkSummary}>
+                      현재 선택: {singleWithDrinkSummary}
+                    </div>
                   </div>
                   {singleWithDrinkSets.length > 0 && (
                     <div className="bg-primary text-primary-foreground text-xs px-2 py-1 rounded-full ml-2">
@@ -643,6 +727,9 @@ export function ProductSelection({
                   <div className="text-left">
                     <div className="font-semibold">브라우니쿠키(최소수량12개)</div>
                     <div className="text-sm text-muted-foreground">개당 7,800원</div>
+                    <div className="text-xs text-muted-foreground mt-1 max-w-[15rem] truncate sm:max-w-[26rem]" title={brownieSummary}>
+                      현재 선택: {brownieSummary}
+                    </div>
                   </div>
                   {brownieCookieSets && brownieCookieSets.length > 0 && (
                     <div className="bg-primary text-primary-foreground text-xs px-2 py-1 rounded-full ml-2">
@@ -829,6 +916,9 @@ export function ProductSelection({
                   <div className="text-left">
                     <div className="font-semibold">행운쿠키</div>
                     <div className="text-sm text-muted-foreground">박스당 17,000원</div>
+                    <div className="text-xs text-muted-foreground mt-1 max-w-[15rem] truncate sm:max-w-[26rem]" title={fortuneSummary}>
+                      현재 선택: {fortuneSummary}
+                    </div>
                   </div>
                   {fortuneCookie > 0 && (
                     <div className="bg-primary text-primary-foreground text-xs px-2 py-1 rounded-full ml-2">
@@ -899,6 +989,9 @@ export function ProductSelection({
                   <div className="text-left">
                     <div className="font-semibold">비행기샌드쿠키</div>
                     <div className="text-sm text-muted-foreground">박스당 22,000원</div>
+                    <div className="text-xs text-muted-foreground mt-1 max-w-[15rem] truncate sm:max-w-[26rem]" title={airplaneSummary}>
+                      현재 선택: {airplaneSummary}
+                    </div>
                   </div>
                   {airplaneSandwich > 0 && (
                     <div className="bg-primary text-primary-foreground text-xs px-2 py-1 rounded-full ml-2">
@@ -962,13 +1055,16 @@ export function ProductSelection({
             open={openSections.scone}
             onOpenChange={(open) => setOpenSections(prev => ({ ...prev, scone: open }))}
           >
-            <div className="border border-border rounded-lg bg-card">
+            <div id="product-section-scone" className="border border-border rounded-lg bg-card">
               <CollapsibleTrigger className="w-full p-4 flex items-center justify-between hover:bg-muted/50 transition-colors">
                 <div className="flex items-center gap-3">
                   <span className="text-2xl">🥐</span>
                   <div className="text-left">
                     <div className="font-semibold">스콘 (최소수량 12개)</div>
                     <div className="text-sm text-muted-foreground">개당 5,000원 (딸기잼 +500원)</div>
+                    <div className="text-xs text-muted-foreground mt-1 max-w-[15rem] truncate sm:max-w-[26rem]" title={sconeSummary}>
+                      현재 선택: {sconeSummary}
+                    </div>
                   </div>
                   {sconeSets && sconeSets.length > 0 && (
                     <div className="bg-primary text-primary-foreground text-xs px-2 py-1 rounded-full ml-2">

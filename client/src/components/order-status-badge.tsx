@@ -8,6 +8,8 @@ export function OrderStatusBadge({ status }: OrderStatusBadgeProps) {
     const getStatusInfo = (status: string) => {
         switch (status) {
             case 'pending':
+                return { label: '주문접수', variant: 'secondary' as const, color: 'bg-amber-100 text-amber-800' };
+            case 'order_confirmed':
                 return { label: '주문확인', variant: 'secondary' as const, color: 'bg-yellow-100 text-yellow-800' };
             case 'payment_confirmed':
                 return { label: '입금확인', variant: 'default' as const, color: 'bg-blue-100 text-blue-800' };

@@ -61,6 +61,54 @@ interface DashboardStats {
   popularProducts: Array<{ name: string; count: number; }>;
 }
 
+type DashboardOrderStatus =
+  | 'pending'
+  | 'order_confirmed'
+  | 'payment_confirmed'
+  | 'in_production'
+  | 'completed';
+
+function getNormalizedOrderStatus(order: Pick<Order, 'orderStatus' | 'paymentConfirmed'>): DashboardOrderStatus {
+  const rawStatus = order.orderStatus || 'pending';
+
+  if (order.paymentConfirmed && (rawStatus === 'pending' || rawStatus === 'order_confirmed')) {
+    return 'payment_confirmed';
+  }
+
+  if (
+    rawStatus === 'order_confirmed' ||
+    rawStatus === 'payment_confirmed' ||
+    rawStatus === 'in_production' ||
+    rawStatus === 'completed'
+  ) {
+    return rawStatus;
+  }
+
+  return 'pending';
+}
+
+function getOrderFilterStatus(order: Pick<Order, 'orderStatus' | 'paymentConfirmed'>): Exclude<DashboardOrderStatus, 'order_confirmed'> {
+  const status = getNormalizedOrderStatus(order);
+  return status === 'order_confirmed' ? 'pending' : status;
+}
+
+function getPrimaryAction(order: Pick<Order, 'orderStatus' | 'paymentConfirmed'>) {
+  const status = getNormalizedOrderStatus(order);
+
+  switch (status) {
+    case 'pending':
+      return { label: '주문확인', type: 'status' as const, nextStatus: 'order_confirmed' as DashboardOrderStatus };
+    case 'order_confirmed':
+      return { label: '입금확인', type: 'payment' as const, confirmed: true };
+    case 'payment_confirmed':
+      return { label: '제작시작', type: 'status' as const, nextStatus: 'in_production' as DashboardOrderStatus };
+    case 'in_production':
+      return { label: '완료', type: 'status' as const, nextStatus: 'completed' as DashboardOrderStatus };
+    default:
+      return null;
+  }
+}
+
 // 결제 방법 선택 컴포넌트
 function PaymentMethodSelector({ order, onUpdate }: { order: Order; onUpdate: (method: string | null) => void }) {
   const methods = [
@@ -221,38 +269,32 @@ function StatusFilterTabs({
 // 단일 주문 카드 컴포넌트
 function OrderCard({
   order,
+  isSelectionMode,
   isSelected,
   onToggleSelect,
   onView,
+  onAdvanceStatus,
   onTogglePayment,
   onUpdatePaymentMethod,
-  onUpdateStatus,
   onGenerateMessage,
   isGeneratingMessage,
   onDelete,
 }: {
   order: Order;
+  isSelectionMode: boolean;
   isSelected: boolean;
   onToggleSelect: (id: string, checked: boolean) => void;
   onView: (order: Order) => void;
+  onAdvanceStatus: (order: Order) => void;
   onTogglePayment: (id: string, confirmed: boolean) => void;
   onUpdatePaymentMethod: (id: string, method: string | null) => void;
-  onUpdateStatus: (id: string, status: string) => void;
   onGenerateMessage: (id: string, type: string) => void;
   isGeneratingMessage: boolean;
   onDelete: (id: string) => void;
 }) {
   const [expanded, setExpanded] = useState(false);
-
-  const statusFlow = ['pending', 'payment_confirmed', 'in_production', 'completed'];
-  const currentIdx = statusFlow.indexOf(order.orderStatus || 'pending');
-  const nextStatus = currentIdx < statusFlow.length - 1 ? statusFlow[currentIdx + 1] : null;
-
-  const nextStatusLabel: Record<string, string> = {
-    'payment_confirmed': '입금확인',
-    'in_production': '제작시작',
-    'completed': '완료처리',
-  };
+  const displayStatus = getNormalizedOrderStatus(order);
+  const primaryAction = getPrimaryAction(order);
 
   const formatDate = (dateString: string) => {
     try {
@@ -267,20 +309,32 @@ function OrderCard({
       className={`
         border rounded-xl overflow-hidden transition-all duration-200 hover:shadow-lg
         ${order.paymentConfirmed ? 'border-l-4 border-l-blue-500' : 'border-l-4 border-l-orange-400'}
+        ${isSelectionMode && isSelected ? 'ring-2 ring-red-200 bg-red-50/20' : ''}
       `}
     >
       {/* 메인 행 */}
       <div
         className="flex items-center gap-3 p-3 md:p-4 cursor-pointer hover:bg-accent/30"
-        onClick={() => onView(order)}
+        onClick={() => {
+          if (isSelectionMode) {
+            onToggleSelect(order.id, !isSelected);
+            return;
+          }
+
+          onView(order);
+        }}
       >
         {/* 입금확인 체크 */}
         <div onClick={(e) => e.stopPropagation()} className="flex-shrink-0">
-          <Checkbox
-            checked={!!Number(order.paymentConfirmed)}
-            onCheckedChange={(checked) => onTogglePayment(order.id, checked as boolean)}
-            className="w-5 h-5"
-          />
+          <div className="flex flex-col items-center gap-1 rounded-lg border bg-background px-2 py-2">
+            <Checkbox
+              checked={!!Number(order.paymentConfirmed)}
+              onCheckedChange={(checked) => onTogglePayment(order.id, checked as boolean)}
+              className="w-5 h-5"
+              aria-label={`${order.customerName} 입금 확인`}
+            />
+            <span className="text-[10px] font-semibold text-muted-foreground">입금</span>
+          </div>
         </div>
 
         {/* 주문 정보 */}
@@ -296,11 +350,7 @@ function OrderCard({
                 <Store className="w-3 h-3 mr-0.5" />픽업
               </Badge>
             )}
-            <OrderStatusBadge status={
-              (order.paymentConfirmed && order.orderStatus === 'pending')
-                ? 'payment_confirmed'
-                : (order.orderStatus || 'pending')
-            } />
+            <OrderStatusBadge status={displayStatus} />
           </div>
           <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
             <span>📅 {order.deliveryDate}</span>
@@ -315,23 +365,25 @@ function OrderCard({
             <div className="font-bold text-base">{order.totalPrice.toLocaleString()}원</div>
             <div className="text-[10px] text-muted-foreground">{order.orderItems.filter(i => i.type !== 'meta').length}개 품목</div>
           </div>
-          <div
-            onClick={(e) => e.stopPropagation()}
-            className={`
-              flex items-center gap-1 rounded-lg border px-2 py-1.5 transition-colors
-              ${isSelected ? 'border-red-200 bg-red-50' : 'border-border bg-background'}
-            `}
-            title="일괄 삭제 선택"
-          >
-            <Checkbox
-              checked={isSelected}
-              onCheckedChange={(checked) => onToggleSelect(order.id, checked === true)}
-              aria-label={`${order.customerName} 주문 삭제 선택`}
-            />
-            <span className={`hidden sm:inline text-[10px] font-semibold ${isSelected ? 'text-red-600' : 'text-muted-foreground'}`}>
-              선택
-            </span>
-          </div>
+          {isSelectionMode && (
+            <div
+              onClick={(e) => e.stopPropagation()}
+              className={`
+                flex flex-col items-center gap-1 rounded-lg border px-2 py-2 transition-colors
+                ${isSelected ? 'border-red-200 bg-red-50' : 'border-border bg-background'}
+              `}
+              title="삭제할 주문 선택"
+            >
+              <Checkbox
+                checked={isSelected}
+                onCheckedChange={(checked) => onToggleSelect(order.id, checked === true)}
+                aria-label={`${order.customerName} 주문 삭제 선택`}
+              />
+              <span className={`text-[10px] font-semibold ${isSelected ? 'text-red-600' : 'text-muted-foreground'}`}>
+                삭제
+              </span>
+            </div>
+          )}
           <button
             onClick={(e) => { e.stopPropagation(); setExpanded(!expanded); }}
             className="p-1 hover:bg-accent rounded"
@@ -360,15 +412,15 @@ function OrderCard({
           </div>
 
           {/* 빠른 액션 */}
-          <div className="flex gap-2">
-            {nextStatus && (
+          <div className="flex flex-col gap-2 sm:flex-row">
+            {primaryAction && (
               <Button
                 size="sm"
-                onClick={() => onUpdateStatus(order.id, nextStatus)}
-                className="flex-1 h-9 text-xs font-semibold"
+                onClick={() => onAdvanceStatus(order)}
+                className="flex-1 h-11 rounded-xl text-sm font-bold shadow-sm"
               >
-                <ArrowRight className="w-3.5 h-3.5 mr-1" />
-                {nextStatusLabel[nextStatus]}
+                <ArrowRight className="w-4 h-4 mr-1.5" />
+                {primaryAction.label}
               </Button>
             )}
             <Button
@@ -376,9 +428,9 @@ function OrderCard({
               variant="outline"
               onClick={() => onGenerateMessage(order.id, 'order_confirm')}
               disabled={isGeneratingMessage}
-              className="h-9 text-xs"
+              className="h-11 rounded-xl text-sm"
             >
-              <MessageCircle className="w-3.5 h-3.5 mr-1" />
+              <MessageCircle className="w-4 h-4 mr-1.5" />
               카톡
             </Button>
             <Button
@@ -389,9 +441,9 @@ function OrderCard({
                   onDelete(order.id);
                 }
               }}
-              className="h-9 text-xs text-red-500 hover:text-red-600 hover:bg-red-50 border-red-200"
+              className="h-11 rounded-xl text-sm text-red-500 hover:text-red-600 hover:bg-red-50 border-red-200"
             >
-              <Trash2 className="w-3.5 h-3.5 mr-1" />
+              <Trash2 className="w-4 h-4 mr-1.5" />
               삭제
             </Button>
           </div>
@@ -417,6 +469,7 @@ export function Dashboard() {
   const [generatedMessage, setGeneratedMessage] = useState('');
   const [isGeneratingMessage, setIsGeneratingMessage] = useState(false);
   const [copiedMessageId, setCopiedMessageId] = useState<string | null>(null);
+  const [isSelectionMode, setIsSelectionMode] = useState(false);
   const [selectedOrderIds, setSelectedOrderIds] = useState<string[]>([]);
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -446,7 +499,10 @@ export function Dashboard() {
       await apiRequest('PATCH', `/api/orders/${orderId}/status`, { status });
       await queryClient.invalidateQueries({ queryKey: ['/api/orders'] });
       const labels: Record<string, string> = {
-        'payment_confirmed': '입금확인', 'in_production': '제작시작', 'completed': '완료처리'
+        'order_confirmed': '주문확인',
+        'payment_confirmed': '입금확인',
+        'in_production': '제작시작',
+        'completed': '완료'
       };
       toast({ title: `✅ ${labels[status] || status} 처리 완료` });
     } catch {
@@ -459,7 +515,13 @@ export function Dashboard() {
   const togglePaymentConfirmed = async (orderId: string, confirmed: boolean) => {
     queryClient.setQueryData(['/api/orders'], (old: Order[] | undefined) =>
       (old || []).map(o => o.id === orderId
-        ? { ...o, paymentConfirmed: confirmed ? 1 : 0, orderStatus: confirmed ? 'payment_confirmed' : 'pending' }
+        ? {
+          ...o,
+          paymentConfirmed: confirmed ? 1 : 0,
+          orderStatus: confirmed
+            ? (o.orderStatus === 'in_production' || o.orderStatus === 'completed' ? o.orderStatus : 'payment_confirmed')
+            : (o.orderStatus === 'payment_confirmed' ? 'order_confirmed' : o.orderStatus)
+        }
         : o
       )
     );
@@ -471,6 +533,21 @@ export function Dashboard() {
       await queryClient.invalidateQueries({ queryKey: ['/api/orders'] });
       toast({ title: '입금 상태 업데이트 실패', variant: 'destructive' });
     }
+  };
+
+  const advanceOrderStatus = async (order: Order) => {
+    const primaryAction = getPrimaryAction(order);
+
+    if (!primaryAction) {
+      return;
+    }
+
+    if (primaryAction.type === 'payment') {
+      await togglePaymentConfirmed(order.id, true);
+      return;
+    }
+
+    await updateOrderStatus(order.id, primaryAction.nextStatus);
   };
 
   // 결제 방법 업데이트
@@ -559,8 +636,7 @@ export function Dashboard() {
       }
       // 상태 필터
       if (statusFilter !== 'all') {
-        const effectiveStatus = (order.paymentConfirmed && order.orderStatus === 'pending')
-          ? 'payment_confirmed' : (order.orderStatus || 'pending');
+        const effectiveStatus = getOrderFilterStatus(order);
         if (effectiveStatus !== statusFilter) return false;
       }
       return true;
@@ -597,6 +673,13 @@ export function Dashboard() {
     setSelectedOrderIds([]);
   }, []);
 
+  const updateSelectionMode = useCallback((next: boolean) => {
+    setIsSelectionMode(next);
+    if (!next) {
+      setSelectedOrderIds([]);
+    }
+  }, []);
+
   const handleBulkDeleteOrders = useCallback(async () => {
     if (selectedOrderIds.length === 0) {
       toast({
@@ -626,19 +709,19 @@ export function Dashboard() {
         setIsModalOpen(false);
       }
 
-      setSelectedOrderIds([]);
+      updateSelectionMode(false);
       toast({ title: `${result.deletedCount || deletedIds.length || selectedOrderIds.length}건 주문이 삭제되었습니다.` });
       await queryClient.invalidateQueries({ queryKey: ['/api/orders'] });
     } catch {
       toast({ title: '주문 일괄 삭제 실패', variant: 'destructive' });
     }
-  }, [queryClient, selectedOrder, selectedOrderIds, toast]);
+  }, [queryClient, selectedOrder, selectedOrderIds, toast, updateSelectionMode]);
 
   // 상태별 카운트
   const statusCounts = useMemo(() => {
     const counts: Record<string, number> = { all: orders.length, pending: 0, payment_confirmed: 0, in_production: 0, completed: 0 };
     orders.forEach(o => {
-      const status = (o.paymentConfirmed && o.orderStatus === 'pending') ? 'payment_confirmed' : (o.orderStatus || 'pending');
+      const status = getOrderFilterStatus(o);
       counts[status] = (counts[status] || 0) + 1;
     });
     return counts;
@@ -752,42 +835,61 @@ export function Dashboard() {
             />
 
             {!ordersLoading && filteredOrders.length > 0 && (
-              <Card className="border-red-100 bg-red-50/40 shadow-sm">
+              <Card className={`${isSelectionMode ? 'border-red-100 bg-red-50/40' : 'border-border bg-white'} shadow-sm`}>
                 <CardContent className="p-3 md:p-4">
                   <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                     <div>
                       <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
                         <Trash2 className="w-4 h-4 text-red-500" />
-                        여러 주문 한 번에 삭제
+                        {isSelectionMode ? '삭제 선택 모드' : '여러 주문 한 번에 삭제'}
                       </h3>
                       <p className="text-xs text-muted-foreground mt-1">
-                        현재 목록에서 삭제할 주문을 선택한 뒤 한 번에 지울 수 있어요.
+                        {isSelectionMode
+                          ? '카드를 눌러 삭제할 주문을 고르세요. 왼쪽 입금 체크와는 별도로 동작합니다.'
+                          : '삭제가 필요할 때만 선택 모드를 켜고, 현재 목록 기준으로 한 번에 정리할 수 있어요.'}
                       </p>
                     </div>
                     <div className="flex flex-wrap items-center gap-2">
-                      <div className="flex items-center gap-2 rounded-full border bg-background px-3 py-2">
-                        <Checkbox
-                          checked={allFilteredSelected}
-                          onCheckedChange={(checked) => toggleSelectAllFiltered(checked === true)}
-                          aria-label="현재 목록 전체 선택"
-                        />
-                        <Label className="text-xs font-medium">현재 목록 전체 선택</Label>
-                      </div>
-                      {selectedCount > 0 && (
-                        <Button variant="ghost" size="sm" onClick={clearSelectedOrders} className="h-9 text-xs">
-                          선택 해제
+                      {isSelectionMode ? (
+                        <>
+                          <div className="flex items-center gap-2 rounded-full border bg-background px-3 py-2">
+                            <Checkbox
+                              checked={allFilteredSelected}
+                              onCheckedChange={(checked) => toggleSelectAllFiltered(checked === true)}
+                              aria-label="현재 목록 전체 선택"
+                            />
+                            <Label className="text-xs font-medium">현재 목록 전체 선택</Label>
+                          </div>
+                          {selectedCount > 0 && (
+                            <Button variant="ghost" size="sm" onClick={clearSelectedOrders} className="h-9 text-xs">
+                              선택 해제
+                            </Button>
+                          )}
+                          <Button variant="outline" size="sm" onClick={() => updateSelectionMode(false)} className="h-9 text-xs">
+                            선택 모드 종료
+                          </Button>
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={handleBulkDeleteOrders}
+                            disabled={selectedCount === 0}
+                            className="h-9 text-xs font-semibold"
+                          >
+                            <Trash2 className="w-3.5 h-3.5 mr-1" />
+                            선택 {selectedCount}건 삭제
+                          </Button>
+                        </>
+                      ) : (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => updateSelectionMode(true)}
+                          className="h-10 rounded-full px-4 text-sm font-semibold"
+                        >
+                          <Trash2 className="w-4 h-4 mr-2" />
+                          선택 모드 시작
                         </Button>
                       )}
-                      <Button
-                        variant="destructive"
-                        size="sm"
-                        onClick={handleBulkDeleteOrders}
-                        disabled={selectedCount === 0}
-                        className="h-9 text-xs font-semibold"
-                      >
-                        <Trash2 className="w-3.5 h-3.5 mr-1" />
-                        선택 {selectedCount}건 삭제
-                      </Button>
                     </div>
                   </div>
                 </CardContent>
@@ -847,12 +949,13 @@ export function Dashboard() {
                   <OrderCard
                     key={order.id}
                     order={order}
+                    isSelectionMode={isSelectionMode}
                     isSelected={selectedOrderIds.includes(order.id)}
                     onToggleSelect={toggleOrderSelection}
                     onView={(o) => { setSelectedOrder(o); setIsModalOpen(true); }}
+                    onAdvanceStatus={advanceOrderStatus}
                     onTogglePayment={togglePaymentConfirmed}
                     onUpdatePaymentMethod={updatePaymentMethod}
-                    onUpdateStatus={updateOrderStatus}
                     onGenerateMessage={generateKakaoMessage}
                     isGeneratingMessage={isGeneratingMessage}
                     onDelete={handleDeleteOrder}

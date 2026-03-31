@@ -1055,9 +1055,11 @@ export class GoogleSheetsService {
         }) : '';
 
         // 주문 상태
-        const orderStatus = order.orderStatus === 'pending' ? '대기중' :
-            order.orderStatus === 'payment_confirmed' ? '입금확인' :
-                order.orderStatus === 'completed' ? '완료' : order.orderStatus || '';
+        const orderStatus = order.orderStatus === 'pending' ? '주문접수' :
+            order.orderStatus === 'order_confirmed' ? '주문확인' :
+                order.orderStatus === 'payment_confirmed' ? '입금확인' :
+                    order.orderStatus === 'in_production' ? '제품제작' :
+                        order.orderStatus === 'completed' ? '완료' : order.orderStatus || '';
 
         // 입금 확인 여부
         const paymentConfirmed = order.paymentConfirmed ? 'Y' : 'N';

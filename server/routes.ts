@@ -743,7 +743,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { id } = req.params;
       const { status } = req.body;
 
-      if (!['pending', 'payment_confirmed', 'in_production', 'completed'].includes(status)) {
+      if (!['pending', 'order_confirmed', 'payment_confirmed', 'in_production', 'completed'].includes(status)) {
         return res.status(400).json({ message: '올바른 상태 값이 아닙니다.' });
       }
 

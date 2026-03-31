@@ -94,6 +94,15 @@ export function CalendarView({ orders, onOrderClick }: CalendarViewProps) {
         return date.getMonth() === month;
     };
 
+    const getDaySummary = (dayOrders: Order[]) => {
+        return {
+            totalCount: dayOrders.length,
+            unpaidCount: dayOrders.filter((order) => !order.paymentConfirmed && order.orderStatus !== 'completed').length,
+            quickCount: dayOrders.filter((order) => order.deliveryMethod === 'quick').length,
+            pickupCount: dayOrders.filter((order) => order.deliveryMethod !== 'quick').length,
+        };
+    };
+
     // 날짜 클릭 핸들러
     const handleDateClick = (date: Date) => {
         const dateKey = formatDate(date);
@@ -139,6 +148,7 @@ export function CalendarView({ orders, onOrderClick }: CalendarViewProps) {
                 {calendarDays.map((date, index) => {
                     const dateKey = formatDate(date);
                     const dayOrders = ordersByDate[dateKey] || [];
+                    const daySummary = getDaySummary(dayOrders);
                     const isCurrentMonthDay = isCurrentMonth(date);
                     const isTodayDay = isToday(date);
                     const isSelected = selectedDate === dateKey;
@@ -160,21 +170,30 @@ export function CalendarView({ orders, onOrderClick }: CalendarViewProps) {
                                 {date.getDate()}
                             </span>
 
-                            {/* 주문이 있으면 점으로 표시 */}
                             {dayOrders.length > 0 && (
-                                <div className="flex gap-1 mt-1 flex-wrap content-end w-full">
-                                    {Array.from({ length: Math.min(dayOrders.length, 6) }).map((_, i) => (
-                                        <div
-                                            key={i}
-                                            className={`
-                                                w-1.5 h-1.5 rounded-full
-                                                ${dayOrders[i]?.paymentConfirmed ? 'bg-blue-500' : 'bg-orange-400'}
-                                            `}
-                                        />
-                                    ))}
-                                    {dayOrders.length > 6 && (
-                                        <span className="text-[10px] text-muted-foreground leading-none">+</span>
-                                    )}
+                                <div className="mt-auto flex w-full flex-col gap-1">
+                                    <div className="flex flex-wrap gap-1">
+                                        <span className="inline-flex items-center rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] font-semibold text-primary">
+                                            {daySummary.totalCount}건
+                                        </span>
+                                        {daySummary.unpaidCount > 0 && (
+                                            <span className="inline-flex items-center rounded-full bg-red-100 px-1.5 py-0.5 text-[10px] font-semibold text-red-700">
+                                                미입금 {daySummary.unpaidCount}
+                                            </span>
+                                        )}
+                                    </div>
+                                    <div className="hidden md:flex flex-wrap gap-1">
+                                        {daySummary.quickCount > 0 && (
+                                            <span className="inline-flex items-center rounded-full bg-orange-100 px-1.5 py-0.5 text-[10px] font-semibold text-orange-700">
+                                                퀵 {daySummary.quickCount}
+                                            </span>
+                                        )}
+                                        {daySummary.pickupCount > 0 && (
+                                            <span className="inline-flex items-center rounded-full bg-blue-100 px-1.5 py-0.5 text-[10px] font-semibold text-blue-700">
+                                                픽업 {daySummary.pickupCount}
+                                            </span>
+                                        )}
+                                    </div>
                                 </div>
                             )}
                         </button>
@@ -213,6 +232,11 @@ export function CalendarView({ orders, onOrderClick }: CalendarViewProps) {
                                                         입금확인
                                                     </Badge>
                                                 )}
+                                                {!order.paymentConfirmed && order.orderStatus !== 'completed' && (
+                                                    <Badge variant="outline" className="text-xs border-red-200 bg-red-50 text-red-600">
+                                                        미입금
+                                                    </Badge>
+                                                )}
                                                 <Badge variant="outline" className="text-xs text-muted-foreground hover:bg-accent cursor-pointer">
                                                     상세정보 <ChevronRight className="w-3 h-3 ml-1" />
                                                 </Badge>
@@ -221,7 +245,7 @@ export function CalendarView({ orders, onOrderClick }: CalendarViewProps) {
                                             {/* 둘째 줄: 픽업/배송 구분 + 시간 */}
                                             <div className="flex items-center gap-2 text-sm">
                                                 <Badge variant="outline" className="text-xs font-normal">
-                                                    {order.deliveryMethod === 'delivery' ? '배송' : '픽업'}
+                                                    {order.deliveryMethod === 'quick' ? '퀵배송' : '매장 픽업'}
                                                 </Badge>
                                                 <span className="font-medium">
                                                     {order.pickupTime || '시간 미지정'}

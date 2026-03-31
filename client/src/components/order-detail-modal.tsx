@@ -933,58 +933,90 @@ export function OrderDetailModal({ order, isOpen, onClose, onDelete }: OrderDeta
                         </div>
                     </div>
 
-                    {/* 견적서 액션 및 삭제 버튼 */}
-                    <div className="pt-4 border-t space-y-2">
-                        <Button
-                            onClick={handleDownloadImage}
-                            className="w-full"
-                            variant="default"
-                            disabled={isDownloadingImage}
-                        >
-                            <ImageIcon className="w-4 h-4 mr-2" />
-                            {isDownloadingImage ? '이미지 생성 중...' : '견적서 이미지 저장 (PNG)'}
-                        </Button>
+                    <div className="pt-4 border-t space-y-4">
+                        <div className="rounded-2xl border bg-muted/20 p-4 space-y-4">
+                            <div>
+                                <h3 className="font-semibold text-base">견적서 내보내기</h3>
+                                <p className="text-sm text-muted-foreground mt-1">
+                                    고객에게 전달하는 견적서 기준으로 저장하거나 Google Sheets 탭으로 남길 수 있어요.
+                                </p>
+                            </div>
 
-                        <Button
-                            onClick={handleCopyToSheet}
-                            className="w-full"
-                            variant="outline"
-                            disabled={isCopyingToSheet}
-                        >
-                            <FileSpreadsheet className="w-4 h-4 mr-2" />
-                            {isCopyingToSheet ? '견적서 시트 저장 중...' : '스프레드시트로 저장'}
-                        </Button>
+                            <div className="grid gap-2 sm:grid-cols-2">
+                                <Button
+                                    onClick={handleCopyToSheet}
+                                    className="h-auto min-h-[64px] justify-start rounded-xl px-4 py-3 text-left"
+                                    variant="default"
+                                    disabled={isCopyingToSheet}
+                                >
+                                    <FileSpreadsheet className="w-4 h-4 mr-3 flex-shrink-0" />
+                                    <span className="flex flex-col items-start">
+                                        <span className="font-semibold">
+                                            {isCopyingToSheet ? '견적서 시트 저장 중...' : '스프레드시트로 저장'}
+                                        </span>
+                                        <span className="text-xs font-normal opacity-90">
+                                            Google Sheets에 견적서 탭을 생성합니다
+                                        </span>
+                                    </span>
+                                </Button>
+
+                                <Button
+                                    onClick={handleDownloadImage}
+                                    className="h-auto min-h-[64px] justify-start rounded-xl px-4 py-3 text-left"
+                                    variant="outline"
+                                    disabled={isDownloadingImage}
+                                >
+                                    <ImageIcon className="w-4 h-4 mr-3 flex-shrink-0" />
+                                    <span className="flex flex-col items-start">
+                                        <span className="font-semibold">
+                                            {isDownloadingImage ? '이미지 생성 중...' : '견적서 이미지 저장'}
+                                        </span>
+                                        <span className="text-xs font-normal text-muted-foreground">
+                                            PNG 파일로 바로 저장하거나 공유합니다
+                                        </span>
+                                    </span>
+                                </Button>
+                            </div>
+                        </div>
 
                         {onDelete && (
-                            <AlertDialog>
-                                <AlertDialogTrigger asChild>
-                                    <Button
-                                        variant="destructive"
-                                        className="w-full"
-                                        disabled={isDeleting}
-                                    >
-                                        <Trash2 className="w-4 h-4 mr-2" />
-                                        주문 삭제
-                                    </Button>
-                                </AlertDialogTrigger>
-                                <AlertDialogContent>
-                                    <AlertDialogHeader>
-                                        <AlertDialogTitle>주문을 삭제하시겠습니까?</AlertDialogTitle>
-                                        <AlertDialogDescription>
-                                            이 작업은 취소할 수 없습니다. 주문이 영구적으로 삭제됩니다.
-                                            <br /><br />
-                                            고객: <strong>{order.customerName}</strong><br />
-                                            주문ID: <strong>{order.id.slice(0, 8)}...</strong>
-                                        </AlertDialogDescription>
-                                    </AlertDialogHeader>
-                                    <AlertDialogFooter>
-                                        <AlertDialogCancel>취소</AlertDialogCancel>
-                                        <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-                                            {isDeleting ? '삭제 중...' : '삭제 확인'}
-                                        </AlertDialogAction>
-                                    </AlertDialogFooter>
-                                </AlertDialogContent>
-                            </AlertDialog>
+                            <div className="rounded-2xl border border-destructive/20 bg-destructive/5 p-4 space-y-3">
+                                <div>
+                                    <h3 className="font-semibold text-base text-destructive">위험 작업</h3>
+                                    <p className="text-sm text-muted-foreground mt-1">
+                                        삭제된 주문은 복구할 수 없습니다. 고객명과 주문번호를 다시 확인한 뒤 진행해주세요.
+                                    </p>
+                                </div>
+                                <AlertDialog>
+                                    <AlertDialogTrigger asChild>
+                                        <Button
+                                            variant="destructive"
+                                            className="w-full h-11 rounded-xl"
+                                            disabled={isDeleting}
+                                        >
+                                            <Trash2 className="w-4 h-4 mr-2" />
+                                            주문 삭제
+                                        </Button>
+                                    </AlertDialogTrigger>
+                                    <AlertDialogContent>
+                                        <AlertDialogHeader>
+                                            <AlertDialogTitle>주문을 삭제하시겠습니까?</AlertDialogTitle>
+                                            <AlertDialogDescription>
+                                                이 작업은 취소할 수 없습니다. 주문이 영구적으로 삭제됩니다.
+                                                <br /><br />
+                                                고객: <strong>{order.customerName}</strong><br />
+                                                주문ID: <strong>{order.id.slice(0, 8)}...</strong>
+                                            </AlertDialogDescription>
+                                        </AlertDialogHeader>
+                                        <AlertDialogFooter>
+                                            <AlertDialogCancel>취소</AlertDialogCancel>
+                                            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                                                {isDeleting ? '삭제 중...' : '삭제 확인'}
+                                            </AlertDialogAction>
+                                        </AlertDialogFooter>
+                                    </AlertDialogContent>
+                                </AlertDialog>
+                            </div>
                         )}
                     </div>
 
