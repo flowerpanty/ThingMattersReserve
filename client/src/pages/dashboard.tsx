@@ -325,7 +325,15 @@ function OrderCard({
   const displayStatus = getNormalizedOrderStatus(order);
   const progressControl = getProgressControlInfo(order);
 
-  const formatDate = (dateString: string) => {
+  const formatDeliveryDate = (dateString: string) => {
+    try {
+      return format(new Date(dateString), 'M/d', { locale: ko });
+    } catch {
+      return dateString;
+    }
+  };
+
+  const formatCreatedAt = (dateString: string) => {
     try {
       return format(new Date(dateString), 'M/d HH:mm', { locale: ko });
     } catch {
@@ -336,14 +344,13 @@ function OrderCard({
   return (
     <div
       className={`
-        border rounded-xl overflow-hidden transition-all duration-200 hover:shadow-lg
-        ${order.paymentConfirmed ? 'border-l-4 border-l-blue-500' : 'border-l-4 border-l-orange-400'}
+        overflow-hidden rounded-2xl border border-slate-200 bg-white transition-all duration-200 hover:border-slate-300 hover:shadow-md
         ${isSelectionMode && isSelected ? 'ring-2 ring-red-200 bg-red-50/20' : ''}
       `}
     >
       {/* 메인 행 */}
       <div
-        className="flex items-center gap-3 p-3 md:p-4 cursor-pointer hover:bg-accent/30"
+        className="flex items-center gap-3 p-4 cursor-pointer hover:bg-slate-50/80"
         onClick={() => {
           if (isSelectionMode) {
             onToggleSelect(order.id, !isSelected);
@@ -361,51 +368,58 @@ function OrderCard({
             disabled={isSelectionMode || progressControl.disabled}
             aria-label={`${order.customerName} ${progressControl.label}`}
             className={`
-              flex min-h-[62px] min-w-[72px] flex-col items-center justify-center gap-1 rounded-xl border px-2 py-2 text-center transition-all
+              inline-flex h-11 min-w-[84px] items-center justify-center gap-1.5 rounded-full border px-3 text-center transition-all
               ${progressControl.tone}
               ${isSelectionMode || progressControl.disabled ? 'cursor-default opacity-80' : 'shadow-sm'}
             `}
           >
-            <CheckCircle2 className="w-5 h-5" />
-            <span className="text-[11px] font-bold leading-none">{progressControl.label}</span>
-            <span className="text-[10px] leading-none opacity-80">{progressControl.description}</span>
+            <CheckCircle2 className="w-4 h-4" />
+            <span className="text-xs font-semibold leading-none">{progressControl.label}</span>
           </button>
         </div>
 
         {/* 주문 정보 */}
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="font-bold text-base">{order.customerName}</span>
-            {order.deliveryMethod === 'quick' ? (
-              <Badge className="bg-orange-100 text-orange-700 border-0 text-[10px] px-1.5 py-0">
-                <Truck className="w-3 h-3 mr-0.5" />퀵
-              </Badge>
-            ) : (
-              <Badge className="bg-blue-100 text-blue-700 border-0 text-[10px] px-1.5 py-0">
-                <Store className="w-3 h-3 mr-0.5" />픽업
-              </Badge>
-            )}
+            <span className="truncate text-lg font-semibold tracking-tight text-slate-900">{order.customerName}</span>
+            <Badge className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-0.5 text-[11px] font-medium text-slate-600 shadow-none">
+              {order.deliveryMethod === 'quick' ? (
+                <>
+                  <Truck className="mr-1 h-3 w-3" />
+                  퀵배송
+                </>
+              ) : (
+                <>
+                  <Store className="mr-1 h-3 w-3" />
+                  픽업
+                </>
+              )}
+            </Badge>
             <OrderStatusBadge status={displayStatus} />
           </div>
-          <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
-            <span>📅 {order.deliveryDate}</span>
-            {order.pickupTime && <span>⏰ {order.pickupTime}</span>}
-            <span>• {formatDate(order.createdAt)}</span>
+          <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
+            <span>{formatDeliveryDate(order.deliveryDate)}</span>
+            {order.pickupTime && (
+              <>
+                <span className="text-slate-300">•</span>
+                <span>{order.pickupTime}</span>
+              </>
+            )}
           </div>
         </div>
 
         {/* 금액 + 확장 */}
         <div className="text-right flex-shrink-0 flex items-center gap-2">
           <div>
-            <div className="font-bold text-base">{order.totalPrice.toLocaleString()}원</div>
-            <div className="text-[10px] text-muted-foreground">{order.orderItems.filter(i => i.type !== 'meta').length}개 품목</div>
+            <div className="text-2xl font-semibold tracking-tight text-slate-900">{order.totalPrice.toLocaleString()}원</div>
+            <div className="text-[11px] text-muted-foreground">{order.orderItems.filter(i => i.type !== 'meta').length}개 품목</div>
           </div>
           {isSelectionMode && (
             <div
               onClick={(e) => e.stopPropagation()}
               className={`
-                flex flex-col items-center gap-1 rounded-lg border px-2 py-2 transition-colors
-                ${isSelected ? 'border-red-200 bg-red-50' : 'border-border bg-background'}
+                flex flex-col items-center gap-1 rounded-xl border px-2.5 py-2 transition-colors
+                ${isSelected ? 'border-red-200 bg-red-50' : 'border-slate-200 bg-white'}
               `}
               title="삭제할 주문 선택"
             >
@@ -421,7 +435,7 @@ function OrderCard({
           )}
           <button
             onClick={(e) => { e.stopPropagation(); setExpanded(!expanded); }}
-            className="p-1 hover:bg-accent rounded"
+            className="rounded-full p-2 text-slate-500 hover:bg-slate-100"
           >
             {expanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
           </button>
@@ -430,11 +444,14 @@ function OrderCard({
 
       {/* 확장 영역 */}
       {expanded && (
-        <div className="px-3 md:px-4 pb-3 space-y-3 border-t bg-muted/20" onClick={(e) => e.stopPropagation()}>
+        <div className="space-y-3 border-t bg-slate-50/70 px-4 pb-4" onClick={(e) => e.stopPropagation()}>
+          <div className="pt-3 text-[11px] text-muted-foreground">
+            주문 접수 {formatCreatedAt(order.createdAt)}
+          </div>
           {/* 주문 항목 */}
-          <div className="flex flex-wrap gap-1 pt-2">
+          <div className="flex flex-wrap gap-1">
             {order.orderItems.filter(i => i.type !== 'meta').map((item, idx) => (
-              <Badge key={idx} variant="secondary" className="text-xs">
+              <Badge key={idx} variant="secondary" className="rounded-full border border-slate-200 bg-white text-xs text-slate-700 shadow-none">
                 {item.name} ×{item.quantity}
               </Badge>
             ))}
