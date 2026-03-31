@@ -33,7 +33,6 @@ interface Order {
     createdAt: string;
 }
 
-import axios from 'axios';
 import { useToast } from "@/hooks/use-toast";
 
 interface OrderDetailModalProps {
@@ -52,6 +51,31 @@ export function OrderDetailModal({ order, isOpen, onClose, onDelete }: OrderDeta
     const [isDownloadingQuote, setIsDownloadingQuote] = useState(false);
     const [isCopyingToSheet, setIsCopyingToSheet] = useState(false);
     const { toast } = useToast();
+    const quoteFileName = `견적서_${order.customerName}_${new Date().toISOString().split('T')[0]}.xlsx`;
+
+    const downloadBlob = (blob: Blob, fileName: string) => {
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = fileName;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        window.setTimeout(() => window.URL.revokeObjectURL(url), 1000);
+    };
+
+    const openQuoteAttachment = () => {
+        const opened = window.open(`/api/orders/${order.id}/quote-excel`, '_blank', 'noopener,noreferrer');
+        if (!opened) {
+            const link = document.createElement('a');
+            link.href = `/api/orders/${order.id}/quote-excel`;
+            link.target = '_blank';
+            link.rel = 'noopener noreferrer';
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+        }
+    };
 
     const handleDelete = async () => {
         if (!order || !onDelete) return;
@@ -174,7 +198,22 @@ export function OrderDetailModal({ order, isOpen, onClose, onDelete }: OrderDeta
     const handleDownloadQuote = async () => {
         setIsDownloadingQuote(true);
         try {
-            // 주문 데이터를 API 형식에 맞게 변환
+            try {
+                const response = await fetch(`/api/orders/${order.id}/quote-excel`, {
+                    method: 'GET',
+                    credentials: 'include',
+                });
+
+                if (!response.ok) {
+                    throw new Error(await response.text());
+                }
+
+                downloadBlob(await response.blob(), quoteFileName);
+                return;
+            } catch (primaryError) {
+                console.warn('주문 기반 견적서 다운로드 실패, 직접 생성본으로 다시 시도합니다.', primaryError);
+            }
+
             const quoteData = {
                 customerName: order.customerName,
                 customerContact: order.customerContact,
@@ -184,78 +223,18 @@ export function OrderDetailModal({ order, isOpen, onClose, onDelete }: OrderDeta
                 orderItems: order.orderItems,
             };
 
-            // 주문 생성 없이 Excel 파일만 다운로드
             const response = await fetch('/api/download-quote-excel', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(quoteData),
+                credentials: 'include',
             });
 
             if (!response.ok) {
-                const errorText = await response.text();
-                console.error('견적서 생성 실패:', errorText);
-                try {
-                    // Attempt to download using axios if fetch failed
-                    const axiosResponse = await axios.post('/api/download-quote-excel', quoteData, {
-                        responseType: 'blob',
-                    });
-
-                    const url = window.URL.createObjectURL(new Blob([axiosResponse.data]));
-                    const link = document.createElement('a');
-                    link.href = url;
-                    link.setAttribute('download', `견적서_${order.customerName}_${format(new Date(), 'yyyyMMdd')}.xlsx`);
-                    document.body.appendChild(link);
-                    link.click();
-                    link.remove();
-                } catch (error) {
-                    console.error('Excel download failed, falling back to CSV:', error);
-
-                    // Fallback: CSV 생성 및 다운로드
-                    const csvContent = [
-                        ['견적서'],
-                        ['날짜', format(new Date(), 'yyyy-MM-dd')],
-                        ['고객명', order.customerName],
-                        ['연락처', order.customerContact],
-                        [''],
-                        ['상품명', '수량', '단가', '금액'],
-                        ...order.orderItems.map(item => [
-                            item.name,
-                            item.quantity,
-                            item.price,
-                            item.price * item.quantity // Calculate total for item
-                        ]),
-                        [''],
-                        ['총 합계', '', '', order.totalPrice] // Use order.totalPrice
-                    ].map(e => e.join(',')).join('\n');
-
-                    // BOM 추가하여 엑셀에서 한글 깨짐 방지
-                    const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
-                    const url = window.URL.createObjectURL(blob);
-                    const link = document.createElement('a');
-                    link.href = url;
-                    link.setAttribute('download', `견적서_${order.customerName}_${format(new Date(), 'yyyyMMdd')}.csv`);
-                    document.body.appendChild(link);
-                    link.click();
-                    link.remove();
-
-                    toast({
-                        title: "Excel 생성 실패로 CSV가 다운로드되었습니다.",
-                        description: "서버 연결 문제로 기본 호환 파일로 제공됩니다.",
-                        variant: "default",
-                    });
-                }
-            } else {
-                // Original successful download logic
-                const blob = await response.blob();
-                const url = window.URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `견적서_${order.customerName}_${order.id.slice(0, 8)}.xlsx`;
-                document.body.appendChild(a);
-                a.click();
-                a.remove();
-                window.URL.revokeObjectURL(url);
+                throw new Error(await response.text());
             }
+
+            downloadBlob(await response.blob(), quoteFileName);
         } catch (error) {
             console.error('견적서 다운로드 오류:', error);
             alert('견적서 다운로드에 실패했습니다. 오류: ' + (error instanceof Error ? error.message : String(error)));
@@ -274,12 +253,13 @@ export function OrderDetailModal({ order, isOpen, onClose, onDelete }: OrderDeta
 
                 toast({
                     title: "스프레드시트에 저장되었습니다",
-                    description: result.message || "Google Sheets로 주문이 전송되었습니다.",
+                    description: result.message || "Google Sheets로 주문이 전송되었습니다. 첨부 견적서도 열었습니다.",
                 });
 
                 if (result.sheetUrl) {
                     window.open(result.sheetUrl, '_blank', 'noopener,noreferrer');
                 }
+                openQuoteAttachment();
                 return;
             } catch (sheetError) {
                 console.warn('Google Sheets 저장 실패, 복사 방식으로 대체합니다.', sheetError);
@@ -689,6 +669,7 @@ export function OrderDetailModal({ order, isOpen, onClose, onDelete }: OrderDeta
                     window.open('https://sheets.new', '_blank');
                 });
             }
+            openQuoteAttachment();
         } finally {
             setIsCopyingToSheet(false);
         }
