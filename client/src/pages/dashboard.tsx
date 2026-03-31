@@ -97,15 +97,37 @@ function getPrimaryAction(order: Pick<Order, 'orderStatus' | 'paymentConfirmed'>
 
   switch (status) {
     case 'pending':
-      return { label: '주문확인', type: 'status' as const, nextStatus: 'order_confirmed' as DashboardOrderStatus };
+      return {
+        label: '주문확인',
+        type: 'status' as const,
+        nextStatus: 'order_confirmed' as DashboardOrderStatus,
+        toastTitle: '주문 확인 완료',
+      };
     case 'order_confirmed':
       return { label: '입금확인', type: 'payment' as const, confirmed: true };
     case 'payment_confirmed':
-      return { label: '제작시작', type: 'status' as const, nextStatus: 'in_production' as DashboardOrderStatus };
+      return {
+        label: '제작시작',
+        type: 'status' as const,
+        nextStatus: 'in_production' as DashboardOrderStatus,
+        toastTitle: '제작 시작',
+      };
     case 'in_production':
-      return { label: '완료', type: 'status' as const, nextStatus: 'completed' as DashboardOrderStatus };
-    default:
-      return null;
+      return {
+        label: '완료처리',
+        type: 'status' as const,
+        nextStatus: 'completed' as DashboardOrderStatus,
+        toastTitle: '완료 처리됨',
+        toastDescription: '완료 탭에서 완료취소로 다시 되돌릴 수 있어요.',
+      };
+    case 'completed':
+      return {
+        label: '완료취소',
+        type: 'status' as const,
+        nextStatus: 'in_production' as DashboardOrderStatus,
+        toastTitle: '완료 취소됨',
+        toastDescription: '주문이 다시 제작중 상태로 돌아갔어요.',
+      };
   }
 }
 
@@ -125,15 +147,17 @@ function getProgressControlInfo(order: Pick<Order, 'orderStatus' | 'paymentConfi
   const toneMap: Record<string, string> = {
     주문확인: 'border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100',
     입금확인: 'border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100',
-    제작시작: 'border-purple-200 bg-purple-50 text-purple-700 hover:bg-purple-100',
-    완료: 'border-green-200 bg-green-50 text-green-700 hover:bg-green-100',
+    제작시작: 'border-violet-200 bg-violet-50 text-violet-700 hover:bg-violet-100',
+    완료처리: 'border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100',
+    완료취소: 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50',
   };
 
   const descriptionMap: Record<string, string> = {
     pending: '다음 단계',
     order_confirmed: '입금 체크',
     payment_confirmed: '작업 시작',
-    in_production: '최종 완료',
+    in_production: '완료 처리',
+    completed: '제작중 복귀',
   };
 
   return {
@@ -324,6 +348,24 @@ function OrderCard({
   const [expanded, setExpanded] = useState(false);
   const displayStatus = getNormalizedOrderStatus(order);
   const progressControl = getProgressControlInfo(order);
+  const nonMetaItems = order.orderItems.filter((item) => item.type !== 'meta');
+  const itemCount = nonMetaItems.length;
+  const paymentStatusTone = order.paymentConfirmed
+    ? 'border-blue-200 bg-blue-50 text-blue-700'
+    : 'border-amber-200 bg-amber-50 text-amber-700';
+  const paymentStatusLabel = order.paymentConfirmed ? '입금완료' : '미입금';
+  const paymentMethodLabelMap: Record<string, string> = {
+    card: '카드',
+    cash: '현금',
+    transfer: '계좌',
+  };
+  const timelineDotTone: Record<DashboardOrderStatus, string> = {
+    pending: 'bg-amber-400',
+    order_confirmed: 'bg-yellow-400',
+    payment_confirmed: 'bg-blue-500',
+    in_production: 'bg-violet-500',
+    completed: 'bg-emerald-500',
+  };
 
   const formatDeliveryDate = (dateString: string) => {
     try {
@@ -344,13 +386,13 @@ function OrderCard({
   return (
     <div
       className={`
-        overflow-hidden rounded-2xl border border-slate-200 bg-white transition-all duration-200 hover:border-slate-300 hover:shadow-md
+        overflow-hidden rounded-3xl border border-slate-200 bg-white transition-all duration-200 hover:border-slate-300 hover:shadow-sm
         ${isSelectionMode && isSelected ? 'ring-2 ring-red-200 bg-red-50/20' : ''}
       `}
     >
       {/* 메인 행 */}
       <div
-        className="flex items-center gap-3 p-4 cursor-pointer hover:bg-slate-50/80"
+        className="flex gap-3 p-4 sm:gap-4 sm:p-5 cursor-pointer hover:bg-slate-50/70"
         onClick={() => {
           if (isSelectionMode) {
             onToggleSelect(order.id, !isSelected);
@@ -360,85 +402,115 @@ function OrderCard({
           onView(order);
         }}
       >
-        {/* 진행 컨트롤 */}
-        <div onClick={(e) => e.stopPropagation()} className="flex-shrink-0">
-          <button
-            type="button"
-            onClick={() => onAdvanceStatus(order)}
-            disabled={isSelectionMode || progressControl.disabled}
-            aria-label={`${order.customerName} ${progressControl.label}`}
-            className={`
-              inline-flex h-11 min-w-[84px] items-center justify-center gap-1.5 rounded-full border px-3 text-center transition-all
-              ${progressControl.tone}
-              ${isSelectionMode || progressControl.disabled ? 'cursor-default opacity-80' : 'shadow-sm'}
-            `}
-          >
-            <CheckCircle2 className="w-4 h-4" />
-            <span className="text-xs font-semibold leading-none">{progressControl.label}</span>
-          </button>
+        <div className="hidden sm:flex w-5 shrink-0 flex-col items-center pt-1">
+          <div className={`h-2.5 w-2.5 rounded-full ${timelineDotTone[displayStatus]}`} />
+          <div className="mt-2 w-px flex-1 bg-slate-200" />
         </div>
 
-        {/* 주문 정보 */}
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className="truncate text-lg font-semibold tracking-tight text-slate-900">{order.customerName}</span>
-            <Badge className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-0.5 text-[11px] font-medium text-slate-600 shadow-none">
-              {order.deliveryMethod === 'quick' ? (
-                <>
-                  <Truck className="mr-1 h-3 w-3" />
-                  퀵배송
-                </>
-              ) : (
-                <>
-                  <Store className="mr-1 h-3 w-3" />
-                  픽업
-                </>
-              )}
-            </Badge>
-            <OrderStatusBadge status={displayStatus} />
-          </div>
-          <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
-            <span>{formatDeliveryDate(order.deliveryDate)}</span>
-            {order.pickupTime && (
-              <>
-                <span className="text-slate-300">•</span>
-                <span>{order.pickupTime}</span>
-              </>
-            )}
-          </div>
-        </div>
+        <div className="min-w-0 flex-1">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-2">
+                <span className="truncate text-lg font-semibold tracking-tight text-slate-900 sm:text-xl">
+                  {order.customerName}
+                </span>
+              </div>
 
-        {/* 금액 + 확장 */}
-        <div className="text-right flex-shrink-0 flex items-center gap-2">
-          <div>
-            <div className="text-2xl font-semibold tracking-tight text-slate-900">{order.totalPrice.toLocaleString()}원</div>
-            <div className="text-[11px] text-muted-foreground">{order.orderItems.filter(i => i.type !== 'meta').length}개 품목</div>
-          </div>
-          {isSelectionMode && (
-            <div
-              onClick={(e) => e.stopPropagation()}
-              className={`
-                flex flex-col items-center gap-1 rounded-xl border px-2.5 py-2 transition-colors
-                ${isSelected ? 'border-red-200 bg-red-50' : 'border-slate-200 bg-white'}
-              `}
-              title="삭제할 주문 선택"
-            >
-              <Checkbox
-                checked={isSelected}
-                onCheckedChange={(checked) => onToggleSelect(order.id, checked === true)}
-                aria-label={`${order.customerName} 주문 삭제 선택`}
-              />
-              <span className={`text-[10px] font-semibold ${isSelected ? 'text-red-600' : 'text-muted-foreground'}`}>
-                삭제
-              </span>
+              <div className="mt-2 flex flex-wrap gap-1.5">
+                <Badge className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-0.5 text-[11px] font-medium text-slate-600 shadow-none">
+                  {order.deliveryMethod === 'quick' ? (
+                    <>
+                      <Truck className="mr-1 h-3 w-3" />
+                      퀵배송
+                    </>
+                  ) : (
+                    <>
+                      <Store className="mr-1 h-3 w-3" />
+                      픽업
+                    </>
+                  )}
+                </Badge>
+                <OrderStatusBadge status={displayStatus} />
+                <Badge className={`rounded-full border px-2.5 py-0.5 text-[11px] font-semibold shadow-none ${paymentStatusTone}`}>
+                  {paymentStatusLabel}
+                </Badge>
+                {order.paymentMethod && paymentMethodLabelMap[order.paymentMethod] && (
+                  <Badge className="rounded-full border border-slate-200 bg-white px-2.5 py-0.5 text-[11px] font-medium text-slate-600 shadow-none">
+                    {paymentMethodLabelMap[order.paymentMethod]}
+                  </Badge>
+                )}
+              </div>
             </div>
-          )}
-          <button
-            onClick={(e) => { e.stopPropagation(); setExpanded(!expanded); }}
-            className="rounded-full p-2 text-slate-500 hover:bg-slate-100"
-          >
-            {expanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-          </button>
+
+            <div className="flex shrink-0 items-start gap-2">
+              <div className="text-right">
+                <div className="text-xl font-semibold tracking-tight text-slate-900 sm:text-2xl">
+                  {order.totalPrice.toLocaleString()}원
+                </div>
+                <div className="mt-1 text-[11px] text-muted-foreground">{itemCount}개 품목</div>
+
+                {!isSelectionMode ? (
+                  <div onClick={(e) => e.stopPropagation()}>
+                    <button
+                      type="button"
+                      onClick={() => onAdvanceStatus(order)}
+                      disabled={progressControl.disabled}
+                      aria-label={`${order.customerName} ${progressControl.label}`}
+                      title={progressControl.description}
+                      className={`
+                        mt-2 inline-flex h-9 items-center justify-center rounded-full border px-3 text-xs font-semibold transition-all
+                        ${progressControl.tone}
+                        ${progressControl.disabled ? 'cursor-default opacity-80' : ''}
+                      `}
+                    >
+                      {progressControl.label}
+                    </button>
+                  </div>
+                ) : (
+                  <label
+                    onClick={(e) => e.stopPropagation()}
+                    className={`
+                      mt-2 inline-flex h-9 items-center gap-2 rounded-full border px-3 text-xs font-semibold transition-colors
+                      ${isSelected ? 'border-red-200 bg-red-50 text-red-700' : 'border-slate-200 bg-white text-slate-600'}
+                    `}
+                    title="삭제할 주문 선택"
+                  >
+                    <Checkbox
+                      checked={isSelected}
+                      onCheckedChange={(checked) => onToggleSelect(order.id, checked === true)}
+                      aria-label={`${order.customerName} 주문 삭제 선택`}
+                    />
+                    삭제 선택
+                  </label>
+                )}
+              </div>
+
+              <button
+                onClick={(e) => { e.stopPropagation(); setExpanded(!expanded); }}
+                className="rounded-full p-2 text-slate-500 hover:bg-slate-100"
+              >
+                {expanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+              </button>
+            </div>
+          </div>
+
+          <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-xs text-slate-500">
+            <span className="inline-flex items-center gap-1">
+              <CalendarDays className="h-3.5 w-3.5" />
+              {formatDeliveryDate(order.deliveryDate)}
+            </span>
+            {order.pickupTime && (
+              <span className="inline-flex items-center gap-1">
+                <Clock className="h-3.5 w-3.5" />
+                {order.pickupTime}
+              </span>
+            )}
+            <span className="inline-flex items-center gap-1">
+              <Package className="h-3.5 w-3.5" />
+              {itemCount}개 품목
+            </span>
+            <span>접수 {formatCreatedAt(order.createdAt)}</span>
+          </div>
         </div>
       </div>
 
@@ -519,7 +591,11 @@ export function Dashboard() {
   };
 
   // 주문 상태 업데이트
-  const updateOrderStatus = async (orderId: string, status: string) => {
+  const updateOrderStatus = async (
+    orderId: string,
+    status: string,
+    options?: { title?: string; description?: string }
+  ) => {
     // Optimistic
     queryClient.setQueryData(['/api/orders'], (old: Order[] | undefined) =>
       (old || []).map(o => o.id === orderId ? { ...o, orderStatus: status } : o)
@@ -533,7 +609,10 @@ export function Dashboard() {
         'in_production': '제작시작',
         'completed': '완료'
       };
-      toast({ title: `✅ ${labels[status] || status} 처리 완료` });
+      toast({
+        title: options?.title || `✅ ${labels[status] || status} 처리 완료`,
+        description: options?.description,
+      });
     } catch {
       await queryClient.invalidateQueries({ queryKey: ['/api/orders'] });
       toast({ title: '상태 업데이트 실패', variant: 'destructive' });
@@ -576,7 +655,10 @@ export function Dashboard() {
       return;
     }
 
-    await updateOrderStatus(order.id, primaryAction.nextStatus);
+    await updateOrderStatus(order.id, primaryAction.nextStatus, {
+      title: primaryAction.toastTitle,
+      description: primaryAction.toastDescription,
+    });
   };
 
   // 결제 방법 업데이트
