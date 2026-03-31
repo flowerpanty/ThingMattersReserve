@@ -10,6 +10,26 @@ import { kakaoAlimtalkService } from "./services/kakao-alimtalk-service";
 import { googleSheetsService } from "./services/google-sheets-service";
 import { buildOrderDataFromOrder } from "./services/order-data-utils";
 
+function toAsciiFallbackFileName(fileName: string): string {
+  const fallback = fileName
+    .normalize("NFKD")
+    .replace(/[^\x20-\x7E]/g, "_")
+    .replace(/["\\/:;*?<>|]/g, "_")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  return fallback || "quote.xlsx";
+}
+
+function createAttachmentHeader(fileName: string): string {
+  const asciiFallback = toAsciiFallbackFileName(fileName);
+  const encoded = encodeURIComponent(fileName)
+    .replace(/['()]/g, (char) => `%${char.charCodeAt(0).toString(16).toUpperCase()}`)
+    .replace(/\*/g, "%2A");
+
+  return `attachment; filename="${asciiFallback}"; filename*=UTF-8''${encoded}`;
+}
+
 export async function registerRoutes(app: Express): Promise<Server> {
   const excelGenerator = new ExcelGenerator();
   const kakaoTemplateService = new KakaoTemplateService();
@@ -247,7 +267,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       );
       res.setHeader(
         "Content-Disposition",
-        `attachment; filename="${fileName}"`
+        createAttachmentHeader(fileName)
       );
       res.send(Buffer.from(buffer));
       console.log('Excel 파일 전송 완료');
@@ -277,7 +297,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       );
       res.setHeader(
         "Content-Disposition",
-        `attachment; filename="${fileName}"`
+        createAttachmentHeader(fileName)
       );
       res.send(Buffer.from(buffer));
       console.log(`[API] 주문 견적서 파일 전송 완료: ${req.params.id}`);
