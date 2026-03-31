@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -221,6 +221,8 @@ function StatusFilterTabs({
 // 단일 주문 카드 컴포넌트
 function OrderCard({
   order,
+  isSelected,
+  onToggleSelect,
   onView,
   onTogglePayment,
   onUpdatePaymentMethod,
@@ -230,6 +232,8 @@ function OrderCard({
   onDelete,
 }: {
   order: Order;
+  isSelected: boolean;
+  onToggleSelect: (id: string, checked: boolean) => void;
   onView: (order: Order) => void;
   onTogglePayment: (id: string, confirmed: boolean) => void;
   onUpdatePaymentMethod: (id: string, method: string | null) => void;
@@ -310,6 +314,23 @@ function OrderCard({
           <div>
             <div className="font-bold text-base">{order.totalPrice.toLocaleString()}원</div>
             <div className="text-[10px] text-muted-foreground">{order.orderItems.filter(i => i.type !== 'meta').length}개 품목</div>
+          </div>
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className={`
+              flex items-center gap-1 rounded-lg border px-2 py-1.5 transition-colors
+              ${isSelected ? 'border-red-200 bg-red-50' : 'border-border bg-background'}
+            `}
+            title="일괄 삭제 선택"
+          >
+            <Checkbox
+              checked={isSelected}
+              onCheckedChange={(checked) => onToggleSelect(order.id, checked === true)}
+              aria-label={`${order.customerName} 주문 삭제 선택`}
+            />
+            <span className={`hidden sm:inline text-[10px] font-semibold ${isSelected ? 'text-red-600' : 'text-muted-foreground'}`}>
+              선택
+            </span>
           </div>
           <button
             onClick={(e) => { e.stopPropagation(); setExpanded(!expanded); }}
@@ -396,6 +417,7 @@ export function Dashboard() {
   const [generatedMessage, setGeneratedMessage] = useState('');
   const [isGeneratingMessage, setIsGeneratingMessage] = useState(false);
   const [copiedMessageId, setCopiedMessageId] = useState<string | null>(null);
+  const [selectedOrderIds, setSelectedOrderIds] = useState<string[]>([]);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -471,6 +493,11 @@ export function Dashboard() {
   const handleDeleteOrder = async (orderId: string) => {
     try {
       await apiRequest('DELETE', `/api/orders/${orderId}`);
+      setSelectedOrderIds((prev) => prev.filter((id) => id !== orderId));
+      if (selectedOrder?.id === orderId) {
+        setSelectedOrder(null);
+        setIsModalOpen(false);
+      }
       toast({ title: '주문이 삭제되었습니다.' });
       await queryClient.invalidateQueries({ queryKey: ['/api/orders'] });
     } catch {
@@ -539,6 +566,73 @@ export function Dashboard() {
       return true;
     });
   }, [orders, searchQuery, statusFilter]);
+
+  const filteredOrderIds = useMemo(() => filteredOrders.map((order) => order.id), [filteredOrders]);
+
+  useEffect(() => {
+    const visibleIds = new Set(filteredOrderIds);
+    setSelectedOrderIds((prev) => {
+      const next = prev.filter((id) => visibleIds.has(id));
+      return next.length === prev.length ? prev : next;
+    });
+  }, [filteredOrderIds]);
+
+  const selectedCount = selectedOrderIds.length;
+  const allFilteredSelected = filteredOrderIds.length > 0 && selectedCount === filteredOrderIds.length;
+
+  const toggleOrderSelection = useCallback((orderId: string, checked: boolean) => {
+    setSelectedOrderIds((prev) => {
+      if (checked) {
+        return prev.includes(orderId) ? prev : [...prev, orderId];
+      }
+      return prev.filter((id) => id !== orderId);
+    });
+  }, []);
+
+  const toggleSelectAllFiltered = useCallback((checked: boolean) => {
+    setSelectedOrderIds(checked ? filteredOrderIds : []);
+  }, [filteredOrderIds]);
+
+  const clearSelectedOrders = useCallback(() => {
+    setSelectedOrderIds([]);
+  }, []);
+
+  const handleBulkDeleteOrders = useCallback(async () => {
+    if (selectedOrderIds.length === 0) {
+      toast({
+        title: '삭제할 주문을 먼저 선택해주세요.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    const confirmed = window.confirm(
+      `선택한 ${selectedOrderIds.length}건 주문을 삭제하시겠습니까?\n삭제된 주문 데이터는 복구할 수 없습니다.`
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      const response = await apiRequest('POST', '/api/orders/bulk-delete', {
+        ids: selectedOrderIds,
+      });
+      const result = await response.json();
+      const deletedIds = Array.isArray(result.deletedIds) ? result.deletedIds as string[] : [];
+
+      if (selectedOrder && deletedIds.includes(selectedOrder.id)) {
+        setSelectedOrder(null);
+        setIsModalOpen(false);
+      }
+
+      setSelectedOrderIds([]);
+      toast({ title: `${result.deletedCount || deletedIds.length || selectedOrderIds.length}건 주문이 삭제되었습니다.` });
+      await queryClient.invalidateQueries({ queryKey: ['/api/orders'] });
+    } catch {
+      toast({ title: '주문 일괄 삭제 실패', variant: 'destructive' });
+    }
+  }, [queryClient, selectedOrder, selectedOrderIds, toast]);
 
   // 상태별 카운트
   const statusCounts = useMemo(() => {
@@ -657,6 +751,49 @@ export function Dashboard() {
               counts={statusCounts}
             />
 
+            {!ordersLoading && filteredOrders.length > 0 && (
+              <Card className="border-red-100 bg-red-50/40 shadow-sm">
+                <CardContent className="p-3 md:p-4">
+                  <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                    <div>
+                      <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                        <Trash2 className="w-4 h-4 text-red-500" />
+                        여러 주문 한 번에 삭제
+                      </h3>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        현재 목록에서 삭제할 주문을 선택한 뒤 한 번에 지울 수 있어요.
+                      </p>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <div className="flex items-center gap-2 rounded-full border bg-background px-3 py-2">
+                        <Checkbox
+                          checked={allFilteredSelected}
+                          onCheckedChange={(checked) => toggleSelectAllFiltered(checked === true)}
+                          aria-label="현재 목록 전체 선택"
+                        />
+                        <Label className="text-xs font-medium">현재 목록 전체 선택</Label>
+                      </div>
+                      {selectedCount > 0 && (
+                        <Button variant="ghost" size="sm" onClick={clearSelectedOrders} className="h-9 text-xs">
+                          선택 해제
+                        </Button>
+                      )}
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={handleBulkDeleteOrders}
+                        disabled={selectedCount === 0}
+                        className="h-9 text-xs font-semibold"
+                      >
+                        <Trash2 className="w-3.5 h-3.5 mr-1" />
+                        선택 {selectedCount}건 삭제
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
             {/* 주문 리스트 */}
             {ordersLoading ? (
               <OrdersListSkeleton />
@@ -710,6 +847,8 @@ export function Dashboard() {
                   <OrderCard
                     key={order.id}
                     order={order}
+                    isSelected={selectedOrderIds.includes(order.id)}
+                    onToggleSelect={toggleOrderSelection}
                     onView={(o) => { setSelectedOrder(o); setIsModalOpen(true); }}
                     onTogglePayment={togglePaymentConfirmed}
                     onUpdatePaymentMethod={updatePaymentMethod}

@@ -40,6 +40,12 @@ export function useOrderForm() {
   const [showKakaoModal, setShowKakaoModal] = useState(false);
   const { toast } = useToast();
 
+  const resetForm = useCallback(() => {
+    setFormData(initialFormData);
+    setPricing(initialPricing);
+    localStorage.removeItem('orderFormData');
+  }, []);
+
   // Calculate pricing whenever form data changes
   const { mutate: calculatePrice } = useMutation({
     mutationFn: async (data: OrderData) => {
@@ -77,9 +83,6 @@ export function useOrderForm() {
       });
       // Show Kakao consultation modal
       setShowKakaoModal(true);
-      // Reset form after successful submission
-      setFormData(initialFormData);
-      setPricing(initialPricing);
     },
     onError: (error: any) => {
       toast({
@@ -233,5 +236,6 @@ export function useOrderForm() {
     isSubmitting,
     showKakaoModal,
     setShowKakaoModal,
+    resetForm,
   };
 }

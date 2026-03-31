@@ -3,10 +3,10 @@ import { CustomerInfo } from "@/components/customer-info";
 import { DeliveryDate } from "@/components/delivery-date";
 import { DeliveryMethod } from "@/components/delivery-method";
 import { ProductSelection } from "@/components/product-selection";
-import { PriceSummary } from "@/components/price-summary";
 import { OrderActions } from "@/components/order-actions";
 import { FinalKakaoModal } from "@/components/final-kakao-modal";
 import { FloatingSummary } from "@/components/floating-summary";
+import { QuotePreview } from "@/components/quote-preview";
 import { useOrderForm } from "@/hooks/use-order-form";
 import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
@@ -79,6 +79,7 @@ export default function OrderForm() {
     isSubmitting,
     showKakaoModal,
     setShowKakaoModal,
+    resetForm,
   } = useOrderForm();
   const [currentStep, setCurrentStep] = useState(1);
   const { toast } = useToast();
@@ -160,6 +161,13 @@ export default function OrderForm() {
   const handlePrev = useCallback(() => {
     if (currentStep > 1) goToStep(currentStep - 1);
   }, [currentStep, goToStep]);
+
+  const handleCloseKakaoModal = useCallback(() => {
+    setShowKakaoModal(false);
+    resetForm();
+    setCurrentStep(1);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }, [resetForm, setShowKakaoModal]);
 
   return (
     <div className="min-h-screen pb-24">
@@ -268,12 +276,11 @@ export default function OrderForm() {
                 </p>
               </div>
 
-              {/* Order Summary Card */}
               <div className="bg-card rounded-xl border border-border p-5 mb-6 card-shadow">
                 <div className="flex flex-col gap-3 mb-4 sm:flex-row sm:items-center sm:justify-between">
                   <div>
                     <h3 className="font-semibold text-base flex items-center gap-2">
-                      📦 주문 내역
+                      ✏️ 빠른 수정
                     </h3>
                     <p className="text-xs text-muted-foreground mt-1">
                       틀린 내용이 있으면 바로 원하는 단계로 돌아가 수정할 수 있어요.
@@ -288,58 +295,9 @@ export default function OrderForm() {
                     </Button>
                   </div>
                 </div>
-                <div className="space-y-2 text-sm">
-                  <div className="flex justify-between py-2 border-b border-border/50">
-                    <span className="text-muted-foreground">주문자</span>
-                    <span className="font-medium">{formData.customerName}</span>
-                  </div>
-                  <div className="flex justify-between py-2 border-b border-border/50">
-                    <span className="text-muted-foreground">이메일</span>
-                    <span className="font-medium">
-                      {formData.customerContact}
-                    </span>
-                  </div>
-                  {formData.customerPhone && (
-                    <div className="flex justify-between py-2 border-b border-border/50">
-                      <span className="text-muted-foreground">핸드폰</span>
-                      <span className="font-medium">
-                        {formData.customerPhone}
-                      </span>
-                    </div>
-                  )}
-                  <div className="flex justify-between py-2 border-b border-border/50">
-                    <span className="text-muted-foreground">수령일</span>
-                    <span className="font-medium">
-                      {formData.deliveryDate
-                        ? new Date(
-                          formData.deliveryDate + "T00:00:00"
-                        ).toLocaleDateString("ko-KR", {
-                          year: "numeric",
-                          month: "long",
-                          day: "numeric",
-                          weekday: "short",
-                        })
-                        : "-"}
-                    </span>
-                  </div>
-                  <div className="flex justify-between py-2 border-b border-border/50">
-                    <span className="text-muted-foreground">수령방법</span>
-                    <span className="font-medium">
-                      {formData.deliveryMethod === "pickup"
-                        ? "매장 픽업"
-                        : "퀵 배송"}
-                    </span>
-                  </div>
-                  {formData.pickupTime && (
-                    <div className="flex justify-between py-2 border-b border-border/50">
-                      <span className="text-muted-foreground">시간</span>
-                      <span className="font-medium">{formData.pickupTime}</span>
-                    </div>
-                  )}
-                </div>
               </div>
 
-              <PriceSummary pricing={pricing} />
+              <QuotePreview formData={formData} pricing={pricing} />
 
               <div className="mt-6">
                 <OrderActions isSubmitting={isSubmitting} />
@@ -381,7 +339,7 @@ export default function OrderForm() {
       {/* Kakao Consultation Modal */}
       <FinalKakaoModal
         isOpen={showKakaoModal}
-        onClose={() => setShowKakaoModal(false)}
+        onClose={handleCloseKakaoModal}
       />
     </div>
   );

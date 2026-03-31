@@ -1,6 +1,6 @@
 import { type Order, type InsertOrder, orders } from "@shared/schema";
 import { db } from "./db";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, inArray } from "drizzle-orm";
 import { randomUUID } from 'crypto';
 
 export interface IStorage {
@@ -11,6 +11,7 @@ export interface IStorage {
   updatePaymentStatus(id: string, confirmed: boolean): Promise<Order | undefined>;
   updatePaymentMethod(id: string, method: string | null): Promise<Order | undefined>;
   deleteOrder(id: string): Promise<boolean>;
+  deleteOrders(ids: string[]): Promise<string[]>;
 }
 
 export class PostgreStorage implements IStorage {
@@ -111,6 +112,27 @@ export class PostgreStorage implements IStorage {
       return true;
     }
     return false;
+  }
+
+  async deleteOrders(ids: string[]): Promise<string[]> {
+    const uniqueIds = Array.from(new Set(ids.filter((id) => typeof id === "string" && id.trim())));
+
+    if (uniqueIds.length === 0) {
+      return [];
+    }
+
+    const result = await db
+      .delete(orders)
+      .where(inArray(orders.id, uniqueIds))
+      .returning({ id: orders.id });
+
+    const deletedIds = result.map((order) => order.id);
+
+    if (deletedIds.length > 0) {
+      console.log(`주문 일괄 삭제 (DB): ${deletedIds.length}건`);
+    }
+
+    return deletedIds;
   }
 }
 

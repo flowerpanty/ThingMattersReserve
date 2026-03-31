@@ -815,6 +815,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // 주문 일괄 삭제
+  app.post('/api/orders/bulk-delete', async (req, res) => {
+    try {
+      const ids = Array.isArray(req.body?.ids)
+        ? req.body.ids.filter((id: unknown): id is string => typeof id === 'string' && id.trim().length > 0)
+        : [];
+
+      const uniqueIds: string[] = Array.from(new Set<string>(ids));
+
+      if (uniqueIds.length === 0) {
+        return res.status(400).json({ message: '삭제할 주문을 선택해주세요.' });
+      }
+
+      const deletedIds = await storage.deleteOrders(uniqueIds);
+
+      if (deletedIds.length === 0) {
+        return res.status(404).json({
+          message: '삭제할 주문을 찾을 수 없습니다.',
+          success: false,
+          deletedCount: 0,
+          deletedIds: [],
+        });
+      }
+
+      res.json({
+        message: `${deletedIds.length}건 주문이 삭제되었습니다.`,
+        success: true,
+        deletedCount: deletedIds.length,
+        deletedIds,
+      });
+    } catch (error) {
+      console.error('주문 일괄 삭제 오류:', error);
+      res.status(500).json({
+        message: '주문 일괄 삭제 중 오류가 발생했습니다.',
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
+  });
+
   // 주문 삭제
   app.delete('/api/orders/:id', async (req, res) => {
     try {
