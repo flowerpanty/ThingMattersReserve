@@ -176,6 +176,8 @@ export function PushNotificationToggle() {
         </CardTitle>
         <CardDescription>
           새로운 주문이 들어올 때 핸드폰으로 알림을 받으세요.
+          <br />
+          iPhone은 홈 화면에 추가한 앱으로 실행해야 하고, 소리는 기기 알림 설정을 따릅니다.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">

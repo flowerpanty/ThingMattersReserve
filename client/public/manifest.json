@@ -1,5 +1,6 @@
 {
   "name": "낫띵메터스 쿠키 주문",
+  "id": "/",
   "short_name": "낫띵메터스",
   "description": "수제 쿠키 예약 주문 시스템",
   "start_url": "/",

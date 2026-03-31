@@ -19,6 +19,14 @@ export const orders = pgTable("orders", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+export const pushSubscriptions = pgTable("push_subscriptions", {
+  endpoint: text("endpoint").primaryKey(),
+  subscription: json("subscription").notNull(),
+  userAgent: text("user_agent"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
 export const orderItemSchema = z.object({
   type: z.enum(['regular', 'brownie', 'fortune', 'airplane', 'meta', 'scone', 'packaging']),
   name: z.string(),
@@ -71,6 +79,7 @@ export type InsertOrder = z.infer<typeof insertOrderSchema>;
 export type Order = typeof orders.$inferSelect;
 export type OrderData = z.infer<typeof orderDataSchema>;
 export type OrderItem = z.infer<typeof orderItemSchema>;
+export type PushSubscriptionRecord = typeof pushSubscriptions.$inferSelect;
 
 export const cookieTypes = [
   '호두초코',

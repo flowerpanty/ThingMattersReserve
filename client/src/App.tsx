@@ -25,6 +25,10 @@ function App() {
   useEffect(() => {
     // 앱 시작 시 서비스 워커 등록 및 PWA 기능 초기화
     pushService.init().catch(console.error);
+
+    if ('clearAppBadge' in navigator) {
+      (navigator as Navigator & { clearAppBadge?: () => Promise<void> }).clearAppBadge?.().catch(() => undefined);
+    }
   }, []);
 
   return (

@@ -156,6 +156,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const isAdmin = startUrl.includes('/dashboard');
 
     const manifest = {
+      id: startUrl,
       name: isAdmin ? "낫띵메터스 관리자" : "낫띵메터스 쿠키 주문",
       short_name: isAdmin ? "관리자" : "낫띵메터스",
       description: isAdmin ? "주문 관리 시스템" : "수제 쿠키 예약 주문 시스템",
@@ -505,15 +506,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log(`[API] 주문 생성 완료: ID=${order.id}, PickupTime=${orderData.pickupTime}`);
 
         // 새 주문 푸시 알림 전송 (백그라운드에서 실행)
-        if (pushNotificationService.hasSubscriptions()) {
-          pushNotificationService.sendNewOrderNotification(orderData.customerName, order.id)
-            .then(() => {
-              console.log('✅ 새 주문 푸시 알림 전송 완료');
-            })
-            .catch((error) => {
-              console.error('❌ 푸시 알림 전송 실패:', error);
-            });
-        }
+        pushNotificationService.sendNewOrderNotification(orderData.customerName, order.id)
+          .then(() => {
+            console.log('✅ 새 주문 푸시 알림 전송 완료');
+          })
+          .catch((error) => {
+            console.error('❌ 푸시 알림 전송 실패:', error);
+          });
 
         // 카카오톡 알림톡 전송 (백그라운드에서 실행)
         if (kakaoAlimtalkService.isEnabled()) {
@@ -689,10 +688,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // 푸시 알림 구독 등록
-  app.post('/api/push/subscribe', (req, res) => {
+  app.post('/api/push/subscribe', async (req, res) => {
     try {
       const subscription = req.body;
-      pushNotificationService.addSubscription(subscription);
+      await pushNotificationService.addSubscription(subscription, req.get('user-agent'));
       res.json({ success: true, message: '푸시 알림 구독이 등록되었습니다.' });
     } catch (error) {
       console.error('Push subscription error:', error);
@@ -704,10 +703,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // 푸시 알림 구독 해제
-  app.post('/api/push/unsubscribe', (req, res) => {
+  app.post('/api/push/unsubscribe', async (req, res) => {
     try {
       const subscription = req.body;
-      pushNotificationService.removeSubscription(subscription);
+      await pushNotificationService.removeSubscription(subscription);
       res.json({ success: true, message: '푸시 알림 구독이 해제되었습니다.' });
     } catch (error) {
       console.error('Push unsubscribe error:', error);
@@ -721,17 +720,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // 테스트 푸시 알림 전송
   app.post('/api/push/test', async (req, res) => {
     try {
-      await pushNotificationService.sendTestNotification();
+      const subscriberCount = await pushNotificationService.sendTestNotification();
       res.json({
         success: true,
         message: '테스트 알림이 전송되었습니다.',
-        subscriberCount: pushNotificationService.getSubscriberCount()
+        subscriberCount
       });
     } catch (error) {
       console.error('Test push notification error:', error);
+      const subscriberCount = await pushNotificationService.getSubscriberCount().catch(() => 0);
       res.status(500).json({
         success: false,
-        message: '테스트 알림 전송에 실패했습니다.'
+        message: error instanceof Error ? error.message : '테스트 알림 전송에 실패했습니다.',
+        subscriberCount,
       });
     }
   });

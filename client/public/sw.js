@@ -1,6 +1,6 @@
 // 낫띵메터스 Service Worker — PWA + 푸시 알림
 
-const CACHE_NAME = 'nothingmatters-v2';
+const CACHE_NAME = 'nothingmatters-v3';
 const OFFLINE_ASSETS = [
     '/',
     '/dashboard',
@@ -74,30 +74,53 @@ self.addEventListener('push', (event) => {
 
     const data = event.data.json();
     const title = data.title || '새로운 알림';
+    const notificationType = data.data?.type || 'general';
+    const badgeCount = typeof data.data?.badgeCount === 'number' ? data.data.badgeCount : 1;
     const options = {
         body: data.body || '',
-        icon: '/icon-192x192.png',
+        icon: '/icon-512x512.png',
         badge: '/icon-96x96.png',
         data: data.data || {},
-        vibrate: [100, 50, 100],
+        tag: notificationType === 'new_order' ? 'new-order-alert' : 'general-alert',
+        renotify: true,
+        requireInteraction: notificationType === 'new_order',
+        vibrate: notificationType === 'new_order' ? [250, 120, 250, 120, 350] : [120, 60, 120],
+        timestamp: Date.now(),
         actions: [
-            { action: 'open', title: '확인하기' },
+            { action: 'open', title: '주문 보기' },
+            { action: 'dismiss', title: '닫기' },
         ],
     };
 
     event.waitUntil(
-        self.registration.showNotification(title, options)
+        (async () => {
+            if (self.navigator?.setAppBadge) {
+                await self.navigator.setAppBadge(badgeCount).catch(() => undefined);
+            }
+
+            await self.registration.showNotification(title, options);
+        })()
     );
 });
 
 // 알림 클릭 시 대시보드로 이동
 self.addEventListener('notificationclick', (event) => {
     event.notification.close();
+
+    if (event.action === 'dismiss') {
+        return;
+    }
+
     const urlToOpen = event.notification.data.url || '/dashboard';
 
     event.waitUntil(
-        clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
-            for (let client of clientList) {
+        (async () => {
+            if (self.navigator?.clearAppBadge) {
+                await self.navigator.clearAppBadge().catch(() => undefined);
+            }
+
+            const clientList = await clients.matchAll({ type: 'window', includeUncontrolled: true });
+            for (const client of clientList) {
                 if (client.url.includes(urlToOpen) && 'focus' in client) {
                     return client.focus();
                 }
@@ -105,6 +128,6 @@ self.addEventListener('notificationclick', (event) => {
             if (clients.openWindow) {
                 return clients.openWindow(urlToOpen);
             }
-        })
+        })()
     );
 });

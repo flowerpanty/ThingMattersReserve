@@ -83,6 +83,16 @@ async function initializeDatabase() {
       )
     `);
 
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS push_subscriptions (
+        endpoint TEXT PRIMARY KEY,
+        subscription JSON NOT NULL,
+        user_agent TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
+      )
+    `);
+
     // 기존 테이블에 pickup_time 및 payment_method 컬럼 추가 (이미 존재하는 경우를 대비해 별도 실행)
     try {
       await db.execute(sql`ALTER TABLE orders ADD COLUMN IF NOT EXISTS pickup_time TEXT`);
@@ -145,4 +155,3 @@ async function initializeDatabase() {
     });
   });
 })();
-

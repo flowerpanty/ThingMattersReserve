@@ -2,7 +2,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Calendar, Mail, Package, MapPin, Clock, DollarSign, Download, Trash2, Image as ImageIcon, FileSpreadsheet } from "lucide-react";
+import { Calendar, Mail, Package, MapPin, Clock, DollarSign, Trash2, Image as ImageIcon, FileSpreadsheet } from "lucide-react";
 import { cookiePrices } from "@shared/schema";
 import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
@@ -48,21 +48,8 @@ export function OrderDetailModal({ order, isOpen, onClose, onDelete }: OrderDeta
     const [isDeleting, setIsDeleting] = useState(false);
     const quoteTemplateRef = useRef<HTMLDivElement>(null);
     const [isDownloadingImage, setIsDownloadingImage] = useState(false);
-    const [isDownloadingQuote, setIsDownloadingQuote] = useState(false);
     const [isCopyingToSheet, setIsCopyingToSheet] = useState(false);
     const { toast } = useToast();
-    const quoteFileName = `견적서_${order.customerName}_${new Date().toISOString().split('T')[0]}.xlsx`;
-
-    const downloadBlob = (blob: Blob, fileName: string) => {
-        const url = window.URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = fileName;
-        document.body.appendChild(link);
-        link.click();
-        link.remove();
-        window.setTimeout(() => window.URL.revokeObjectURL(url), 1000);
-    };
 
     const closePreOpenedWindow = (openedWindow?: Window | null) => {
         if (openedWindow && !openedWindow.closed) {
@@ -87,47 +74,6 @@ export function OrderDetailModal({ order, isOpen, onClose, onDelete }: OrderDeta
             return true;
         }
 
-        return true;
-    };
-
-    const downloadQuoteAttachment = async () => {
-        try {
-            const response = await fetch(`/api/orders/${order.id}/quote-excel`, {
-                method: 'GET',
-                credentials: 'include',
-            });
-
-            if (!response.ok) {
-                throw new Error(await response.text());
-            }
-
-            downloadBlob(await response.blob(), quoteFileName);
-            return true;
-        } catch (primaryError) {
-            console.warn('주문 기반 견적서 다운로드 실패, 직접 생성본으로 다시 시도합니다.', primaryError);
-        }
-
-        const quoteData = {
-            customerName: order.customerName,
-            customerContact: order.customerContact,
-            deliveryDate: order.deliveryDate,
-            deliveryMethod: order.deliveryMethod || 'pickup',
-            pickupTime: order.pickupTime,
-            orderItems: order.orderItems,
-        };
-
-        const response = await fetch('/api/download-quote-excel', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(quoteData),
-            credentials: 'include',
-        });
-
-        if (!response.ok) {
-            throw new Error(await response.text());
-        }
-
-        downloadBlob(await response.blob(), quoteFileName);
         return true;
     };
 
@@ -246,18 +192,6 @@ export function OrderDetailModal({ order, isOpen, onClose, onDelete }: OrderDeta
             console.error('이미지 다운로드 오류:', error);
             alert('이미지 다운로드에 실패했습니다. 오류: ' + (error instanceof Error ? error.message : String(error)));
             setIsDownloadingImage(false);
-        }
-    };
-
-    const handleDownloadQuote = async () => {
-        setIsDownloadingQuote(true);
-        try {
-            await downloadQuoteAttachment();
-        } catch (error) {
-            console.error('견적서 다운로드 오류:', error);
-            alert('견적서 다운로드에 실패했습니다. 오류: ' + (error instanceof Error ? error.message : String(error)));
-        } finally {
-            setIsDownloadingQuote(false); // Reset loading state
         }
     };
 
@@ -999,7 +933,7 @@ export function OrderDetailModal({ order, isOpen, onClose, onDelete }: OrderDeta
                         </div>
                     </div>
 
-                    {/* 견적서 다운로드 및 삭제 버튼 */}
+                    {/* 견적서 액션 및 삭제 버튼 */}
                     <div className="pt-4 border-t space-y-2">
                         <Button
                             onClick={handleDownloadImage}
@@ -1009,16 +943,6 @@ export function OrderDetailModal({ order, isOpen, onClose, onDelete }: OrderDeta
                         >
                             <ImageIcon className="w-4 h-4 mr-2" />
                             {isDownloadingImage ? '이미지 생성 중...' : '견적서 이미지 저장 (PNG)'}
-                        </Button>
-
-                        <Button
-                            onClick={handleDownloadQuote}
-                            className="w-full"
-                            variant="outline"
-                            disabled={isDownloadingQuote}
-                        >
-                            <Download className="w-4 h-4 mr-2" />
-                            {isDownloadingQuote ? '견적서 생성 중...' : '견적서 다운로드 (Excel)'}
                         </Button>
 
                         <Button

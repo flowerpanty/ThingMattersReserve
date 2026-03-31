@@ -12,9 +12,13 @@ export class PushNotificationService {
     }
 
     try {
-      // 서비스 워커 등록
-      this.registration = await navigator.serviceWorker.register('/sw.js');
+      // 서비스 워커 등록 후 활성화 완료까지 대기
+      await navigator.serviceWorker.register('/sw.js');
+      this.registration = await navigator.serviceWorker.ready;
+      await this.registration.update().catch(() => undefined);
       console.log('서비스 워커 등록 완료:', this.registration);
+
+      await this.syncExistingSubscription();
       return true;
     } catch (error) {
       console.error('서비스 워커 등록 실패:', error);
@@ -48,6 +52,13 @@ export class PushNotificationService {
 
     try {
       console.log('푸시 구독 시작...');
+      const existingSubscription = await this.registration.pushManager.getSubscription();
+      if (existingSubscription) {
+        console.log('기존 푸시 구독 재사용:', existingSubscription);
+        await this.sendSubscriptionToServer(existingSubscription);
+        return existingSubscription;
+      }
+
       const subscription = await this.registration.pushManager.subscribe({
         userVisibleOnly: true,
         applicationServerKey: this.urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
@@ -107,6 +118,22 @@ export class PushNotificationService {
     }
   }
 
+  private async syncExistingSubscription(): Promise<void> {
+    if (!this.registration) {
+      return;
+    }
+
+    try {
+      const subscription = await this.registration.pushManager.getSubscription();
+      if (subscription) {
+        console.log('기존 푸시 구독을 서버와 동기화합니다.');
+        await this.sendSubscriptionToServer(subscription);
+      }
+    } catch (error) {
+      console.warn('기존 푸시 구독 동기화 실패:', error);
+    }
+  }
+
   private async sendSubscriptionToServer(subscription: PushSubscription): Promise<void> {
     try {
       console.log('서버로 구독 정보 전송 중...', subscription);
@@ -116,6 +143,7 @@ export class PushNotificationService {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(subscription),
+        credentials: 'include',
       });
 
       if (!response.ok) {
@@ -138,6 +166,7 @@ export class PushNotificationService {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(subscription),
+        credentials: 'include',
       });
 
       if (!response.ok) {
@@ -173,15 +202,18 @@ export class PushNotificationService {
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include',
       });
 
       if (!response.ok) {
-        throw new Error('테스트 알림 전송 실패');
+        const errorBody = await response.json().catch(() => null);
+        throw new Error(errorBody?.message || '테스트 알림 전송 실패');
       }
 
       console.log('테스트 알림 전송 요청 완료');
     } catch (error) {
       console.error('테스트 알림 전송 오류:', error);
+      throw error;
     }
   }
 }
