@@ -68,6 +68,22 @@ type DashboardOrderStatus =
   | 'in_production'
   | 'completed';
 
+type OrderFlowAction =
+  | {
+    label: string;
+    type: 'status';
+    nextStatus: DashboardOrderStatus;
+    toastTitle?: string;
+    toastDescription?: string;
+  }
+  | {
+    label: string;
+    type: 'payment';
+    confirmed: boolean;
+    toastTitle?: string;
+    toastDescription?: string;
+  };
+
 function getNormalizedOrderStatus(order: Pick<Order, 'orderStatus' | 'paymentConfirmed'>): DashboardOrderStatus {
   const rawStatus = order.orderStatus || 'pending';
 
@@ -92,7 +108,7 @@ function getOrderFilterStatus(order: Pick<Order, 'orderStatus' | 'paymentConfirm
   return status === 'order_confirmed' ? 'pending' : status;
 }
 
-function getPrimaryAction(order: Pick<Order, 'orderStatus' | 'paymentConfirmed'>) {
+function getPrimaryAction(order: Pick<Order, 'orderStatus' | 'paymentConfirmed'>): OrderFlowAction | null {
   const status = getNormalizedOrderStatus(order);
 
   switch (status) {
@@ -104,7 +120,12 @@ function getPrimaryAction(order: Pick<Order, 'orderStatus' | 'paymentConfirmed'>
         toastTitle: '주문 확인 완료',
       };
     case 'order_confirmed':
-      return { label: '입금확인', type: 'payment' as const, confirmed: true };
+      return {
+        label: '입금확인',
+        type: 'payment' as const,
+        confirmed: true,
+        toastTitle: '입금 확인 완료',
+      };
     case 'payment_confirmed':
       return {
         label: '제작시작',
@@ -128,6 +149,36 @@ function getPrimaryAction(order: Pick<Order, 'orderStatus' | 'paymentConfirmed'>
         toastTitle: '완료 취소됨',
         toastDescription: '주문이 다시 제작중 상태로 돌아갔어요.',
       };
+  }
+}
+
+function getPreviousAction(order: Pick<Order, 'orderStatus' | 'paymentConfirmed'>): OrderFlowAction | null {
+  const status = getNormalizedOrderStatus(order);
+
+  switch (status) {
+    case 'order_confirmed':
+      return {
+        label: '이전',
+        type: 'status' as const,
+        nextStatus: 'pending',
+        toastTitle: '주문접수로 되돌림',
+      };
+    case 'payment_confirmed':
+      return {
+        label: '이전',
+        type: 'payment' as const,
+        confirmed: false,
+        toastTitle: '입금 확인 취소',
+      };
+    case 'in_production':
+      return {
+        label: '이전',
+        type: 'status' as const,
+        nextStatus: 'payment_confirmed',
+        toastTitle: '제작 시작 전으로 되돌림',
+      };
+    default:
+      return null;
   }
 }
 
@@ -341,13 +392,14 @@ function OrderCard({
   isSelected: boolean;
   onToggleSelect: (id: string, checked: boolean) => void;
   onView: (order: Order) => void;
-  onAdvanceStatus: (order: Order) => void;
+  onAdvanceStatus: (order: Order, overrideAction?: OrderFlowAction | null) => void;
   onUpdatePaymentMethod: (id: string, method: string | null) => void;
   onDelete: (id: string) => void;
 }) {
   const [expanded, setExpanded] = useState(false);
   const displayStatus = getNormalizedOrderStatus(order);
   const progressControl = getProgressControlInfo(order);
+  const previousAction = getPreviousAction(order);
   const nonMetaItems = order.orderItems.filter((item) => item.type !== 'meta');
   const itemCount = nonMetaItems.length;
   const paymentStatusTone = order.paymentConfirmed
@@ -451,20 +503,31 @@ function OrderCard({
 
                 {!isSelectionMode ? (
                   <div onClick={(e) => e.stopPropagation()}>
-                    <button
-                      type="button"
-                      onClick={() => onAdvanceStatus(order)}
-                      disabled={progressControl.disabled}
-                      aria-label={`${order.customerName} ${progressControl.label}`}
-                      title={progressControl.description}
-                      className={`
-                        mt-2 inline-flex h-9 items-center justify-center rounded-full border px-3 text-xs font-semibold transition-all
-                        ${progressControl.tone}
-                        ${progressControl.disabled ? 'cursor-default opacity-80' : ''}
-                      `}
-                    >
-                      {progressControl.label}
-                    </button>
+                    <div className="mt-2 flex items-center justify-end gap-1.5">
+                      {previousAction && (
+                        <button
+                          type="button"
+                          onClick={() => onAdvanceStatus(order, previousAction)}
+                          className="inline-flex h-9 items-center justify-center rounded-full border border-slate-200 bg-white px-3 text-xs font-medium text-slate-600 transition-colors hover:bg-slate-50"
+                        >
+                          {previousAction.label}
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => onAdvanceStatus(order)}
+                        disabled={progressControl.disabled}
+                        aria-label={`${order.customerName} ${progressControl.label}`}
+                        title={progressControl.description}
+                        className={`
+                          inline-flex h-9 items-center justify-center rounded-full border px-3 text-xs font-semibold transition-all
+                          ${progressControl.tone}
+                          ${progressControl.disabled ? 'cursor-default opacity-80' : ''}
+                        `}
+                      >
+                        {progressControl.label}
+                      </button>
+                    </div>
                   </div>
                 ) : (
                   <label
@@ -643,22 +706,24 @@ export function Dashboard() {
     }
   };
 
-  const advanceOrderStatus = async (order: Order) => {
-    const primaryAction = getPrimaryAction(order);
-
-    if (!primaryAction) {
+  const executeOrderFlowAction = async (order: Order, action: OrderFlowAction | null) => {
+    if (!action) {
       return;
     }
 
-    if (primaryAction.type === 'payment') {
-      await togglePaymentConfirmed(order.id, true);
+    if (action.type === 'payment') {
+      await togglePaymentConfirmed(order.id, action.confirmed);
       return;
     }
 
-    await updateOrderStatus(order.id, primaryAction.nextStatus, {
-      title: primaryAction.toastTitle,
-      description: primaryAction.toastDescription,
+    await updateOrderStatus(order.id, action.nextStatus, {
+      title: action.toastTitle,
+      description: action.toastDescription,
     });
+  };
+
+  const advanceOrderStatus = async (order: Order, overrideAction?: OrderFlowAction | null) => {
+    await executeOrderFlowAction(order, overrideAction ?? getPrimaryAction(order));
   };
 
   // 결제 방법 업데이트
