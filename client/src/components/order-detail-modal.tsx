@@ -64,16 +64,18 @@ export function OrderDetailModal({ order, isOpen, onClose, onDelete }: OrderDeta
         window.setTimeout(() => window.URL.revokeObjectURL(url), 1000);
     };
 
-    const openQuoteAttachment = () => {
-        const opened = window.open(`/api/orders/${order.id}/quote-excel`, '_blank', 'noopener,noreferrer');
+    const openQuoteAttachment = (preOpenedWindow?: Window | null) => {
+        const quoteUrl = `/api/orders/${order.id}/quote-excel`;
+
+        if (preOpenedWindow && !preOpenedWindow.closed) {
+            preOpenedWindow.location.href = quoteUrl;
+            return;
+        }
+
+        const opened = window.open(quoteUrl, '_blank', 'noopener,noreferrer');
         if (!opened) {
-            const link = document.createElement('a');
-            link.href = `/api/orders/${order.id}/quote-excel`;
-            link.target = '_blank';
-            link.rel = 'noopener noreferrer';
-            document.body.appendChild(link);
-            link.click();
-            link.remove();
+            // 팝업이 차단된 경우 현재 탭에서라도 첨부 견적서를 열어 사용자 흐름을 보장
+            window.location.href = quoteUrl;
         }
     };
 
@@ -245,6 +247,7 @@ export function OrderDetailModal({ order, isOpen, onClose, onDelete }: OrderDeta
 
     const handleCopyToSheet = async () => {
         setIsCopyingToSheet(true);
+        const preOpenedQuoteWindow = window.open('', '_blank');
 
         try {
             try {
@@ -253,13 +256,10 @@ export function OrderDetailModal({ order, isOpen, onClose, onDelete }: OrderDeta
 
                 toast({
                     title: "스프레드시트에 저장되었습니다",
-                    description: result.message || "Google Sheets로 주문이 전송되었습니다. 첨부 견적서도 열었습니다.",
+                    description: result.message || "Google Sheets로 주문이 전송되었습니다. 첨부 견적서를 열었습니다.",
                 });
 
-                if (result.sheetUrl) {
-                    window.open(result.sheetUrl, '_blank', 'noopener,noreferrer');
-                }
-                openQuoteAttachment();
+                openQuoteAttachment(preOpenedQuoteWindow);
                 return;
             } catch (sheetError) {
                 console.warn('Google Sheets 저장 실패, 복사 방식으로 대체합니다.', sheetError);
@@ -669,7 +669,7 @@ export function OrderDetailModal({ order, isOpen, onClose, onDelete }: OrderDeta
                     window.open('https://sheets.new', '_blank');
                 });
             }
-            openQuoteAttachment();
+            openQuoteAttachment(preOpenedQuoteWindow);
         } finally {
             setIsCopyingToSheet(false);
         }
