@@ -269,22 +269,15 @@ export function OrderDetailModal({ order, isOpen, onClose, onDelete }: OrderDeta
             try {
                 const response = await apiRequest('POST', `/api/sheets/orders/${order.id}/append`);
                 const result = await response.json();
+                if (!result?.sheetUrl) {
+                    throw new Error(result?.message || '견적서 시트 URL을 받지 못했습니다.');
+                }
 
                 openSheetWindow(result.sheetUrl, preOpenedSheetWindow);
-                let quoteDownloaded = false;
-
-                try {
-                    await downloadQuoteAttachment();
-                    quoteDownloaded = true;
-                } catch (quoteError) {
-                    console.warn('견적서 다운로드 실패:', quoteError);
-                }
 
                 toast({
                     title: "스프레드시트에 저장되었습니다",
-                    description: quoteDownloaded
-                        ? (result.message || "Google Sheets로 주문이 전송되었고 첨부 견적서도 다운로드했습니다.")
-                        : (result.message || "Google Sheets로 주문이 전송되었습니다. 견적서는 다운로드 버튼으로 다시 받을 수 있습니다."),
+                    description: result.message || "Google Sheets에 견적서 시트가 저장되어 바로 열렸습니다.",
                 });
 
                 return;
@@ -309,7 +302,7 @@ export function OrderDetailModal({ order, isOpen, onClose, onDelete }: OrderDeta
                 airplane: 22000,
                 brownieOptions: {
                     birthdayBear: 500,
-                    customSticker: 15000,
+                    customSticker: 20000,
                     heartMessage: 500,
                 },
                 sconeOptions: {
@@ -336,8 +329,8 @@ export function OrderDetailModal({ order, isOpen, onClose, onDelete }: OrderDeta
                 if (orderData.packaging && (orderData.packaging === 'single_box' || orderData.packaging === 'plastic_wrap')) {
                     const pkgName = orderData.packaging === 'single_box' ? '1구박스' : '비닐탭포장';
                     const pkgPrice = PRICES.packaging[orderData.packaging as keyof typeof PRICES.packaging];
-                    // 'ㄴ' 접두어로 하위 항목임을 표시
-                    detailedRows.push({ name: `ㄴ ${pkgName}`, quantity: regularQty, price: pkgPrice, total: regularQty * pkgPrice });
+                    // '└' 접두어로 하위 항목임을 표시
+                    detailedRows.push({ name: `└ ${pkgName}`, quantity: regularQty, price: pkgPrice, total: regularQty * pkgPrice });
                 }
             }
 
@@ -364,7 +357,7 @@ export function OrderDetailModal({ order, isOpen, onClose, onDelete }: OrderDeta
                 });
                 detailedRows.push({ name: '스콘', quantity: sconeQty, price: PRICES.scone, total: sconeQty * PRICES.scone });
                 if (jamQty > 0) {
-                    detailedRows.push({ name: 'ㄴ 딸기잼 추가', quantity: jamQty, price: PRICES.sconeOptions.strawberryJam, total: jamQty * PRICES.sconeOptions.strawberryJam });
+                    detailedRows.push({ name: '└ 딸기잼 추가', quantity: jamQty, price: PRICES.sconeOptions.strawberryJam, total: jamQty * PRICES.sconeOptions.strawberryJam });
                 }
             }
 
@@ -396,10 +389,10 @@ export function OrderDetailModal({ order, isOpen, onClose, onDelete }: OrderDeta
                 });
 
                 detailedRows.push({ name: '브라우니쿠키', quantity: brownieQty, price: PRICES.brownie, total: brownieQty * PRICES.brownie });
-                if (topperCount > 0) detailedRows.push({ name: 'ㄴ 커스텀토퍼', quantity: '', price: '', total: '' });
-                if (bearQty > 0) detailedRows.push({ name: 'ㄴ 생일곰 추가', quantity: bearQty, price: PRICES.brownieOptions.birthdayBear, total: bearQty * PRICES.brownieOptions.birthdayBear });
-                if (stickerCount > 0) detailedRows.push({ name: 'ㄴ 하단 커스텀 스티커', quantity: stickerCount, price: PRICES.brownieOptions.customSticker, total: stickerCount * PRICES.brownieOptions.customSticker });
-                if (heartQty > 0) detailedRows.push({ name: 'ㄴ 하트안 문구 추가', quantity: heartQty, price: PRICES.brownieOptions.heartMessage, total: heartQty * PRICES.brownieOptions.heartMessage });
+                if (topperCount > 0) detailedRows.push({ name: '└ 커스텀토퍼', quantity: '', price: '', total: '' });
+                if (bearQty > 0) detailedRows.push({ name: '└ 생일곰 추가', quantity: bearQty, price: PRICES.brownieOptions.birthdayBear, total: bearQty * PRICES.brownieOptions.birthdayBear });
+                if (stickerCount > 0) detailedRows.push({ name: '└ 하단 커스텀 스티커', quantity: stickerCount, price: PRICES.brownieOptions.customSticker, total: stickerCount * PRICES.brownieOptions.customSticker });
+                if (heartQty > 0) detailedRows.push({ name: '└ 하트안 문구 추가', quantity: heartQty, price: PRICES.brownieOptions.heartMessage, total: heartQty * PRICES.brownieOptions.heartMessage });
             }
 
             // 배송비 (총액 차액으로 계산하거나 명시적 추가)
@@ -537,15 +530,15 @@ export function OrderDetailModal({ order, isOpen, onClose, onDelete }: OrderDeta
 
             if (summary.brownie.count > 0) {
                 detailedRows.push({ name: '브라우니쿠키', quantity: summary.brownie.count, price: PRICES.brownie, total: summary.brownie.amount });
-                if (summary.brownieOptions.customTopper.count > 0) detailedRows.push({ name: 'ㄴ 커스텀토퍼', quantity: '', price: '', total: '' });
-                if (summary.brownieOptions.birthdayBear.count > 0) detailedRows.push({ name: 'ㄴ 생일곰 추가', quantity: summary.brownieOptions.birthdayBear.count, price: PRICES.brownieOptions.birthdayBear, total: summary.brownieOptions.birthdayBear.amount });
-                if (summary.brownieOptions.customSticker.count > 0) detailedRows.push({ name: 'ㄴ 하단 커스텀 스티커', quantity: summary.brownieOptions.customSticker.count, price: PRICES.brownieOptions.customSticker, total: summary.brownieOptions.customSticker.amount });
-                if (summary.brownieOptions.heartMessage.count > 0) detailedRows.push({ name: 'ㄴ 하트안 문구 추가', quantity: summary.brownieOptions.heartMessage.count, price: PRICES.brownieOptions.heartMessage, total: summary.brownieOptions.heartMessage.amount });
+                if (summary.brownieOptions.customTopper.count > 0) detailedRows.push({ name: '└ 커스텀토퍼', quantity: '', price: '', total: '' });
+                if (summary.brownieOptions.birthdayBear.count > 0) detailedRows.push({ name: '└ 생일곰 추가', quantity: summary.brownieOptions.birthdayBear.count, price: PRICES.brownieOptions.birthdayBear, total: summary.brownieOptions.birthdayBear.amount });
+                if (summary.brownieOptions.customSticker.count > 0) detailedRows.push({ name: '└ 하단 커스텀 스티커', quantity: summary.brownieOptions.customSticker.count, price: PRICES.brownieOptions.customSticker, total: summary.brownieOptions.customSticker.amount });
+                if (summary.brownieOptions.heartMessage.count > 0) detailedRows.push({ name: '└ 하트안 문구 추가', quantity: summary.brownieOptions.heartMessage.count, price: PRICES.brownieOptions.heartMessage, total: summary.brownieOptions.heartMessage.amount });
             }
 
             if (summary.scone.count > 0) {
                 detailedRows.push({ name: '스콘', quantity: summary.scone.count, price: PRICES.scone, total: summary.scone.amount });
-                if (summary.sconeOptions.strawberryJam.count > 0) detailedRows.push({ name: 'ㄴ 딸기잼 추가', quantity: summary.sconeOptions.strawberryJam.count, price: PRICES.sconeOptions.strawberryJam, total: summary.sconeOptions.strawberryJam.amount });
+                if (summary.sconeOptions.strawberryJam.count > 0) detailedRows.push({ name: '└ 딸기잼 추가', quantity: summary.sconeOptions.strawberryJam.count, price: PRICES.sconeOptions.strawberryJam, total: summary.sconeOptions.strawberryJam.amount });
             }
 
             if (summary.fortune.count > 0) detailedRows.push({ name: '행운쿠키', quantity: summary.fortune.count, price: PRICES.fortune, total: summary.fortune.amount });
@@ -612,7 +605,7 @@ export function OrderDetailModal({ order, isOpen, onClose, onDelete }: OrderDeta
                 <!-- 주문 항목 (상세 분해) -->
                 ${detailedRows.map(item => `
                     <tr>
-                        <td style="border: 1px solid #000; padding: 10px; ${item.name.startsWith('ㄴ') ? 'padding-left: 20px;' : ''}">${item.name}</td>
+                        <td style="border: 1px solid #000; padding: 10px; ${item.name.startsWith('└') ? 'padding-left: 20px;' : ''}">${item.name}</td>
                         <td style="border: 1px solid #000; padding: 10px; text-align: center;">${item.quantity}</td>
                         <td style="border: 1px solid #000; padding: 10px; text-align: right;">${typeof item.price === 'number' ? item.price.toLocaleString() + '원' : ''}</td>
                         <td style="border: 1px solid #000; padding: 10px; text-align: right;">${typeof item.total === 'number' ? item.total.toLocaleString() + '원' : ''}</td>
@@ -637,7 +630,7 @@ export function OrderDetailModal({ order, isOpen, onClose, onDelete }: OrderDeta
                 <!-- 입금 계좌 -->
                 <tr>
                     <td colspan="4" style="border: 1px solid #000; padding: 15px; background-color: #FEF3C7; text-align: center; font-weight: bold;">
-                        입금 계좌: 83050104204736 국민은행 (낫띵매터스)
+                        입금 계좌: 83050104204736 국민은행 (낫띵메터스)
                     </td>
                 </tr>
                 <!-- 문의 -->
@@ -698,7 +691,6 @@ export function OrderDetailModal({ order, isOpen, onClose, onDelete }: OrderDeta
                     window.open('https://sheets.new', '_blank');
                 });
             }
-            await downloadQuoteAttachment();
         } finally {
             setIsCopyingToSheet(false);
         }
@@ -1036,7 +1028,7 @@ export function OrderDetailModal({ order, isOpen, onClose, onDelete }: OrderDeta
                             disabled={isCopyingToSheet}
                         >
                             <FileSpreadsheet className="w-4 h-4 mr-2" />
-                            {isCopyingToSheet ? '스프레드시트 저장 중...' : '스프레드시트로 복사'}
+                            {isCopyingToSheet ? '견적서 시트 저장 중...' : '스프레드시트로 저장'}
                         </Button>
 
                         {onDelete && (

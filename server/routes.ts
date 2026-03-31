@@ -835,7 +835,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // 기존 주문을 Google Sheets에 저장
+  // 기존 주문으로 Google Sheets 견적서 탭 생성
   app.post('/api/sheets/orders/:id/append', async (req, res) => {
     try {
       const { id } = req.params;
@@ -855,27 +855,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      const success = await googleSheetsService.appendOrderToSheet(order);
+      const quoteSheet = await googleSheetsService.createQuoteSheet(order);
 
-      if (!success) {
+      if (!quoteSheet) {
         return res.status(500).json({
           success: false,
-          message: 'Google Sheets에 주문을 저장하지 못했습니다. 시트 탭 이름과 서비스 계정을 확인해주세요.'
+          message: 'Google Sheets에 견적서 시트를 만들지 못했습니다. 시트 권한과 서비스 계정을 확인해주세요.'
         });
       }
 
-      const spreadsheetId = process.env.GOOGLE_SHEETS_SPREADSHEET_ID;
       res.json({
         success: true,
-        message: 'Google Sheets에 주문이 저장되었습니다.',
+        message: 'Google Sheets에 견적서 시트가 저장되었습니다.',
         orderId: id,
-        sheetUrl: spreadsheetId ? `https://docs.google.com/spreadsheets/d/${spreadsheetId}` : undefined
+        sheetId: quoteSheet.sheetId,
+        sheetTitle: quoteSheet.sheetTitle,
+        sheetUrl: quoteSheet.sheetUrl,
       });
     } catch (error) {
-      console.error('Google Sheets 주문 저장 오류:', error);
+      console.error('Google Sheets 견적서 시트 생성 오류:', error);
       res.status(500).json({
         success: false,
-        message: 'Google Sheets 주문 저장 중 오류가 발생했습니다.',
+        message: 'Google Sheets 견적서 시트 생성 중 오류가 발생했습니다.',
         error: error instanceof Error ? error.message : String(error)
       });
     }
