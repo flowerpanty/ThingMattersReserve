@@ -19,7 +19,6 @@ import { useToast } from '@/hooks/use-toast';
 import { PushNotificationToggle } from '@/components/push-notification-toggle';
 import { AdminAuth } from '@/components/admin-auth';
 import { OrderDetailModal } from '@/components/order-detail-modal';
-import { OrderStatusBadge } from '@/components/order-status-badge';
 import { CalendarView } from '@/components/calendar-view';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -219,6 +218,42 @@ function getProgressControlInfo(order: Pick<Order, 'orderStatus' | 'paymentConfi
   };
 }
 
+function getOrderProgressTags(order: Pick<Order, 'orderStatus' | 'paymentConfirmed'>) {
+  const status = getNormalizedOrderStatus(order);
+  const isOrderConfirmed = status !== 'pending';
+  const isPaymentConfirmed =
+    status === 'payment_confirmed' ||
+    status === 'in_production' ||
+    status === 'completed';
+
+  const tags: Array<{ label: string; tone: string }> = [
+    {
+      label: '주문확인',
+      tone: isOrderConfirmed
+        ? 'border-slate-200 bg-slate-100 text-slate-700'
+        : 'border-amber-200 bg-amber-50 text-amber-700',
+    },
+    {
+      label: '입금확인',
+      tone: isPaymentConfirmed
+        ? 'border-blue-200 bg-blue-50 text-blue-700'
+        : status === 'order_confirmed'
+          ? 'border-blue-200 bg-blue-50 text-blue-700'
+          : 'border-slate-200 bg-white text-slate-400',
+    },
+  ];
+
+  if (status === 'payment_confirmed') {
+    tags.push({ label: '제작대기', tone: 'border-violet-200 bg-violet-50 text-violet-700' });
+  } else if (status === 'in_production') {
+    tags.push({ label: '제작중', tone: 'border-violet-200 bg-violet-50 text-violet-700' });
+  } else if (status === 'completed') {
+    tags.push({ label: '완료', tone: 'border-emerald-200 bg-emerald-50 text-emerald-700' });
+  }
+
+  return tags;
+}
+
 // 결제 방법 선택 컴포넌트
 function PaymentMethodSelector({ order, onUpdate }: { order: Order; onUpdate: (method: string | null) => void }) {
   const methods = [
@@ -400,17 +435,9 @@ function OrderCard({
   const displayStatus = getNormalizedOrderStatus(order);
   const progressControl = getProgressControlInfo(order);
   const previousAction = getPreviousAction(order);
+  const progressTags = getOrderProgressTags(order);
   const nonMetaItems = order.orderItems.filter((item) => item.type !== 'meta');
   const itemCount = nonMetaItems.length;
-  const paymentStatusTone = order.paymentConfirmed
-    ? 'border-blue-200 bg-blue-50 text-blue-700'
-    : 'border-amber-200 bg-amber-50 text-amber-700';
-  const paymentStatusLabel = order.paymentConfirmed ? '입금완료' : '미입금';
-  const paymentMethodLabelMap: Record<string, string> = {
-    card: '카드',
-    cash: '현금',
-    transfer: '계좌',
-  };
   const timelineDotTone: Record<DashboardOrderStatus, string> = {
     pending: 'bg-amber-400',
     order_confirmed: 'bg-yellow-400',
@@ -482,15 +509,17 @@ function OrderCard({
                     </>
                   )}
                 </Badge>
-                <OrderStatusBadge status={displayStatus} />
-                <Badge className={`rounded-full border px-2.5 py-0.5 text-[11px] font-semibold shadow-none ${paymentStatusTone}`}>
-                  {paymentStatusLabel}
-                </Badge>
-                {order.paymentMethod && paymentMethodLabelMap[order.paymentMethod] && (
-                  <Badge className="rounded-full border border-slate-200 bg-white px-2.5 py-0.5 text-[11px] font-medium text-slate-600 shadow-none">
-                    {paymentMethodLabelMap[order.paymentMethod]}
+              </div>
+
+              <div className="mt-2 flex flex-wrap gap-1.5">
+                {progressTags.map((tag) => (
+                  <Badge
+                    key={tag.label}
+                    className={`rounded-full border px-2.5 py-0.5 text-[11px] font-semibold shadow-none ${tag.tone}`}
+                  >
+                    {tag.label}
                   </Badge>
-                )}
+                ))}
               </div>
             </div>
 
@@ -572,7 +601,6 @@ function OrderCard({
               <Package className="h-3.5 w-3.5" />
               {itemCount}개 품목
             </span>
-            <span>접수 {formatCreatedAt(order.createdAt)}</span>
           </div>
         </div>
       </div>
