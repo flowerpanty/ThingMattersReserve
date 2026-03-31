@@ -9,11 +9,14 @@ export function OrderActions({ isSubmitting }: OrderActionsProps) {
   return (
     <div className="space-y-6">
       {/* 견적서 받기 메인 섹션 */}
-      <div className="bg-gradient-to-r from-primary/10 to-primary/5 rounded-xl p-8 border-2 border-primary/20">
+      <div className="bg-gradient-to-r from-primary/10 to-primary/5 rounded-2xl p-8 border-2 border-primary/20 shadow-sm">
         <div className="text-center mb-6">
+          <div className="inline-flex items-center rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary mb-3">
+            마지막 단계
+          </div>
           <h3 className="text-xl font-bold text-primary mb-2">📋 견적서 요청</h3>
           <p className="text-sm text-muted-foreground">
-            견적서 확인후 카카오톡으로 최종상담 진행
+            아래 버튼을 누르면 견적서가 생성되고, 이후 카카오톡으로 최종 상담을 이어갑니다.
           </p>
         </div>
         

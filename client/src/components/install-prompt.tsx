@@ -18,21 +18,27 @@ export function InstallPrompt() {
         const isIOSDevice = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
         setIsIOS(isIOSDevice);
 
-        // 이번 세션에서 이미 닫았는지 확인
-        const dismissed = sessionStorage.getItem('pwa_install_dismissed');
-        if (dismissed) return;
+        const dismissedUntil = Number(localStorage.getItem('pwa_install_dismissed_until') || '0');
+        if (dismissedUntil > Date.now()) return;
+
+        const visitCount = Number(localStorage.getItem('pwa_install_visit_count') || '0') + 1;
+        localStorage.setItem('pwa_install_visit_count', String(visitCount));
+
+        const shouldShowPrompt = visitCount >= 2;
 
         // 설치 프롬프트 이벤트 (Android/Desktop Chrome)
         const handler = (e: Event) => {
             e.preventDefault();
             setDeferredPrompt(e);
-            setShowPrompt(true);
+            if (shouldShowPrompt) {
+                setShowPrompt(true);
+            }
         };
         window.addEventListener('beforeinstallprompt', handler);
 
-        // iOS에서는 3초 후 표시
-        if (isIOSDevice) {
-            const timer = setTimeout(() => setShowPrompt(true), 3000);
+        // iOS에서는 두 번째 방문부터 조금 늦게 표시
+        if (isIOSDevice && shouldShowPrompt) {
+            const timer = setTimeout(() => setShowPrompt(true), 6000);
             return () => {
                 clearTimeout(timer);
                 window.removeEventListener('beforeinstallprompt', handler);
@@ -56,7 +62,7 @@ export function InstallPrompt() {
 
     const handleDismiss = () => {
         setShowPrompt(false);
-        sessionStorage.setItem('pwa_install_dismissed', 'true');
+        localStorage.setItem('pwa_install_dismissed_until', String(Date.now() + 1000 * 60 * 60 * 24 * 7));
     };
 
     if (isInstalled || !showPrompt) return null;

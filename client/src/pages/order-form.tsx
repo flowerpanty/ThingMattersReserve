@@ -8,6 +8,7 @@ import { OrderActions } from "@/components/order-actions";
 import { FinalKakaoModal } from "@/components/final-kakao-modal";
 import { FloatingSummary } from "@/components/floating-summary";
 import { useOrderForm } from "@/hooks/use-order-form";
+import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
 import { BarChart3, Check } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -144,8 +145,17 @@ export default function OrderForm() {
   );
 
   const handleNext = useCallback(() => {
+    if (currentStep === 2 && totalItems === 0) {
+      toast({
+        title: "제품을 1개 이상 선택해주세요",
+        description: "견적을 만들려면 최소 한 가지 이상 선택이 필요합니다.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     if (currentStep < 3) goToStep(currentStep + 1);
-  }, [currentStep, goToStep]);
+  }, [currentStep, goToStep, toast, totalItems]);
 
   const handlePrev = useCallback(() => {
     if (currentStep > 1) goToStep(currentStep - 1);
@@ -260,9 +270,24 @@ export default function OrderForm() {
 
               {/* Order Summary Card */}
               <div className="bg-card rounded-xl border border-border p-5 mb-6 card-shadow">
-                <h3 className="font-semibold text-base mb-4 flex items-center gap-2">
-                  📦 주문 내역
-                </h3>
+                <div className="flex flex-col gap-3 mb-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <h3 className="font-semibold text-base flex items-center gap-2">
+                      📦 주문 내역
+                    </h3>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      틀린 내용이 있으면 바로 원하는 단계로 돌아가 수정할 수 있어요.
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    <Button type="button" variant="outline" size="sm" onClick={() => goToStep(1)}>
+                      기본 정보 수정
+                    </Button>
+                    <Button type="button" variant="outline" size="sm" onClick={() => goToStep(2)}>
+                      제품 수정
+                    </Button>
+                  </div>
+                </div>
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between py-2 border-b border-border/50">
                     <span className="text-muted-foreground">주문자</span>
@@ -330,6 +355,7 @@ export default function OrderForm() {
             onNext={handleNext}
             onPrev={handlePrev}
             isSubmitting={isSubmitting}
+            disableNext={currentStep === 2 && totalItems === 0}
           />
         </form>
       </main>

@@ -8,6 +8,7 @@ interface FloatingSummaryProps {
     onNext: () => void;
     onPrev: () => void;
     isSubmitting?: boolean;
+    disableNext?: boolean;
 }
 
 export function FloatingSummary({
@@ -17,6 +18,7 @@ export function FloatingSummary({
     onNext,
     onPrev,
     isSubmitting,
+    disableNext,
 }: FloatingSummaryProps) {
     const formatPrice = (price: number) =>
         (price || 0).toLocaleString("ko-KR") + "원";
@@ -24,6 +26,11 @@ export function FloatingSummary({
     // Step 3에서는 "견적서 받기" 버튼으로 변경
     const isLastStep = currentStep === 3;
     const isFirstStep = currentStep === 1;
+    const emptyStateMessage = currentStep === 1
+        ? "기본 정보를 입력하고 다음 단계로 넘어가세요"
+        : currentStep === 2
+            ? "제품을 1개 이상 선택해주세요"
+            : "선택한 제품을 다시 확인해주세요";
 
     return (
         <div className="floating-summary-bar">
@@ -46,7 +53,7 @@ export function FloatingSummary({
 
                 {/* Center: Summary info */}
                 <div className="flex items-center gap-3 flex-1 justify-center">
-                    {totalItems > 0 && (
+                    {totalItems > 0 ? (
                         <>
                             <div className="flex items-center gap-2">
                                 <ShoppingCart className="w-4 h-4 text-white/70" />
@@ -59,23 +66,27 @@ export function FloatingSummary({
                                 {formatPrice(totalPrice)}
                             </span>
                         </>
+                    ) : (
+                        <div className="flex items-center gap-2 rounded-full bg-white/10 px-3 py-1.5">
+                            <ShoppingCart className="w-4 h-4 text-white/70" />
+                            <span className="text-white/90 text-sm font-medium">
+                                {emptyStateMessage}
+                            </span>
+                        </div>
                     )}
                 </div>
 
                 {/* Right: Next/Submit button */}
                 <div className="flex-shrink-0">
                     {isLastStep ? (
-                        <Button
-                            type="submit"
-                            disabled={isSubmitting}
-                            className="bg-white text-primary hover:bg-white/90 font-bold px-5 py-2 rounded-full shadow-lg gap-1"
-                        >
-                            {isSubmitting ? "생성 중..." : "📄 견적서 받기"}
-                        </Button>
+                        <div className="min-w-[96px] text-right text-xs font-semibold text-white/75">
+                            최종 확인 단계
+                        </div>
                     ) : (
                         <Button
                             type="button"
                             onClick={onNext}
+                            disabled={disableNext || isSubmitting}
                             className="bg-white text-primary hover:bg-white/90 font-bold px-5 py-2 rounded-full shadow-lg gap-1"
                         >
                             다음

@@ -26,6 +26,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { InstallPrompt } from '@/components/install-prompt';
+import { Skeleton } from '@/components/ui/skeleton';
 
 interface OrderItem {
   type: string;
@@ -124,6 +125,45 @@ function TodaySummaryCards({ stats }: { stats: DashboardStats }) {
           <div className="flex justify-center mb-1">{card.icon}</div>
           <div className={`text-lg md:text-2xl font-bold ${card.pulse ? 'animate-pulse' : ''}`}>{card.value}</div>
           <div className="text-xs font-medium opacity-80">{card.label}</div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function TodaySummaryCardsSkeleton() {
+  return (
+    <div className="grid grid-cols-4 gap-2 md:gap-3">
+      {Array.from({ length: 4 }).map((_, index) => (
+        <div key={index} className="rounded-xl border bg-white p-3">
+          <Skeleton className="h-5 w-5 mx-auto mb-2 rounded-full" />
+          <Skeleton className="h-7 w-12 mx-auto mb-2" />
+          <Skeleton className="h-3 w-16 mx-auto" />
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function OrdersListSkeleton() {
+  return (
+    <div className="space-y-3">
+      {Array.from({ length: 4 }).map((_, index) => (
+        <div key={index} className="rounded-xl border bg-white p-4">
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex items-start gap-3 flex-1">
+              <Skeleton className="h-5 w-5 rounded-md mt-1" />
+              <div className="space-y-2 flex-1">
+                <Skeleton className="h-5 w-28" />
+                <Skeleton className="h-4 w-44" />
+                <Skeleton className="h-3 w-36" />
+              </div>
+            </div>
+            <div className="space-y-2 text-right">
+              <Skeleton className="h-5 w-20 ml-auto" />
+              <Skeleton className="h-3 w-14 ml-auto" />
+            </div>
+          </div>
         </div>
       ))}
     </div>
@@ -529,6 +569,7 @@ export function Dashboard() {
   }), [orders, today]);
 
   const formatCurrency = (amount: number) => `${amount.toLocaleString('ko-KR')}원`;
+  const hasActiveOrderFilters = Boolean(searchQuery) || statusFilter !== 'all';
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white">
@@ -549,7 +590,7 @@ export function Dashboard() {
           <div className="flex items-center gap-1.5">
             <Dialog>
               <DialogTrigger asChild>
-                <Button variant="ghost" size="icon" className="w-9 h-9">
+                <Button variant="ghost" size="icon" className="w-9 h-9" aria-label="알림 설정 열기" title="알림 설정">
                   <Bell className="w-4 h-4" />
                 </Button>
               </DialogTrigger>
@@ -558,7 +599,7 @@ export function Dashboard() {
               </DialogContent>
             </Dialog>
             <Link href="/">
-              <Button variant="ghost" size="icon" className="w-9 h-9">
+              <Button variant="ghost" size="icon" className="w-9 h-9" aria-label="주문 폼으로 이동" title="주문 폼 열기">
                 <ShoppingCart className="w-4 h-4" />
               </Button>
             </Link>
@@ -567,6 +608,8 @@ export function Dashboard() {
               variant="ghost"
               size="icon"
               className="w-9 h-9"
+              aria-label="주문 목록 새로고침"
+              title="새로고침"
             >
               <RefreshCw className="w-4 h-4" />
             </Button>
@@ -576,6 +619,7 @@ export function Dashboard() {
               size="icon"
               className="w-9 h-9 text-red-500 hover:text-red-700 hover:bg-red-50"
               title="로그아웃"
+              aria-label="로그아웃"
             >
               <LogOut className="w-4 h-4" />
             </Button>
@@ -583,7 +627,7 @@ export function Dashboard() {
         </div>
 
         {/* 오늘의 요약 */}
-        <TodaySummaryCards stats={stats} />
+        {ordersLoading ? <TodaySummaryCardsSkeleton /> : <TodaySummaryCards stats={stats} />}
 
         {/* 메인 탭 */}
         <Tabs defaultValue="orders" className="w-full">
@@ -615,18 +659,51 @@ export function Dashboard() {
 
             {/* 주문 리스트 */}
             {ordersLoading ? (
-              <div className="text-center py-12 text-muted-foreground">
-                <div className="animate-spin w-8 h-8 border-2 border-primary border-t-transparent rounded-full mx-auto mb-3" />
-                주문 불러오는 중...
-              </div>
+              <OrdersListSkeleton />
             ) : filteredOrders.length === 0 ? (
-              <div className="text-center py-12 text-muted-foreground">
-                {searchQuery || statusFilter !== 'all' ? (
-                  <>🔍 조건에 맞는 주문이 없습니다.</>
-                ) : (
-                  <>📄 아직 주문이 없습니다.</>
-                )}
-              </div>
+              <Card className="border-dashed border-muted-foreground/20 shadow-sm">
+                <CardContent className="py-12 text-center">
+                  <div className="text-4xl mb-3">
+                    {hasActiveOrderFilters ? '🔎' : '📭'}
+                  </div>
+                  <h3 className="text-base font-semibold mb-2">
+                    {hasActiveOrderFilters ? '조건에 맞는 주문이 없습니다' : '아직 주문이 없습니다'}
+                  </h3>
+                  <p className="text-sm text-muted-foreground max-w-sm mx-auto">
+                    {hasActiveOrderFilters
+                      ? '검색어나 상태 필터를 초기화하면 다른 주문을 바로 확인할 수 있어요.'
+                      : '첫 주문이 들어오면 이 화면에서 입금 확인과 제작 진행을 바로 관리할 수 있어요.'}
+                  </p>
+                  <div className="mt-5 flex flex-wrap justify-center gap-2">
+                    {hasActiveOrderFilters ? (
+                      <Button
+                        variant="outline"
+                        onClick={() => {
+                          setSearchQuery('');
+                          setStatusFilter('all');
+                        }}
+                      >
+                        <Filter className="w-4 h-4 mr-2" />
+                        필터 초기화
+                      </Button>
+                    ) : (
+                      <Link href="/">
+                        <Button variant="outline">
+                          <ShoppingCart className="w-4 h-4 mr-2" />
+                          주문 폼 열기
+                        </Button>
+                      </Link>
+                    )}
+                    <Button
+                      variant="ghost"
+                      onClick={() => queryClient.invalidateQueries({ queryKey: ['/api/orders'] })}
+                    >
+                      <RefreshCw className="w-4 h-4 mr-2" />
+                      새로고침
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
             ) : (
               <div className="space-y-2">
                 {filteredOrders.map((order) => (

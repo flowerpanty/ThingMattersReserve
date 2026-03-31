@@ -52,7 +52,7 @@ export function ProductSelection({
 }: ProductSelectionProps) {
 
   const [openSections, setOpenSections] = useState({
-    regular: false,
+    regular: true,
     twopack: false,
     singledrink: false,
     brownie: false,
@@ -60,6 +60,25 @@ export function ProductSelection({
     fortune: false,
     airplane: false
   });
+
+  const openAndFocusSection = useCallback((section: keyof typeof openSections) => {
+    setOpenSections({
+      regular: section === 'regular',
+      twopack: section === 'twopack',
+      singledrink: section === 'singledrink',
+      brownie: section === 'brownie',
+      scone: section === 'scone',
+      fortune: section === 'fortune',
+      airplane: section === 'airplane',
+    });
+
+    window.setTimeout(() => {
+      document.getElementById(`product-section-${section}`)?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start',
+      });
+    }, 80);
+  }, []);
 
   const updateRegularCookie = (type: string, quantity: number) => {
     onUpdate('regularCookies', { ...regularCookies, [type]: Math.max(0, quantity) });
@@ -172,6 +191,7 @@ export function ProductSelection({
           newCookies[type] = perType + (i < remainder ? 1 : 0);
         });
         onUpdate('regularCookies', newCookies);
+        openAndFocusSection('regular');
         break;
       case 'brownie12':
         // 브라우니 곰돌이 12개
@@ -182,6 +202,7 @@ export function ProductSelection({
           heartMessage: undefined,
           customTopper: false,
         }]);
+        openAndFocusSection('brownie');
         break;
       case 'twopack10':
         // 2구패키지 10세트
@@ -190,6 +211,7 @@ export function ProductSelection({
           quantity: 1,
         }));
         onUpdate('twoPackSets', sets);
+        openAndFocusSection('twopack');
         break;
     }
   };
@@ -239,7 +261,7 @@ export function ProductSelection({
             open={openSections.regular}
             onOpenChange={(open) => setOpenSections(prev => ({ ...prev, regular: open }))}
           >
-            <div className="border border-border rounded-lg bg-card">
+            <div id="product-section-regular" className="border border-border rounded-lg bg-card">
               <CollapsibleTrigger className="w-full p-4 flex items-center justify-between hover:bg-muted/50 transition-colors">
                 <div className="flex items-center gap-3">
                   <span className="text-2xl">🍪</span>
@@ -360,7 +382,7 @@ export function ProductSelection({
             open={openSections.twopack}
             onOpenChange={(open) => setOpenSections(prev => ({ ...prev, twopack: open }))}
           >
-            <div className="border border-border rounded-lg bg-card">
+            <div id="product-section-twopack" className="border border-border rounded-lg bg-card">
               <CollapsibleTrigger className="w-full p-4 flex items-center justify-between hover:bg-muted/50 transition-colors">
                 <div className="flex items-center gap-3">
                   <span className="text-2xl">📦</span>
@@ -485,7 +507,7 @@ export function ProductSelection({
             open={openSections.singledrink}
             onOpenChange={(open) => setOpenSections(prev => ({ ...prev, singledrink: open }))}
           >
-            <div className="border border-border rounded-lg bg-card">
+            <div id="product-section-singledrink" className="border border-border rounded-lg bg-card">
               <CollapsibleTrigger className="w-full p-4 flex items-center justify-between hover:bg-muted/50 transition-colors">
                 <div className="flex items-center gap-3">
                   <span className="text-2xl">🍪☕</span>
@@ -614,7 +636,7 @@ export function ProductSelection({
             open={openSections.brownie}
             onOpenChange={(open) => setOpenSections(prev => ({ ...prev, brownie: open }))}
           >
-            <div className="border border-border rounded-lg bg-card">
+            <div id="product-section-brownie" className="border border-border rounded-lg bg-card">
               <CollapsibleTrigger className="w-full p-4 flex items-center justify-between hover:bg-muted/50 transition-colors">
                 <div className="flex items-center gap-3">
                   <span className="text-2xl">🧸</span>
@@ -800,7 +822,7 @@ export function ProductSelection({
             open={openSections.fortune}
             onOpenChange={(open) => setOpenSections(prev => ({ ...prev, fortune: open }))}
           >
-            <div className="border border-border rounded-lg bg-card">
+            <div id="product-section-fortune" className="border border-border rounded-lg bg-card">
               <CollapsibleTrigger className="w-full p-4 flex items-center justify-between hover:bg-muted/50 transition-colors">
                 <div className="flex items-center gap-3">
                   <span className="text-2xl">🥠</span>
@@ -870,7 +892,7 @@ export function ProductSelection({
             open={openSections.airplane}
             onOpenChange={(open) => setOpenSections(prev => ({ ...prev, airplane: open }))}
           >
-            <div className="border border-border rounded-lg bg-card">
+            <div id="product-section-airplane" className="border border-border rounded-lg bg-card">
               <CollapsibleTrigger className="w-full p-4 flex items-center justify-between hover:bg-muted/50 transition-colors">
                 <div className="flex items-center gap-3">
                   <span className="text-2xl">✈️</span>

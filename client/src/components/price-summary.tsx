@@ -80,11 +80,16 @@ export function PriceSummary({ pricing }: PriceSummaryProps) {
           )}
         </div>
 
-        <div className="flex justify-between items-center text-lg font-bold py-3 border-t-2 border-primary/20 bg-primary/10 rounded-lg px-4">
-          <span>총 금액</span>
-          <span className="text-primary-foreground" data-testid="price-total">
-            {formatPrice(pricing.total)}
-          </span>
+        <div className="rounded-2xl border border-primary/20 bg-primary/12 px-4 py-4 shadow-sm">
+          <div className="flex items-end justify-between gap-4">
+            <div>
+              <p className="text-sm font-semibold text-primary/80">예상 총 금액</p>
+              <p className="text-xs text-muted-foreground mt-1">옵션 포함 예상 합계입니다</p>
+            </div>
+            <span className="text-primary text-2xl md:text-3xl font-black tracking-tight" data-testid="price-total">
+              {formatPrice(pricing.total)}
+            </span>
+          </div>
         </div>
 
         <p className="text-sm text-muted-foreground mt-4 text-center">
