@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   CalendarDays, Package, TrendingUp, RefreshCw, ShoppingCart,
-  Search, Truck, Store, Bell,
+  Search, Bell,
   CreditCard, Banknote, ArrowRight, Clock, CheckCircle2,
   ChefHat, BarChart3, Filter, ChevronDown, ChevronUp, LogOut, Trash2
 } from 'lucide-react';
@@ -218,40 +218,21 @@ function getProgressControlInfo(order: Pick<Order, 'orderStatus' | 'paymentConfi
   };
 }
 
-function getOrderProgressTags(order: Pick<Order, 'orderStatus' | 'paymentConfirmed'>) {
+function getOrderStatusMessage(order: Pick<Order, 'orderStatus' | 'paymentConfirmed'>) {
   const status = getNormalizedOrderStatus(order);
-  const isOrderConfirmed = status !== 'pending';
-  const isPaymentConfirmed =
-    status === 'payment_confirmed' ||
-    status === 'in_production' ||
-    status === 'completed';
 
-  const tags: Array<{ label: string; tone: string }> = [
-    {
-      label: '주문확인',
-      tone: isOrderConfirmed
-        ? 'border-slate-200 bg-slate-100 text-slate-700'
-        : 'border-amber-200 bg-amber-50 text-amber-700',
-    },
-    {
-      label: '입금확인',
-      tone: isPaymentConfirmed
-        ? 'border-blue-200 bg-blue-50 text-blue-700'
-        : status === 'order_confirmed'
-          ? 'border-blue-200 bg-blue-50 text-blue-700'
-          : 'border-slate-200 bg-white text-slate-400',
-    },
-  ];
-
-  if (status === 'payment_confirmed') {
-    tags.push({ label: '제작대기', tone: 'border-violet-200 bg-violet-50 text-violet-700' });
-  } else if (status === 'in_production') {
-    tags.push({ label: '제작중', tone: 'border-violet-200 bg-violet-50 text-violet-700' });
-  } else if (status === 'completed') {
-    tags.push({ label: '완료', tone: 'border-emerald-200 bg-emerald-50 text-emerald-700' });
+  switch (status) {
+    case 'pending':
+      return { text: '주문😘을 확인중입니다.', tone: 'text-amber-700' };
+    case 'order_confirmed':
+      return { text: '입금💰을 확인중입니다.', tone: 'text-blue-700' };
+    case 'payment_confirmed':
+      return { text: '맛있는쿠키🍪를 만들어주세요!', tone: 'text-violet-700' };
+    case 'in_production':
+      return { text: '쿠키 만드는중❤️', tone: 'text-rose-700' };
+    case 'completed':
+      return { text: '완료', tone: 'text-emerald-700' };
   }
-
-  return tags;
 }
 
 // 결제 방법 선택 컴포넌트
@@ -435,7 +416,7 @@ function OrderCard({
   const displayStatus = getNormalizedOrderStatus(order);
   const progressControl = getProgressControlInfo(order);
   const previousAction = getPreviousAction(order);
-  const progressTags = getOrderProgressTags(order);
+  const statusMessage = getOrderStatusMessage(order);
   const nonMetaItems = order.orderItems.filter((item) => item.type !== 'meta');
   const itemCount = nonMetaItems.length;
   const timelineDotTone: Record<DashboardOrderStatus, string> = {
@@ -497,29 +478,12 @@ function OrderCard({
 
               <div className="mt-2 flex flex-wrap gap-1.5">
                 <Badge className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-0.5 text-[11px] font-medium text-slate-600 shadow-none">
-                  {order.deliveryMethod === 'quick' ? (
-                    <>
-                      <Truck className="mr-1 h-3 w-3" />
-                      퀵배송
-                    </>
-                  ) : (
-                    <>
-                      <Store className="mr-1 h-3 w-3" />
-                      픽업
-                    </>
-                  )}
+                  {order.deliveryMethod === 'quick' ? '🚚 퀵배송' : '🏪 픽업'}
                 </Badge>
               </div>
 
-              <div className="mt-2 flex flex-wrap gap-1.5">
-                {progressTags.map((tag) => (
-                  <Badge
-                    key={tag.label}
-                    className={`rounded-full border px-2.5 py-0.5 text-[11px] font-semibold shadow-none ${tag.tone}`}
-                  >
-                    {tag.label}
-                  </Badge>
-                ))}
+              <div className={`mt-2 text-base font-black tracking-tight sm:text-lg ${statusMessage.tone}`}>
+                {statusMessage.text}
               </div>
             </div>
 
