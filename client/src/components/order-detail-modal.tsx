@@ -64,19 +64,71 @@ export function OrderDetailModal({ order, isOpen, onClose, onDelete }: OrderDeta
         window.setTimeout(() => window.URL.revokeObjectURL(url), 1000);
     };
 
-    const openQuoteAttachment = (preOpenedWindow?: Window | null) => {
-        const quoteUrl = `/api/orders/${order.id}/quote-excel`;
+    const closePreOpenedWindow = (openedWindow?: Window | null) => {
+        if (openedWindow && !openedWindow.closed) {
+            openedWindow.close();
+        }
+    };
+
+    const openSheetWindow = (sheetUrl?: string, preOpenedWindow?: Window | null) => {
+        if (!sheetUrl) {
+            closePreOpenedWindow(preOpenedWindow);
+            return false;
+        }
 
         if (preOpenedWindow && !preOpenedWindow.closed) {
-            preOpenedWindow.location.href = quoteUrl;
-            return;
+            preOpenedWindow.location.href = sheetUrl;
+            return true;
         }
 
-        const opened = window.open(quoteUrl, '_blank', 'noopener,noreferrer');
+        const opened = window.open(sheetUrl, '_blank', 'noopener,noreferrer');
         if (!opened) {
-            // 팝업이 차단된 경우 현재 탭에서라도 첨부 견적서를 열어 사용자 흐름을 보장
-            window.location.href = quoteUrl;
+            window.location.href = sheetUrl;
+            return true;
         }
+
+        return true;
+    };
+
+    const downloadQuoteAttachment = async () => {
+        try {
+            const response = await fetch(`/api/orders/${order.id}/quote-excel`, {
+                method: 'GET',
+                credentials: 'include',
+            });
+
+            if (!response.ok) {
+                throw new Error(await response.text());
+            }
+
+            downloadBlob(await response.blob(), quoteFileName);
+            return true;
+        } catch (primaryError) {
+            console.warn('주문 기반 견적서 다운로드 실패, 직접 생성본으로 다시 시도합니다.', primaryError);
+        }
+
+        const quoteData = {
+            customerName: order.customerName,
+            customerContact: order.customerContact,
+            deliveryDate: order.deliveryDate,
+            deliveryMethod: order.deliveryMethod || 'pickup',
+            pickupTime: order.pickupTime,
+            orderItems: order.orderItems,
+        };
+
+        const response = await fetch('/api/download-quote-excel', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(quoteData),
+            credentials: 'include',
+        });
+
+        if (!response.ok) {
+            throw new Error(await response.text());
+        }
+
+        downloadBlob(await response.blob(), quoteFileName);
+        return true;
     };
 
     const handleDelete = async () => {
@@ -200,43 +252,7 @@ export function OrderDetailModal({ order, isOpen, onClose, onDelete }: OrderDeta
     const handleDownloadQuote = async () => {
         setIsDownloadingQuote(true);
         try {
-            try {
-                const response = await fetch(`/api/orders/${order.id}/quote-excel`, {
-                    method: 'GET',
-                    credentials: 'include',
-                });
-
-                if (!response.ok) {
-                    throw new Error(await response.text());
-                }
-
-                downloadBlob(await response.blob(), quoteFileName);
-                return;
-            } catch (primaryError) {
-                console.warn('주문 기반 견적서 다운로드 실패, 직접 생성본으로 다시 시도합니다.', primaryError);
-            }
-
-            const quoteData = {
-                customerName: order.customerName,
-                customerContact: order.customerContact,
-                deliveryDate: order.deliveryDate,
-                deliveryMethod: order.deliveryMethod || 'pickup',
-                pickupTime: order.pickupTime,
-                orderItems: order.orderItems,
-            };
-
-            const response = await fetch('/api/download-quote-excel', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(quoteData),
-                credentials: 'include',
-            });
-
-            if (!response.ok) {
-                throw new Error(await response.text());
-            }
-
-            downloadBlob(await response.blob(), quoteFileName);
+            await downloadQuoteAttachment();
         } catch (error) {
             console.error('견적서 다운로드 오류:', error);
             alert('견적서 다운로드에 실패했습니다. 오류: ' + (error instanceof Error ? error.message : String(error)));
@@ -247,21 +263,33 @@ export function OrderDetailModal({ order, isOpen, onClose, onDelete }: OrderDeta
 
     const handleCopyToSheet = async () => {
         setIsCopyingToSheet(true);
-        const preOpenedQuoteWindow = window.open('', '_blank');
+        const preOpenedSheetWindow = window.open('', '_blank');
 
         try {
             try {
                 const response = await apiRequest('POST', `/api/sheets/orders/${order.id}/append`);
                 const result = await response.json();
 
+                openSheetWindow(result.sheetUrl, preOpenedSheetWindow);
+                let quoteDownloaded = false;
+
+                try {
+                    await downloadQuoteAttachment();
+                    quoteDownloaded = true;
+                } catch (quoteError) {
+                    console.warn('견적서 다운로드 실패:', quoteError);
+                }
+
                 toast({
                     title: "스프레드시트에 저장되었습니다",
-                    description: result.message || "Google Sheets로 주문이 전송되었습니다. 첨부 견적서를 열었습니다.",
+                    description: quoteDownloaded
+                        ? (result.message || "Google Sheets로 주문이 전송되었고 첨부 견적서도 다운로드했습니다.")
+                        : (result.message || "Google Sheets로 주문이 전송되었습니다. 견적서는 다운로드 버튼으로 다시 받을 수 있습니다."),
                 });
 
-                openQuoteAttachment(preOpenedQuoteWindow);
                 return;
             } catch (sheetError) {
+                closePreOpenedWindow(preOpenedSheetWindow);
                 console.warn('Google Sheets 저장 실패, 복사 방식으로 대체합니다.', sheetError);
             }
 
@@ -657,9 +685,10 @@ export function OrderDetailModal({ order, isOpen, onClose, onDelete }: OrderDeta
                     title: "견적서 서식이 복사되었습니다",
                     description: "스프레드시트에 붙여넣기(Ctrl+V) 하세요.",
                 });
-                window.open('https://sheets.new', '_blank');
+                openSheetWindow('https://sheets.new', preOpenedSheetWindow);
             } catch (err) {
                 console.error('Clipboard write failed:', err);
+                closePreOpenedWindow(preOpenedSheetWindow);
                 // 실패 시 텍스트만 복사 시도
                 navigator.clipboard.writeText(tsvContent).then(() => {
                     toast({
@@ -669,7 +698,7 @@ export function OrderDetailModal({ order, isOpen, onClose, onDelete }: OrderDeta
                     window.open('https://sheets.new', '_blank');
                 });
             }
-            openQuoteAttachment(preOpenedQuoteWindow);
+            await downloadQuoteAttachment();
         } finally {
             setIsCopyingToSheet(false);
         }
