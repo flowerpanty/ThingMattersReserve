@@ -826,73 +826,63 @@ export function Dashboard() {
               />
             </div>
 
-            <StatusFilterTabs
-              activeFilter={statusFilter}
-              onFilterChange={setStatusFilter}
-              counts={statusCounts}
-            />
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+              <div className="min-w-0 flex-1">
+                <StatusFilterTabs
+                  activeFilter={statusFilter}
+                  onFilterChange={setStatusFilter}
+                  counts={statusCounts}
+                />
+              </div>
 
-            {!ordersLoading && filteredOrders.length > 0 && (
-              <Card className={`${isSelectionMode ? 'border-red-100 bg-red-50/40' : 'border-border bg-white'} shadow-sm`}>
-                <CardContent className="p-3 md:p-4">
-                  <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-                    <div>
-                      <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
-                        <Trash2 className="w-4 h-4 text-red-500" />
-                        {isSelectionMode ? '삭제 선택 모드' : '여러 주문 한 번에 삭제'}
-                      </h3>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        {isSelectionMode
-                          ? '카드를 눌러 삭제할 주문을 고르세요. 왼쪽 입금 체크와는 별도로 동작합니다.'
-                          : '삭제가 필요할 때만 선택 모드를 켜고, 현재 목록 기준으로 한 번에 정리할 수 있어요.'}
-                      </p>
-                    </div>
-                    <div className="flex flex-wrap items-center gap-2">
-                      {isSelectionMode ? (
-                        <>
-                          <div className="flex items-center gap-2 rounded-full border bg-background px-3 py-2">
-                            <Checkbox
-                              checked={allFilteredSelected}
-                              onCheckedChange={(checked) => toggleSelectAllFiltered(checked === true)}
-                              aria-label="현재 목록 전체 선택"
-                            />
-                            <Label className="text-xs font-medium">현재 목록 전체 선택</Label>
-                          </div>
-                          {selectedCount > 0 && (
-                            <Button variant="ghost" size="sm" onClick={clearSelectedOrders} className="h-9 text-xs">
-                              선택 해제
-                            </Button>
-                          )}
-                          <Button variant="outline" size="sm" onClick={() => updateSelectionMode(false)} className="h-9 text-xs">
-                            선택 모드 종료
-                          </Button>
-                          <Button
-                            variant="destructive"
-                            size="sm"
-                            onClick={handleBulkDeleteOrders}
-                            disabled={selectedCount === 0}
-                            className="h-9 text-xs font-semibold"
-                          >
-                            <Trash2 className="w-3.5 h-3.5 mr-1" />
-                            선택 {selectedCount}건 삭제
-                          </Button>
-                        </>
-                      ) : (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => updateSelectionMode(true)}
-                          className="h-10 rounded-full px-4 text-sm font-semibold"
-                        >
-                          <Trash2 className="w-4 h-4 mr-2" />
-                          선택 모드 시작
+              {!ordersLoading && filteredOrders.length > 0 && (
+                <div className="flex justify-end sm:justify-start shrink-0">
+                  {isSelectionMode ? (
+                    <div className="flex flex-wrap items-center justify-end gap-2 rounded-2xl border border-red-200 bg-red-50/80 px-3 py-2 shadow-sm">
+                      <div className="flex items-center gap-2 rounded-full border bg-background px-3 py-2">
+                        <Checkbox
+                          checked={allFilteredSelected}
+                          onCheckedChange={(checked) => toggleSelectAllFiltered(checked === true)}
+                          aria-label="현재 목록 전체 선택"
+                        />
+                        <Label className="text-xs font-medium">전체 선택</Label>
+                      </div>
+                      <span className="text-xs font-semibold text-red-700">
+                        {selectedCount > 0 ? `${selectedCount}건 선택` : '삭제할 주문 선택'}
+                      </span>
+                      {selectedCount > 0 && (
+                        <Button variant="ghost" size="sm" onClick={clearSelectedOrders} className="h-9 text-xs">
+                          선택 해제
                         </Button>
                       )}
+                      <Button variant="outline" size="sm" onClick={() => updateSelectionMode(false)} className="h-9 text-xs">
+                        종료
+                      </Button>
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={handleBulkDeleteOrders}
+                        disabled={selectedCount === 0}
+                        className="h-9 text-xs font-semibold"
+                      >
+                        <Trash2 className="w-3.5 h-3.5 mr-1" />
+                        삭제
+                      </Button>
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
+                  ) : (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => updateSelectionMode(true)}
+                      className="h-10 rounded-full px-4 text-sm font-semibold"
+                    >
+                      <Trash2 className="w-4 h-4 mr-2" />
+                      선택 모드
+                    </Button>
+                  )}
+                </div>
+              )}
+            </div>
 
             {/* 주문 리스트 */}
             {ordersLoading ? (
