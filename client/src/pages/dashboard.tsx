@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   CalendarDays, Package, TrendingUp, RefreshCw, ShoppingCart,
-  MessageCircle, Copy, Check, Search, Truck, Store, Bell,
+  Search, Truck, Store, Bell,
   CreditCard, Banknote, ArrowRight, Clock, CheckCircle2,
   ChefHat, BarChart3, Filter, ChevronDown, ChevronUp, LogOut, Trash2
 } from 'lucide-react';
@@ -107,6 +107,41 @@ function getPrimaryAction(order: Pick<Order, 'orderStatus' | 'paymentConfirmed'>
     default:
       return null;
   }
+}
+
+function getProgressControlInfo(order: Pick<Order, 'orderStatus' | 'paymentConfirmed'>) {
+  const primaryAction = getPrimaryAction(order);
+  const status = getNormalizedOrderStatus(order);
+
+  if (!primaryAction) {
+    return {
+      label: '완료',
+      description: '처리 완료',
+      tone: 'border-green-200 bg-green-100 text-green-700',
+      disabled: true,
+    };
+  }
+
+  const toneMap: Record<string, string> = {
+    주문확인: 'border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100',
+    입금확인: 'border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100',
+    제작시작: 'border-purple-200 bg-purple-50 text-purple-700 hover:bg-purple-100',
+    완료: 'border-green-200 bg-green-50 text-green-700 hover:bg-green-100',
+  };
+
+  const descriptionMap: Record<string, string> = {
+    pending: '다음 단계',
+    order_confirmed: '입금 체크',
+    payment_confirmed: '작업 시작',
+    in_production: '최종 완료',
+  };
+
+  return {
+    label: primaryAction.label,
+    description: descriptionMap[status] || '다음 단계',
+    tone: toneMap[primaryAction.label] || 'border-border bg-background text-foreground hover:bg-accent',
+    disabled: false,
+  };
 }
 
 // 결제 방법 선택 컴포넌트
@@ -274,10 +309,7 @@ function OrderCard({
   onToggleSelect,
   onView,
   onAdvanceStatus,
-  onTogglePayment,
   onUpdatePaymentMethod,
-  onGenerateMessage,
-  isGeneratingMessage,
   onDelete,
 }: {
   order: Order;
@@ -286,15 +318,12 @@ function OrderCard({
   onToggleSelect: (id: string, checked: boolean) => void;
   onView: (order: Order) => void;
   onAdvanceStatus: (order: Order) => void;
-  onTogglePayment: (id: string, confirmed: boolean) => void;
   onUpdatePaymentMethod: (id: string, method: string | null) => void;
-  onGenerateMessage: (id: string, type: string) => void;
-  isGeneratingMessage: boolean;
   onDelete: (id: string) => void;
 }) {
   const [expanded, setExpanded] = useState(false);
   const displayStatus = getNormalizedOrderStatus(order);
-  const primaryAction = getPrimaryAction(order);
+  const progressControl = getProgressControlInfo(order);
 
   const formatDate = (dateString: string) => {
     try {
@@ -324,17 +353,23 @@ function OrderCard({
           onView(order);
         }}
       >
-        {/* 입금확인 체크 */}
+        {/* 진행 컨트롤 */}
         <div onClick={(e) => e.stopPropagation()} className="flex-shrink-0">
-          <div className="flex flex-col items-center gap-1 rounded-lg border bg-background px-2 py-2">
-            <Checkbox
-              checked={!!Number(order.paymentConfirmed)}
-              onCheckedChange={(checked) => onTogglePayment(order.id, checked as boolean)}
-              className="w-5 h-5"
-              aria-label={`${order.customerName} 입금 확인`}
-            />
-            <span className="text-[10px] font-semibold text-muted-foreground">입금</span>
-          </div>
+          <button
+            type="button"
+            onClick={() => onAdvanceStatus(order)}
+            disabled={isSelectionMode || progressControl.disabled}
+            aria-label={`${order.customerName} ${progressControl.label}`}
+            className={`
+              flex min-h-[62px] min-w-[72px] flex-col items-center justify-center gap-1 rounded-xl border px-2 py-2 text-center transition-all
+              ${progressControl.tone}
+              ${isSelectionMode || progressControl.disabled ? 'cursor-default opacity-80' : 'shadow-sm'}
+            `}
+          >
+            <CheckCircle2 className="w-5 h-5" />
+            <span className="text-[11px] font-bold leading-none">{progressControl.label}</span>
+            <span className="text-[10px] leading-none opacity-80">{progressControl.description}</span>
+          </button>
         </div>
 
         {/* 주문 정보 */}
@@ -412,27 +447,7 @@ function OrderCard({
           </div>
 
           {/* 빠른 액션 */}
-          <div className="flex flex-col gap-2 sm:flex-row">
-            {primaryAction && (
-              <Button
-                size="sm"
-                onClick={() => onAdvanceStatus(order)}
-                className="flex-1 h-11 rounded-xl text-sm font-bold shadow-sm"
-              >
-                <ArrowRight className="w-4 h-4 mr-1.5" />
-                {primaryAction.label}
-              </Button>
-            )}
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => onGenerateMessage(order.id, 'order_confirm')}
-              disabled={isGeneratingMessage}
-              className="h-11 rounded-xl text-sm"
-            >
-              <MessageCircle className="w-4 h-4 mr-1.5" />
-              카톡
-            </Button>
+          <div className="flex gap-2">
             <Button
               size="sm"
               variant="outline"
@@ -466,9 +481,6 @@ export function Dashboard() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
-  const [generatedMessage, setGeneratedMessage] = useState('');
-  const [isGeneratingMessage, setIsGeneratingMessage] = useState(false);
-  const [copiedMessageId, setCopiedMessageId] = useState<string | null>(null);
   const [isSelectionMode, setIsSelectionMode] = useState(false);
   const [selectedOrderIds, setSelectedOrderIds] = useState<string[]>([]);
   const { toast } = useToast();
@@ -598,32 +610,6 @@ export function Dashboard() {
     retry: 3,
   });
 
-  // 카카오톡 메시지 생성
-  const generateKakaoMessage = async (orderId: string, type: string) => {
-    setIsGeneratingMessage(true);
-    try {
-      const response = await apiRequest('POST', '/api/generate-kakao-message', { orderId, messageType: type });
-      const result = await response.json();
-      setGeneratedMessage(result.message);
-      toast({ title: '카카오톡 메시지 생성 완료' });
-    } catch {
-      toast({ title: '메시지 생성 실패', variant: 'destructive' });
-    } finally {
-      setIsGeneratingMessage(false);
-    }
-  };
-
-  const copyToClipboard = async (text: string) => {
-    try {
-      await navigator.clipboard.writeText(text);
-      setCopiedMessageId('preview');
-      toast({ title: '📋 복사 완료' });
-      setTimeout(() => setCopiedMessageId(null), 2000);
-    } catch {
-      toast({ title: '복사 실패', variant: 'destructive' });
-    }
-  };
-
   // 필터링
   const filteredOrders = useMemo(() => {
     return orders.filter(order => {
@@ -634,11 +620,16 @@ export function Dashboard() {
           !order.customerContact.toLowerCase().includes(q) &&
           !order.id.toLowerCase().includes(q)) return false;
       }
+
+      const effectiveStatus = getOrderFilterStatus(order);
+
       // 상태 필터
-      if (statusFilter !== 'all') {
-        const effectiveStatus = getOrderFilterStatus(order);
-        if (effectiveStatus !== statusFilter) return false;
+      if (statusFilter === 'all') {
+        if (effectiveStatus === 'completed') return false;
+      } else if (effectiveStatus !== statusFilter) {
+        return false;
       }
+
       return true;
     });
   }, [orders, searchQuery, statusFilter]);
@@ -719,10 +710,13 @@ export function Dashboard() {
 
   // 상태별 카운트
   const statusCounts = useMemo(() => {
-    const counts: Record<string, number> = { all: orders.length, pending: 0, payment_confirmed: 0, in_production: 0, completed: 0 };
+    const counts: Record<string, number> = { all: 0, pending: 0, payment_confirmed: 0, in_production: 0, completed: 0 };
     orders.forEach(o => {
       const status = getOrderFilterStatus(o);
       counts[status] = (counts[status] || 0) + 1;
+      if (status !== 'completed') {
+        counts.all += 1;
+      }
     });
     return counts;
   }, [orders]);
@@ -747,6 +741,10 @@ export function Dashboard() {
 
   const formatCurrency = (amount: number) => `${amount.toLocaleString('ko-KR')}원`;
   const hasActiveOrderFilters = Boolean(searchQuery) || statusFilter !== 'all';
+  const hasOnlyCompletedOrders = !hasActiveOrderFilters && statusCounts.all === 0 && statusCounts.completed > 0;
+  const headerOrderSummary = statusFilter === 'all'
+    ? `${filteredOrders.length}건 진행 주문`
+    : `${filteredOrders.length}건 표시`;
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white">
@@ -761,7 +759,7 @@ export function Dashboard() {
               🍪 주문 관리
             </h1>
             <p className="text-xs text-muted-foreground mt-0.5">
-              {orders.length}건 주문 • {format(new Date(), 'M월 d일 EEEE', { locale: ko })}
+              {headerOrderSummary} • {format(new Date(), 'M월 d일 EEEE', { locale: ko })}
             </p>
           </div>
           <div className="flex items-center gap-1.5">
@@ -903,18 +901,32 @@ export function Dashboard() {
               <Card className="border-dashed border-muted-foreground/20 shadow-sm">
                 <CardContent className="py-12 text-center">
                   <div className="text-4xl mb-3">
-                    {hasActiveOrderFilters ? '🔎' : '📭'}
+                    {hasOnlyCompletedOrders ? '✅' : hasActiveOrderFilters ? '🔎' : '📭'}
                   </div>
                   <h3 className="text-base font-semibold mb-2">
-                    {hasActiveOrderFilters ? '조건에 맞는 주문이 없습니다' : '아직 주문이 없습니다'}
+                    {hasOnlyCompletedOrders
+                      ? '진행 중인 주문이 없습니다'
+                      : hasActiveOrderFilters
+                        ? '조건에 맞는 주문이 없습니다'
+                        : '아직 주문이 없습니다'}
                   </h3>
                   <p className="text-sm text-muted-foreground max-w-sm mx-auto">
-                    {hasActiveOrderFilters
-                      ? '검색어나 상태 필터를 초기화하면 다른 주문을 바로 확인할 수 있어요.'
-                      : '첫 주문이 들어오면 이 화면에서 입금 확인과 제작 진행을 바로 관리할 수 있어요.'}
+                    {hasOnlyCompletedOrders
+                      ? '완료된 주문은 완료 탭에서 확인할 수 있어요. 전체 탭에는 진행 중인 주문만 보여드리고 있습니다.'
+                      : hasActiveOrderFilters
+                        ? '검색어나 상태 필터를 초기화하면 다른 주문을 바로 확인할 수 있어요.'
+                        : '첫 주문이 들어오면 이 화면에서 입금 확인과 제작 진행을 바로 관리할 수 있어요.'}
                   </p>
                   <div className="mt-5 flex flex-wrap justify-center gap-2">
-                    {hasActiveOrderFilters ? (
+                    {hasOnlyCompletedOrders ? (
+                      <Button
+                        variant="outline"
+                        onClick={() => setStatusFilter('completed')}
+                      >
+                        <CheckCircle2 className="w-4 h-4 mr-2" />
+                        완료 주문 보기
+                      </Button>
+                    ) : hasActiveOrderFilters ? (
                       <Button
                         variant="outline"
                         onClick={() => {
@@ -954,32 +966,11 @@ export function Dashboard() {
                     onToggleSelect={toggleOrderSelection}
                     onView={(o) => { setSelectedOrder(o); setIsModalOpen(true); }}
                     onAdvanceStatus={advanceOrderStatus}
-                    onTogglePayment={togglePaymentConfirmed}
                     onUpdatePaymentMethod={updatePaymentMethod}
-                    onGenerateMessage={generateKakaoMessage}
-                    isGeneratingMessage={isGeneratingMessage}
                     onDelete={handleDeleteOrder}
                   />
                 ))}
               </div>
-            )}
-
-            {/* 카카오톡 메시지 미리보기 */}
-            {generatedMessage && (
-              <Card className="border-2 border-yellow-200 bg-yellow-50/50">
-                <CardHeader className="pb-2">
-                  <CardTitle className="flex items-center justify-between text-sm">
-                    <span>💬 카카오톡 메시지</span>
-                    <Button size="sm" variant="outline" onClick={() => copyToClipboard(generatedMessage)} className="h-7 text-xs">
-                      {copiedMessageId === 'preview' ? <Check className="h-3 w-3 mr-1" /> : <Copy className="h-3 w-3 mr-1" />}
-                      {copiedMessageId === 'preview' ? '복사됨' : '복사'}
-                    </Button>
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <pre className="whitespace-pre-wrap text-xs bg-white/80 p-3 rounded-lg">{generatedMessage}</pre>
-                </CardContent>
-              </Card>
             )}
           </TabsContent>
 
