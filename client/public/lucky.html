@@ -855,8 +855,14 @@
     };
 
     const $ = (id) => document.getElementById(id);
+    const STORAGE_KEY = "nm-lucky-state-v1";
     const won = (n) => `${Math.max(0, n).toLocaleString("ko-KR")}원`;
     const totalPrice = () => state.quantity * setPrice;
+
+    function clampStep(value, min, max, fallback) {
+      const next = Math.floor(Number(value));
+      return Number.isFinite(next) ? Math.min(max, Math.max(min, next)) : fallback;
+    }
 
     function tomorrowString() {
       const d = new Date();
@@ -900,6 +906,34 @@
         throw new Error(result.message || "주문 저장에 실패했어요.");
       }
       return result;
+    }
+
+    function savePageState() {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      } catch (error) {
+        // Ignore storage failures in private browsing or constrained environments.
+      }
+    }
+
+    function restorePageState(minDate) {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (!raw) return;
+        const saved = JSON.parse(raw);
+        if (!saved || typeof saved !== "object") return;
+        state.step = clampStep(saved.step, 1, 3, 1);
+        state.customerName = typeof saved.customerName === "string" ? saved.customerName : "";
+        state.customerPhone = typeof saved.customerPhone === "string" ? saved.customerPhone : "";
+        state.date = typeof saved.date === "string" && saved.date >= minDate ? saved.date : minDate;
+        state.time = typeof saved.time === "string" ? saved.time : state.time;
+        state.method = saved.method === "퀵 배송" ? "퀵 배송" : "매장 픽업";
+        state.address = typeof saved.address === "string" ? saved.address : "";
+        state.request = typeof saved.request === "string" ? saved.request : "";
+        state.quantity = clampStep(saved.quantity, 1, 999, 1);
+      } catch (error) {
+        // Ignore invalid stored state and fall back to defaults.
+      }
     }
 
     function slideRail(id, direction) {
@@ -961,6 +995,7 @@
       $("liveTotal").textContent = won(totalPrice());
       renderQuote();
       renderFloating();
+      savePageState();
     }
 
     function changeQty(delta) {
@@ -1009,6 +1044,7 @@
       state.request = $("requestInput").value;
       renderFloating();
       if (state.step === 3) renderQuote();
+      savePageState();
     }
 
     function buildText() {
@@ -1163,9 +1199,19 @@
     function init() {
       const minDate = tomorrowString();
       $("dateInput").min = minDate;
-      $("dateInput").value = minDate;
       state.date = minDate;
+      restorePageState(minDate);
+      $("customerName").value = state.customerName;
+      $("customerPhone").value = state.customerPhone;
+      $("dateInput").value = state.date;
+      $("timeInput").value = state.time;
+      $("addressInput").value = state.address;
+      $("requestInput").value = state.request;
       renderGallery();
+      document.querySelectorAll("[data-method]").forEach((button) => {
+        button.setAttribute("aria-pressed", String(button.dataset.method === state.method));
+      });
+      $("addressWrap").style.display = state.method === "퀵 배송" ? "block" : "none";
       ["customerName", "customerPhone", "dateInput", "timeInput", "addressInput", "requestInput"].forEach((id) => {
         $(id).addEventListener("input", syncInputs);
         $(id).addEventListener("change", () => {

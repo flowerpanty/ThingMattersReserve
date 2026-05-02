@@ -48,7 +48,7 @@
     }
 
     * { box-sizing: border-box; }
-    html { scroll-behavior: smooth; overflow-x: hidden; }
+    html { scroll-behavior: smooth; overflow-x: hidden; -webkit-text-size-adjust: 100%; }
     body {
       margin: 0;
       background: linear-gradient(135deg, #fff 0%, #fffdf5 100%);
@@ -60,7 +60,7 @@
     }
 
     a { color: inherit; text-decoration: none; }
-    button, input, select { font: inherit; }
+    button, input, select, textarea { font: inherit; }
     img { max-width: 100%; }
 
     /* ── Scroll Progress ── */
@@ -394,12 +394,12 @@
       margin-top: 9px;
       border: 0;
       border-radius: 12px;
-      background: var(--blue);
+      background: var(--orange);
       color: #fff;
       font-size: 15px;
       font-weight: 900;
       cursor: pointer;
-      box-shadow: 0 10px 18px hsl(225, 73%, 57%, 0.22);
+      box-shadow: 0 10px 18px rgba(255, 122, 0, 0.24);
       animation: comboPulse 1.4s ease-in-out infinite;
     }
 
@@ -768,6 +768,7 @@
       background: var(--paper);
       color: var(--ink);
       padding: 0 14px;
+      font-size: 16px;
       text-align: left;
       font-weight: 600;
       outline: none;
@@ -783,6 +784,7 @@
       background: var(--paper);
       color: var(--ink);
       font-weight: 600;
+      font-size: 16px;
       outline: none;
       padding: 0 16px;
       box-shadow: inset 0 2px 8px rgba(90, 58, 46, 0.06);
@@ -902,6 +904,32 @@
       overflow: visible;
     }
 
+    .paperPill {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      min-height: 42px;
+      padding-inline: 14px 18px;
+      white-space: nowrap;
+    }
+
+    .paperPill .pillSwatch {
+      width: 16px;
+      height: 16px;
+      flex: 0 0 auto;
+      border: 1px solid rgba(17, 24, 39, 0.16);
+      border-radius: 999px;
+      background: var(--swatch, #fff);
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.28);
+    }
+
+    .paperPill .pillText {
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
     .btn:hover, .pill:hover { transform: translateY(-2px); box-shadow: var(--soft-shadow); }
     .btn:active, .pill:active { transform: translateY(2px) scale(0.94, 1.04); filter: saturate(1.2); }
 
@@ -937,6 +965,11 @@
       color: #fff;
       font-size: 10px;
       content: "✓";
+    }
+
+    .paperPill[aria-pressed="true"]::after {
+      right: 6px;
+      top: 6px;
     }
 
     .charPill {
@@ -1612,8 +1645,8 @@
       bottom: 0;
       left: 0;
       z-index: 80;
-      padding: 12px 0;
-      padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+      padding: 10px 0;
+      padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px));
       background: linear-gradient(135deg, hsl(225, 73%, 52%) 0%, hsl(225, 73%, 42%) 100%);
       color: #fff;
       border-top: 1px solid hsl(225, 73%, 60%, 0.3);
@@ -1623,7 +1656,7 @@
 
     .floatingInner {
       width: min(896px, 100%);
-      min-height: 72px;
+      min-height: 66px;
       margin: 0 auto;
       display: grid;
       grid-template-columns: 78px minmax(0, 0.76fr) minmax(0, 1.24fr) 92px;
@@ -1697,27 +1730,27 @@
     }
 
     .floatingAction {
-      min-height: 58px;
+      min-height: 54px;
       border: 0;
       border-radius: 999px;
       background: #fff;
       color: var(--blue);
-      padding: 0 22px;
+      padding: 0 18px;
       font-weight: 700;
-      font-size: 20px;
+      font-size: 18px;
       cursor: pointer;
       box-shadow: 0 10px 22px rgba(0, 0, 0, 0.16);
     }
 
     .floatingBack {
-      min-height: 58px;
+      min-height: 54px;
       border: 0;
       border-radius: 999px;
       background: rgba(255, 255, 255, 0.12);
       color: #fff;
-      padding: 0 18px;
+      padding: 0 14px;
       font-weight: 600;
-      font-size: 18px;
+      font-size: 16px;
       cursor: pointer;
     }
 
@@ -1836,16 +1869,18 @@
     }
 
     @media (max-width: 760px) {
+      body { padding-bottom: 94px; }
       .orderPage { min-height: calc(100svh - 158px); padding: 14px 0 24px; }
       .fieldGrid.two { grid-template-columns: 1fr; }
       .formPanel { padding: 14px; border-radius: 20px; }
-      .floatingInner { grid-template-columns: 58px minmax(0, .62fr) minmax(0, 1fr) 72px; gap: 8px; padding-inline: 10px; }
-      .floatingBack { min-height: 52px; padding-inline: 10px; font-size: 14px; }
-      .floatingAction { min-height: 52px; padding-inline: 14px; font-size: 16px; }
-      .floatingMeta small { font-size: 11px; }
-      .floatingMeta strong { font-size: 12px; }
+      .floatingSummary { padding: 8px 0; padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px)); }
+      .floatingInner { width: 100%; max-width: 100%; min-height: 54px; grid-template-columns: 54px minmax(0, 1fr) 64px; gap: 8px; padding-inline: 10px; }
+      .floatingMeta { display: none; }
+      .floatingBack { min-height: 44px; padding-inline: 0; font-size: 14px; }
+      .floatingAction { min-height: 44px; padding-inline: 0; font-size: 15px; }
+      .floatingCart { justify-self: stretch; gap: 2px; }
       .floatingCart strong { font-size: 15px; }
-      .floatingCart span { font-size: 11px; }
+      .floatingCart span { font-size: 10px; }
       .builderHero {
         grid-template-rows: auto auto;
         gap: 5px;
@@ -1865,9 +1900,28 @@
       .charPill img { height: 29px; border-radius: 10px; }
       .charPill span { font-size: 9px; }
       .premium { font-size: 8px; }
-      .pill { min-height: 30px; padding-inline: 9px; font-size: 10.5px; }
-      input { height: 30px; font-size: 11px; }
-      .plus { height: 30px; flex-basis: 30px; }
+      .pill { min-height: 40px; padding-inline: 10px; font-size: 12px; }
+      #papers { gap: 4px; padding: 2px 1px 4px; }
+      .paperPill {
+        min-height: 38px;
+        gap: 5px;
+        padding-inline: 7px 14px;
+        border-radius: 999px;
+        font-size: 10.5px;
+      }
+      .paperPill.custom { min-width: auto; }
+      .paperPill .pillSwatch { width: 13px; height: 13px; }
+      input,
+      select {
+        height: 44px;
+        font-size: 16px;
+      }
+      #heartText,
+      .customInputs input,
+      .countBox input {
+        font-size: 16px;
+      }
+      .plus { height: 44px; flex-basis: 44px; font-size: 24px; }
       .btn { min-height: 37px; padding-inline: 10px; font-size: 12px; }
       .seg { gap: 4px; }
       .row { gap: 6px; padding-bottom: 5px; }
@@ -1886,6 +1940,7 @@
     }
 
     @media (max-width: 520px) {
+      body { padding-bottom: 82px; }
       .builderHero {
         grid-template-rows: auto auto;
         gap: 4px;
@@ -1905,16 +1960,35 @@
       .charPill img { height: 26px; border-radius: 9px; }
       .charPill span { font-size: 8.5px; }
       .premium { font-size: 8px; }
-      .pill { min-height: 28px; padding-inline: 9px; font-size: 10.5px; }
-      input { height: 28px; font-size: 11px; }
-      .plus { height: 28px; flex-basis: 28px; }
+      .pill { min-height: 38px; padding-inline: 10px; font-size: 11.5px; }
+      #papers { gap: 3px; padding: 2px 0 4px; }
+      .paperPill {
+        min-height: 36px;
+        gap: 4px;
+        padding-inline: 6px 13px;
+        font-size: 9.5px;
+      }
+      .paperPill.custom { min-width: auto; }
+      .paperPill .pillSwatch { width: 12px; height: 12px; }
+      input,
+      select {
+        height: 42px;
+        font-size: 16px;
+      }
+      #heartText,
+      .customInputs input,
+      .countBox input {
+        font-size: 16px;
+      }
+      .plus { height: 42px; flex-basis: 42px; font-size: 22px; }
       .btn { min-height: 36px; padding-inline: 10px; font-size: 12px; }
-      .floatingInner { grid-template-columns: 52px minmax(0, .52fr) minmax(0, 1.05fr) 64px; gap: 6px; }
-      .floatingBack { min-height: 48px; padding-inline: 8px; font-size: 13px; }
-      .floatingAction { min-height: 48px; padding-inline: 10px; font-size: 15px; }
-      .floatingMeta strong { font-size: 11px; }
+      .floatingSummary { padding: 7px 0; padding-bottom: calc(7px + env(safe-area-inset-bottom, 0px)); }
+      .floatingInner { width: 100%; max-width: 100%; min-height: 52px; grid-template-columns: 50px minmax(0, 1fr) 60px; gap: 6px; }
+      .floatingBack { min-height: 42px; font-size: 13px; }
+      .floatingAction { min-height: 42px; font-size: 14px; }
       .floatingCart strong { font-size: 13px; }
-      .floatingCart span { font-size: 10px; }
+      .floatingCart span { font-size: 9.5px; }
+      #floatingCartDetail { display: none; }
       .seg { gap: 4px; }
       .row { gap: 6px; padding-bottom: 5px; }
       .caseSlide { flex-basis: 152px; }
@@ -2071,8 +2145,8 @@
     }
 
     @keyframes comboPulse {
-      0%, 100% { transform: translateY(0) scale(1); box-shadow: 0 10px 18px hsl(225, 73%, 57%, 0.22); }
-      50% { transform: translateY(-1px) scale(1.015); box-shadow: 0 16px 28px hsl(225, 73%, 57%, 0.3); }
+      0%, 100% { transform: translateY(0) scale(1); box-shadow: 0 10px 18px rgba(255, 122, 0, 0.24); }
+      50% { transform: translateY(-1px) scale(1.015); box-shadow: 0 16px 28px rgba(255, 122, 0, 0.32); }
     }
 
     @keyframes comboGlow {
@@ -2215,7 +2289,7 @@
           </div>
           <div class="seg">
             <button class="pill" id="noText" type="button">기본 하트</button>
-            <button class="pill" id="withText" type="button">문구 추가 +500</button>
+            <button class="pill" id="withText" type="button">문구 추가 +500원</button>
           </div>
           <p class="helper" id="heartGuide"></p>
           <input id="heartText" value="" placeholder="영문은 4글자 한글은 2글자" />
@@ -2427,35 +2501,35 @@
     const heartPositions = {
       miss_bear_navy: { left: 51.43, top: 48.93, rotate: 24.66, width: 20.21 },
       tiger_navy: { left: 49.91, top: 48.57, rotate: -4, width: 17.44 },
-      bear_navy: { left: 50.71, top: 44.2, rotate: -4, width: 15.11 },
+      bear_navy: { left: 50.71, top: 44.7, rotate: -4, width: 15.11 },
       birthday_bear_navy: { left: 50.36, top: 47, rotate: -4, width: 18.96 },
       rabbit_navy: { left: 50.18, top: 48.6, rotate: -4, width: 16.39 },
       horse_navy: { left: 49.2, top: 45.89, rotate: -4, width: 18.4 },
-      bear_red: { left: 50.27, top: 47.25, rotate: -4, width: 16.79 },
+      bear_red: { left: 50.27, top: 47.75, rotate: -4, width: 16.79 },
       birthday_bear_red: { left: 50.09, top: 50.2, rotate: -4, width: 16.47 },
       rabbit_red: { left: 50.36, top: 50.7, rotate: -4, width: 15.91 },
       tiger_red: { left: 49.38, top: 47.95, rotate: -4, width: 14.87 },
       horse_red: { left: 48.75, top: 51.61, rotate: -4, width: 17.2 },
       miss_bear_red: { left: 52.68, top: 50.54, rotate: 24.12, width: 20.21 },
-      bear_green: { left: 50.36, top: 47.25, rotate: -4, width: 16.88 },
+      bear_green: { left: 50.36, top: 47.75, rotate: -4, width: 16.88 },
       birthday_bear_green: { left: 50.18, top: 49.9, rotate: -4, width: 16.55 },
       rabbit_green: { left: 50.36, top: 50.5, rotate: -4, width: 15.91 },
       tiger_green: { left: 49.46, top: 47.86, rotate: -4, width: 14.79 },
       horse_green: { left: 48.75, top: 51.43, rotate: -4, width: 17.2 },
       miss_bear_green: { left: 52.86, top: 50.45, rotate: 24.17, width: 20.21 },
-      bear_white: { left: 49.91, top: 46.1, rotate: -4, width: 16.63 },
+      bear_white: { left: 49.91, top: 46.6, rotate: -4, width: 16.63 },
       birthday_bear_white: { left: 50, top: 49.8, rotate: -4, width: 16.88 },
       rabbit_white: { left: 49.73, top: 49.7, rotate: -4, width: 15.51 },
       tiger_white: { left: 49.46, top: 47.23, rotate: -4, width: 14.79 },
       horse_white: { left: 48.93, top: 50.89, rotate: -4, width: 16.55 },
       miss_bear_white: { left: 52.86, top: 50.18, rotate: 23.99, width: 20.21 },
-      bear_black: { left: 50.18, top: 47, rotate: -4, width: 16.88 },
+      bear_black: { left: 50.18, top: 47.5, rotate: -4, width: 16.88 },
       birthday_bear_black: { left: 50.18, top: 49.8, rotate: -4, width: 16.55 },
       rabbit_black: { left: 49.55, top: 49.5, rotate: -4, width: 16.63 },
       tiger_black: { left: 49.46, top: 47.77, rotate: -4, width: 14.95 },
       horse_black: { left: 48.75, top: 51.34, rotate: -4, width: 17.36 },
       miss_bear_black: { left: 52.68, top: 50.45, rotate: 24.2, width: 20.21 },
-      bear_custom: { left: 49.64, top: 45.36, rotate: -4, width: 16.23 },
+      bear_custom: { left: 49.64, top: 45.86, rotate: -4, width: 16.23 },
       birthday_bear_custom: { left: 50.09, top: 51.52, rotate: -4, width: 16.63 },
       rabbit_custom: { left: 50.36, top: 53.21, rotate: -4, width: 15.91 },
       tiger_custom: { left: 49.38, top: 47.95, rotate: -4, width: 14.87 },
@@ -2464,7 +2538,7 @@
     };
 
     const customPositions = {
-      bear_custom: { left: 49.91, top: 82.77, width: 38.55, height: 11.85 },
+      bear_custom: { left: 49.91, top: 83.27, width: 38.55, height: 11.85 },
       birthday_bear_custom: { left: 49.82, top: 84.38, width: 39.62, height: 12.45 },
       rabbit_custom: { left: 49.82, top: 83.57, width: 39.01, height: 12.3 },
       tiger_custom: { left: 50, top: 81.43, width: 35.32, height: 11.7 },
@@ -2497,6 +2571,7 @@
 
     const $ = (id) => document.getElementById(id);
     const KAKAO_URL = "https://pf.kakao.com/_QdCaK/chat";
+    const STORAGE_KEY = "nm-brookie-state-v1";
     const won = (value) => `${value.toLocaleString("ko-KR")}원`;
     const nameOf = (list, id) => (list.find((item) => item[0] === id) || [id, id])[1];
     const renderSrc = () => `public/renders/${state.character}_${state.paper}.webp`;
@@ -2556,15 +2631,82 @@
       return result;
     }
 
-    function clampHeartText(value) {
+    function clampHeartText(value, character = state.character) {
       const compact = value.replace(/\s/g, "");
-      if (state.character === "miss_bear") return compact.replace(/[^a-zA-Z0-9]/g, "").toUpperCase().slice(0, 6);
+      if (character === "miss_bear") return compact.replace(/[^a-zA-Z0-9]/g, "").toUpperCase().slice(0, 6);
       if (/[가-힣]/.test(compact)) return Array.from(compact).filter((char) => /[가-힣]/.test(char)).slice(0, 2).join("");
       return compact.replace(/[^a-zA-Z0-9]/g, "").toUpperCase().slice(0, 4);
     }
 
     function clampPaperText(value) {
       return value.replace(/[<>]/g, "").slice(0, 28);
+    }
+
+    function clampStep(value, min, max, fallback) {
+      const next = Math.floor(Number(value));
+      return Number.isFinite(next) ? Math.min(max, Math.max(min, next)) : fallback;
+    }
+
+    function savePageState() {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify({
+          activeStep,
+          state: { ...state }
+        }));
+      } catch (error) {
+        // Ignore storage failures in private browsing or constrained environments.
+      }
+    }
+
+    function normalizeCombo(combo, index) {
+      if (!combo || typeof combo !== "object") return null;
+      const character = chars.some(([id]) => id === combo.character) ? combo.character : "bear";
+      const paper = papers.some(([id]) => id === combo.paper) ? combo.paper : "navy";
+      return {
+        id: typeof combo.id === "string" && combo.id ? combo.id : `restored-${index + 1}`,
+        character,
+        paper,
+        heartTextEnabled: !!combo.heartTextEnabled,
+        heartText: clampHeartText(typeof combo.heartText === "string" ? combo.heartText : "", character),
+        customPaperLine1: clampPaperText(typeof combo.customPaperLine1 === "string" ? combo.customPaperLine1 : ""),
+        customPaperLine2: clampPaperText(typeof combo.customPaperLine2 === "string" ? combo.customPaperLine2 : ""),
+        qty: clampStep(combo.qty, 1, 999, 1)
+      };
+    }
+
+    function restorePageState(minDate) {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (!raw) return;
+        const parsed = JSON.parse(raw);
+        const saved = parsed && typeof parsed === "object" ? parsed.state || {} : {};
+        const restoredItems = Array.isArray(saved.items)
+          ? saved.items.map(normalizeCombo).filter(Boolean)
+          : [];
+
+        activeStep = clampStep(parsed.activeStep, 1, 4, 1);
+        state.character = chars.some(([id]) => id === saved.character) ? saved.character : state.character;
+        state.paper = papers.some(([id]) => id === saved.paper) ? saved.paper : state.paper;
+        state.heartTextEnabled = !!saved.heartTextEnabled;
+        state.heartText = clampHeartText(typeof saved.heartText === "string" ? saved.heartText : "", state.character);
+        state.customPaperLine1 = clampPaperText(typeof saved.customPaperLine1 === "string" ? saved.customPaperLine1 : "");
+        state.customPaperLine2 = clampPaperText(typeof saved.customPaperLine2 === "string" ? saved.customPaperLine2 : "");
+        state.qty = clampStep(saved.qty, 1, 999, 1);
+        state.date = typeof saved.date === "string" && saved.date >= minDate ? saved.date : minDate;
+        state.customerName = typeof saved.customerName === "string" ? saved.customerName : "";
+        state.customerPhone = typeof saved.customerPhone === "string" ? saved.customerPhone : "";
+        state.deliveryMethod = saved.deliveryMethod === "퀵 배송" ? "퀵 배송" : "매장 픽업";
+        state.pickupTime = typeof saved.pickupTime === "string" ? saved.pickupTime : "";
+        state.deliveryAddress = typeof saved.deliveryAddress === "string" ? saved.deliveryAddress : "";
+        state.items = restoredItems;
+        state.comboSeq = Math.max(clampStep(saved.comboSeq, 1, 9999, restoredItems.length + 1), restoredItems.length + 1);
+        state.topper = !!saved.topper;
+        state.sticker = !!saved.sticker;
+        state.topperKind = topperLabels[saved.topperKind] ? saved.topperKind : "square";
+        state.customCaseKind = customCaseGroups[saved.customCaseKind] ? saved.customCaseKind : "wedding";
+      } catch (error) {
+        // Ignore invalid stored state and fall back to defaults.
+      }
     }
 
     function makePill({ className = "", pressed = false, html = "", onClick }) {
@@ -2597,9 +2739,9 @@
       $("papers").innerHTML = "";
       papers.forEach(([id, label, color]) => {
         const button = makePill({
-          className: id === "custom" ? "custom" : "",
+          className: `paperPill${id === "custom" ? " custom" : ""}`,
           pressed: state.paper === id,
-          html: `<span style="display:inline-block;width:14px;height:14px;border-radius:50%;background:${color};border:1px solid #0002;vertical-align:-2px;margin-right:6px"></span>${id === "custom" ? "커스텀 +700원 추가" : label}`,
+          html: `<span class="pillSwatch" style="--swatch:${color}"></span><span class="pillText">${id === "custom" ? "커스텀 +700원 추가" : label}</span>`,
           onClick: () => {
             state.paper = id;
             draw();
@@ -2618,7 +2760,12 @@
       $("customInputs").style.display = state.paper === "custom" ? "grid" : "none";
       $("customNote").style.display = state.paper === "custom" ? "block" : "none";
       $("heartText").style.display = state.heartTextEnabled ? "block" : "none";
-      $("heartGuide").textContent = "";
+      $("heartGuide").textContent = state.character === "miss_bear"
+        ? "미스곰 한글은 불가능해요. 영문/숫자만 입력해 주세요."
+        : "";
+      $("heartText").placeholder = state.character === "miss_bear"
+        ? "영문/숫자 최대 6자"
+        : "영문은 4글자 한글은 2글자";
       $("charStepHint").textContent = `${nameOf(chars, state.character)} 선택`;
       $("heartStepHint").textContent = state.heartTextEnabled
         ? (state.heartText ? `${state.heartText} 입력` : "+500 적용")
@@ -3088,6 +3235,7 @@ ${custom ? `${custom}\n` : ""}
     function updateSummary() {
       updateQuotePreview();
       updateFloatingSummary();
+      savePageState();
     }
 
     function updateFloatingSummary() {
@@ -3299,6 +3447,7 @@ ${custom ? `${custom}\n` : ""}
           renderAddons();
         });
       });
+      savePageState();
     }
 
     function fallbackCopy(text) {
@@ -3328,8 +3477,17 @@ ${custom ? `${custom}\n` : ""}
     function init() {
       const minDate = tomorrow();
       state.date = minDate;
+      restorePageState(minDate);
       $("needDate").min = minDate;
-      $("needDate").value = minDate;
+      $("needDate").value = state.date;
+      $("customerName").value = state.customerName;
+      $("customerPhone").value = state.customerPhone;
+      $("pickupTime").value = state.pickupTime;
+      $("deliveryAddress").value = state.deliveryAddress;
+      $("heartText").value = state.heartText;
+      $("paper1").value = state.customPaperLine1;
+      $("paper2").value = state.customPaperLine2;
+      $("qty").value = String(state.qty);
       updateDateNotice();
       updateDeliveryUi();
 

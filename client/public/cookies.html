@@ -1038,7 +1038,13 @@
     };
 
     const $ = (id) => document.getElementById(id);
+    const STORAGE_KEY = "nm-cookies-state-v1";
     const won = (n) => `${Math.max(0, n).toLocaleString("ko-KR")}원`;
+
+    function clampStep(value, min, max, fallback) {
+      const next = Math.floor(Number(value));
+      return Number.isFinite(next) ? Math.min(max, Math.max(min, next)) : fallback;
+    }
 
     function tomorrowString() {
       const d = new Date();
@@ -1071,6 +1077,62 @@
         drink: item.drink || "",
         ribbon: !!item.ribbon
       }));
+    }
+
+    function savePageState() {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      } catch (error) {
+        // Ignore storage failures in private browsing or constrained environments.
+      }
+    }
+
+    function normalizeFlavorQty(source) {
+      const normalized = {};
+      const validFlavorIds = new Set(flavors.map((flavor) => flavor.id));
+      if (!source || typeof source !== "object") return normalized;
+      Object.entries(source).forEach(([id, qty]) => {
+        const next = clampStep(qty, 0, 999, 0);
+        if (validFlavorIds.has(id) && next > 0) normalized[id] = next;
+      });
+      return normalized;
+    }
+
+    function normalizeItem(item, index) {
+      if (!item || typeof item !== "object") return null;
+      const packageId = packages.some((pkg) => pkg.id === item.packageId) ? item.packageId : "one-box";
+      return {
+        id: clampStep(item.id, 1, Number.MAX_SAFE_INTEGER, Date.now() + index),
+        packageId,
+        flavorQty: normalizeFlavorQty(item.flavorQty),
+        drink: typeof item.drink === "string" ? item.drink : "",
+        ribbon: !!item.ribbon
+      };
+    }
+
+    function restorePageState(minDate) {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (!raw) return;
+        const saved = JSON.parse(raw);
+        if (!saved || typeof saved !== "object") return;
+        state.step = clampStep(saved.step, 1, 5, 1);
+        state.customerName = typeof saved.customerName === "string" ? saved.customerName : "";
+        state.customerPhone = typeof saved.customerPhone === "string" ? saved.customerPhone : "";
+        state.date = typeof saved.date === "string" && saved.date >= minDate ? saved.date : minDate;
+        state.time = typeof saved.time === "string" ? saved.time : state.time;
+        state.method = saved.method === "퀵 배송" ? "퀵 배송" : "매장 픽업";
+        state.address = typeof saved.address === "string" ? saved.address : "";
+        state.request = typeof saved.request === "string" ? saved.request : "";
+        state.packageId = packages.some((pkg) => pkg.id === saved.packageId) ? saved.packageId : "one-box";
+        state.drink = typeof saved.drink === "string" ? saved.drink : "수제초코";
+        state.flavorQty = normalizeFlavorQty(saved.flavorQty);
+        state.items = Array.isArray(saved.items) ? saved.items.map(normalizeItem).filter(Boolean) : [];
+        state.ribbon = !!saved.ribbon;
+        state.sticker = !!saved.sticker;
+      } catch (error) {
+        // Ignore invalid stored state and fall back to defaults.
+      }
     }
 
     async function submitLandingOrder() {
@@ -1300,6 +1362,7 @@
       renderFloating();
       $("ribbonButton").setAttribute("aria-pressed", state.ribbon);
       $("stickerButton").setAttribute("aria-pressed", state.sticker);
+      savePageState();
     }
 
     function selectPackage(id) {
@@ -1576,13 +1639,24 @@ ${lines}
       state.request = $("requestInput").value;
       renderFloating();
       if (state.step === 5) renderQuote();
+      savePageState();
     }
 
     function init() {
       const minDate = tomorrowString();
       $("dateInput").min = minDate;
-      $("dateInput").value = minDate;
       state.date = minDate;
+      restorePageState(minDate);
+      $("customerName").value = state.customerName;
+      $("customerPhone").value = state.customerPhone;
+      $("dateInput").value = state.date;
+      $("timeInput").value = state.time;
+      $("addressInput").value = state.address;
+      $("requestInput").value = state.request;
+      document.querySelectorAll("[data-method]").forEach((button) => {
+        button.setAttribute("aria-pressed", String(button.dataset.method === state.method));
+      });
+      $("addressWrap").style.display = state.method === "퀵 배송" ? "block" : "none";
       ["customerName", "customerPhone", "dateInput", "timeInput", "addressInput", "requestInput"].forEach((id) => {
         $(id).addEventListener("input", syncInputs);
         $(id).addEventListener("change", () => {
