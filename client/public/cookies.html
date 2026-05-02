@@ -847,7 +847,6 @@
           <p class="eyebrow">Customer</p>
           <div class="fieldGrid">
             <label><span>고객명</span><input id="customerName" type="text" placeholder="성함" autocomplete="name" /></label>
-            <label><span>이메일</span><input id="customerEmail" type="email" placeholder="example@email.com" autocomplete="email" /></label>
             <label><span>핸드폰</span><input id="customerPhone" type="tel" placeholder="010-0000-0000" autocomplete="tel" /></label>
           </div>
         </article>
@@ -1024,7 +1023,6 @@
     const state = {
       step: 1,
       customerName: "",
-      customerEmail: "",
       customerPhone: "",
       date: "",
       time: "12:00~13:00",
@@ -1082,7 +1080,6 @@
         body: JSON.stringify({
           source: "cookie7",
           customerName: state.customerName,
-          customerEmail: state.customerEmail,
           customerPhone: state.customerPhone,
           deliveryDate: state.date,
           deliveryMethod: state.method,
@@ -1491,7 +1488,7 @@ ${lines}
       rect(20, 20, 1040, 88, "#5548e8");
       text("nothingmatters 견적서", 540, 65, 36, 700, "#fff", "center");
       rect(20, 108, 1040, 70);
-      text(`고객명: ${state.customerName || "미입력"} | 이메일: ${state.customerEmail || "미입력"} | 핸드폰: ${state.customerPhone || "미입력"}`, 32, 143, 24);
+      text(`고객명: ${state.customerName || "미입력"} | 핸드폰: ${state.customerPhone || "미입력"}`, 32, 143, 24);
       rect(20, 178, 1040, 70);
       text(`수령 방법: ${state.method} | 수령 희망일: ${state.date || "미입력"} | 시간: ${state.time}`, 32, 213, 24);
 
@@ -1572,7 +1569,6 @@ ${lines}
 
     function syncInputs() {
       state.customerName = $("customerName").value;
-      state.customerEmail = $("customerEmail").value;
       state.customerPhone = $("customerPhone").value;
       state.date = $("dateInput").value;
       state.time = $("timeInput").value;
@@ -1587,7 +1583,7 @@ ${lines}
       $("dateInput").min = minDate;
       $("dateInput").value = minDate;
       state.date = minDate;
-      ["customerName", "customerEmail", "customerPhone", "dateInput", "timeInput", "addressInput", "requestInput"].forEach((id) => {
+      ["customerName", "customerPhone", "dateInput", "timeInput", "addressInput", "requestInput"].forEach((id) => {
         $(id).addEventListener("input", syncInputs);
         $(id).addEventListener("change", () => {
           syncInputs();

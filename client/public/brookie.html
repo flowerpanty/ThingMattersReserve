@@ -2117,11 +2117,7 @@
               <input id="customerName" type="text" placeholder="주문자 성함을 입력해주세요" autocomplete="name" />
             </label>
             <label>
-              <span>이메일 주소 *</span>
-              <input id="customerEmail" type="email" placeholder="example@email.com" autocomplete="email" />
-            </label>
-            <label>
-              <span>핸드폰번호</span>
+              <span>핸드폰번호 *</span>
               <input id="customerPhone" type="tel" placeholder="010-1234-5678" autocomplete="tel" />
             </label>
           </div>
@@ -2486,7 +2482,6 @@
       qty: 1,
       date: "",
       customerName: "",
-      customerEmail: "",
       customerPhone: "",
       deliveryMethod: "매장 픽업",
       pickupTime: "",
@@ -2543,7 +2538,6 @@
         body: JSON.stringify({
           source: "brookie",
           customerName: state.customerName,
-          customerEmail: state.customerEmail,
           customerPhone: state.customerPhone,
           deliveryDate: state.date,
           deliveryMethod: landingDeliveryMethod(),
@@ -2864,7 +2858,7 @@
       $("quoteTotalPrice").textContent = won(totalPrice());
       $("quoteDetails").innerHTML = [
         ["고객명", state.customerName || "미입력"],
-        ["연락처", `${state.customerEmail || "이메일 미입력"} / ${state.customerPhone || "핸드폰 미입력"}`],
+        ["연락처", state.customerPhone || "핸드폰 미입력"],
         ["수령 정보", `${state.deliveryMethod} · ${state.date || "미입력"} · ${state.pickupTime || "시간 미선택"}`],
         ...(state.deliveryMethod === "퀵 배송" ? [["배송 주소", state.deliveryAddress || "미입력"]] : []),
         ["브루키 조합", comboLines.join(" / ")],
@@ -2888,7 +2882,6 @@ function buildQuoteText() {
       return `[nothingmatters 브루키 견적서]
 
 고객명: ${state.customerName || "미입력"}
-이메일: ${state.customerEmail || "미입력"}
 핸드폰: ${state.customerPhone || "미입력"}
 수령 방법: ${state.deliveryMethod}
 희망 시간: ${state.pickupTime || "미선택"}
@@ -2949,7 +2942,7 @@ ${custom ? `${custom}\n` : ""}
       rect(20, 20, width - 40, 86, "#5147e8", 3);
       text("nothingmatters 견적서", width / 2, 63, 36, 900, "#fff", "center");
       rect(20, 106, width - 40, 70, "#fff", 2);
-      text(`고객명: ${state.customerName || "미입력"} | 이메일: ${state.customerEmail || "미입력"} | 핸드폰: ${state.customerPhone || "미입력"}`, 30, 141, 24, 600);
+      text(`고객명: ${state.customerName || "미입력"} | 핸드폰: ${state.customerPhone || "미입력"}`, 30, 141, 24, 600);
       rect(20, 176, width - 40, 70, "#fff", 2);
       text(`수령 방법: ${state.deliveryMethod} | 수령 희망일: ${state.date || "미입력"} | 시간: ${state.pickupTime || "미선택"}`, 30, 211, 24, 600);
 
@@ -3171,9 +3164,9 @@ ${custom ? `${custom}\n` : ""}
         $("customerName").focus();
         return false;
       }
-      if (!state.customerEmail.trim()) {
-        showToast("이메일을 입력해 주세요.");
-        $("customerEmail").focus();
+      if (!state.customerPhone.trim()) {
+        showToast("핸드폰 번호를 입력해 주세요.");
+        $("customerPhone").focus();
         return false;
       }
       if (!state.date) {
@@ -3399,10 +3392,6 @@ ${custom ? `${custom}\n` : ""}
       });
       $("customerName").addEventListener("input", (event) => {
         state.customerName = event.target.value;
-        updateSummary();
-      });
-      $("customerEmail").addEventListener("input", (event) => {
-        state.customerEmail = event.target.value;
         updateSummary();
       });
       $("customerPhone").addEventListener("input", (event) => {
