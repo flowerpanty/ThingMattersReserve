@@ -60,6 +60,18 @@ interface DashboardStats {
   popularProducts: Array<{ name: string; count: number; }>;
 }
 
+function getLandingSourceInfo(order: Pick<Order, 'orderItems'>) {
+  const meta = order.orderItems.find((item) => item.type === 'meta')?.options || {};
+  const source = meta.landingSource || meta.source;
+  const labels: Record<string, { label: string; tone: string }> = {
+    brookie: { label: '브루키', tone: 'border-orange-200 bg-orange-50 text-orange-700' },
+    cookie7: { label: '수제꾸덕쿠키', tone: 'border-blue-200 bg-blue-50 text-blue-700' },
+    lucky: { label: '행운쿠키', tone: 'border-emerald-200 bg-emerald-50 text-emerald-700' },
+  };
+
+  return labels[source as string] || null;
+}
+
 type DashboardOrderStatus =
   | 'pending'
   | 'order_confirmed'
@@ -419,6 +431,7 @@ function OrderCard({
   const statusMessage = getOrderStatusMessage(order);
   const nonMetaItems = order.orderItems.filter((item) => item.type !== 'meta');
   const itemCount = nonMetaItems.length;
+  const landingSource = getLandingSourceInfo(order);
   const timelineDotTone: Record<DashboardOrderStatus, string> = {
     pending: 'bg-amber-400',
     order_confirmed: 'bg-yellow-400',
@@ -477,6 +490,11 @@ function OrderCard({
               </div>
 
               <div className="mt-2 flex flex-wrap gap-1.5">
+                {landingSource && (
+                  <Badge className={`rounded-full border px-2.5 py-0.5 text-[11px] font-semibold shadow-none ${landingSource.tone}`}>
+                    {landingSource.label}
+                  </Badge>
+                )}
                 <Badge className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-0.5 text-[11px] font-medium text-slate-600 shadow-none">
                   {order.deliveryMethod === 'quick' ? '🚚 퀵배송' : '🏪 픽업'}
                 </Badge>

@@ -144,7 +144,6 @@ async function initializeDatabase() {
   server.listen({
     port,
     host: "0.0.0.0",
-    reusePort: true,
   }, () => {
     log(`✅ Server listening on port ${port}`);
 

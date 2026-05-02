@@ -7,6 +7,11 @@ import { fileURLToPath } from 'node:url'
 import { createServer as createViteServer, createLogger } from 'vite'
 
 const viteLogger = createLogger()
+const landingPages: Record<string, string> = {
+  '/brookie': 'brookie.html',
+  '/cookies': 'cookies.html',
+  '/lucky': 'lucky.html',
+}
 
 // ✅ server/index.ts 에서 import 하는 log 함수 다시 export
 export function log(message: string, source = 'express') {
@@ -21,6 +26,8 @@ export function log(message: string, source = 'express') {
 
 // 개발 모드에서만 Vite 미들웨어 사용
 export async function setupVite(app: Express, server: any) {
+  registerLandingRoutes(app, path.resolve(process.cwd(), 'client', 'public'))
+
   const vite = await createViteServer({
     server: {
       middlewareMode: true,
@@ -33,6 +40,18 @@ export async function setupVite(app: Express, server: any) {
   app.use(vite.middlewares)
 }
 
+function registerLandingRoutes(app: Express, publicDir: string) {
+  Object.entries(landingPages).forEach(([route, fileName]) => {
+    app.get([route, `${route}.html`], (_req, res, next) => {
+      const filePath = path.join(publicDir, fileName)
+      if (!fs.existsSync(filePath)) {
+        return next()
+      }
+      res.sendFile(filePath)
+    })
+  })
+}
+
 // 프로덕션: dist/public 정적 서빙
 export function serveStatic(app: Express) {
   const __dirname = path.dirname(fileURLToPath(import.meta.url)) // => dist/
@@ -42,6 +61,7 @@ export function serveStatic(app: Express) {
     throw new Error(`Could not find build dir: ${publicDir}. Run "vite build" first.`)
   }
 
+  registerLandingRoutes(app, publicDir)
   app.use(express.static(publicDir))
 
   // 루트 페이지

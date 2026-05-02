@@ -1,0 +1,1205 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>행운쿠키 주문 | NOTHINGMATTERS.</title>
+  <meta name="description" content="nothingmatters 행운쿠키 4가지맛 세트 주문 견적 시스템" />
+  <style>
+    :root {
+      --ink: #171313;
+      --muted: #6f6764;
+      --line: #eadfd5;
+      --paper: #fff;
+      --soft: #fff8ef;
+      --blue: #2454d6;
+      --blue2: #143fb3;
+      --yellow: #ffdc00;
+      --orange: #ff7a00;
+      --danger: #ff4d3d;
+      --shadow: 0 18px 46px rgba(40, 27, 18, .1);
+      --soft-shadow: 0 10px 24px rgba(40, 27, 18, .07);
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      padding-bottom: 112px;
+      background:
+        radial-gradient(circle at 0 0, rgba(255,220,0,.2), transparent 330px),
+        radial-gradient(circle at 100% 0, rgba(36,84,214,.11), transparent 340px),
+        #fff;
+      color: var(--ink);
+      font-family: Pretendard, -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Noto Sans KR", system-ui, sans-serif;
+      font-weight: 500;
+    }
+
+    button, input, textarea, select { font: inherit; }
+    button { cursor: pointer; }
+    img { max-width: 100%; }
+
+    .siteHeader {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      background: rgba(255,255,255,.9);
+      border-bottom: 1px solid var(--line);
+      backdrop-filter: blur(16px);
+    }
+
+    .headerInner {
+      max-width: 980px;
+      margin: 0 auto;
+      padding: 14px 16px 10px;
+    }
+
+    .brand {
+      display: block;
+      margin-bottom: 12px;
+      color: inherit;
+      text-align: center;
+      text-decoration: none;
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: .11em;
+    }
+
+    .stepIndicator {
+      display: grid;
+      grid-template-columns: 1fr 28px 1fr 28px 1fr;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .topStep {
+      display: grid;
+      justify-items: center;
+      gap: 4px;
+      color: var(--muted);
+      text-decoration: none;
+      font-size: 11px;
+      font-weight: 700;
+      line-height: 1.1;
+    }
+
+    .topStepDot {
+      display: grid;
+      place-items: center;
+      width: 28px;
+      height: 28px;
+      border-radius: 999px;
+      background: #f5f1ec;
+      border: 1px solid var(--line);
+      font-size: 14px;
+    }
+
+    .topStep.active { color: var(--blue); }
+    .topStep.active .topStepDot {
+      background: var(--blue);
+      color: #fff;
+      border-color: var(--blue);
+      box-shadow: 0 8px 18px rgba(36,84,214,.26);
+    }
+    .topStep.completed .topStepDot {
+      background: var(--yellow);
+      color: var(--ink);
+      border-color: var(--yellow);
+    }
+
+    .topStepLine {
+      height: 2px;
+      background: var(--line);
+      border-radius: 999px;
+    }
+    .topStep.completed + .topStepLine { background: var(--blue); }
+
+    main {
+      width: min(980px, 100%);
+      margin: 0 auto;
+      padding: 18px 14px 0;
+    }
+
+    .stepPage { display: none; }
+    .stepPage.active {
+      display: block;
+      animation: fadeIn .26s ease both;
+    }
+
+    .heroImage {
+      overflow: hidden;
+      margin: 4px 0 16px;
+      border: 1px solid var(--line);
+      border-radius: 30px;
+      background: #fff;
+      box-shadow: var(--shadow);
+    }
+
+    .heroImage img {
+      display: block;
+      width: 100%;
+      aspect-ratio: 4 / 3;
+      object-fit: cover;
+    }
+
+    .pageHead { margin: 12px 2px 14px; }
+    .eyebrow {
+      margin: 0 0 7px;
+      color: var(--orange);
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: .16em;
+      text-transform: uppercase;
+    }
+
+    h1, h2, h3, p { margin-top: 0; }
+    h1, h2 {
+      margin-bottom: 8px;
+      font-size: clamp(31px, 8vw, 58px);
+      line-height: 1;
+      letter-spacing: -.055em;
+      font-weight: 650;
+    }
+
+    .lead {
+      margin: 0;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.55;
+      font-weight: 500;
+    }
+
+    .card, .quantityCard, .quoteCard {
+      border: 1px solid var(--line);
+      border-radius: 26px;
+      background: rgba(255,255,255,.96);
+      padding: 18px;
+      box-shadow: var(--soft-shadow);
+    }
+
+    .stack { display: grid; gap: 12px; }
+
+    .fieldGrid {
+      display: grid;
+      gap: 12px;
+    }
+
+    label span, .label {
+      display: block;
+      margin-bottom: 7px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    input, textarea, select {
+      width: 100%;
+      min-height: 48px;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: #fff;
+      color: var(--ink);
+      padding: 0 14px;
+      outline: none;
+      box-shadow: inset 0 2px 8px rgba(95,62,43,.05);
+    }
+
+    textarea {
+      min-height: 88px;
+      padding: 13px 14px;
+      line-height: 1.45;
+      resize: vertical;
+    }
+
+    input:focus, textarea:focus, select:focus {
+      border-color: var(--blue);
+      box-shadow: 0 0 0 4px rgba(36,84,214,.13);
+    }
+
+    .methodGrid {
+      display: grid;
+      gap: 10px;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .choiceBtn {
+      position: relative;
+      min-height: 70px;
+      border: 1px solid var(--line);
+      border-radius: 24px;
+      background: #fff;
+      color: var(--ink);
+      padding: 14px;
+      text-align: left;
+      font-weight: 650;
+      box-shadow: var(--soft-shadow);
+      transition: transform .16s cubic-bezier(.2,.9,.22,1.25), border-color .16s, box-shadow .16s;
+    }
+
+    .choiceBtn small {
+      display: block;
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 500;
+    }
+
+    .choiceBtn[aria-pressed="true"] {
+      border-color: var(--blue);
+      border-width: 2px;
+      box-shadow: inset 0 0 0 3px var(--blue), var(--shadow);
+      animation: pop .26s ease both;
+    }
+
+    .choiceBtn[aria-pressed="true"]::after {
+      content: "✓";
+      position: absolute;
+      right: 12px;
+      top: 12px;
+      display: grid;
+      place-items: center;
+      width: 28px;
+      height: 28px;
+      border-radius: 999px;
+      background: var(--blue);
+      color: #fff;
+      border: 2px solid #fff;
+      font-weight: 800;
+    }
+
+    .imageFrame {
+      position: relative;
+      overflow: hidden;
+      display: block;
+      border-radius: 22px;
+      background: #fff;
+    }
+
+    .imageFrame img {
+      width: 100%;
+      height: 100%;
+      display: block;
+      object-fit: cover;
+    }
+
+    .fallback {
+      position: absolute;
+      inset: 0;
+      display: none;
+      place-items: center;
+      background: linear-gradient(135deg, #fff, var(--soft));
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 650;
+      text-align: center;
+    }
+
+    .setIntro {
+      display: grid;
+      gap: 12px;
+    }
+
+    .setGrid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .setCard {
+      display: grid;
+      gap: 9px;
+      border: 1px solid var(--line);
+      border-radius: 22px;
+      background: #fff;
+      padding: 9px;
+      box-shadow: var(--soft-shadow);
+    }
+
+    .setPhoto {
+      aspect-ratio: 1;
+      border-radius: 18px;
+    }
+    .setCard h3 {
+      margin: 0 0 4px;
+      font-size: 15px;
+      font-weight: 650;
+      letter-spacing: -.035em;
+    }
+    .setCard p,
+    .setCard small {
+      display: block;
+      margin: 0;
+      color: var(--muted);
+      font-size: 10.5px;
+      line-height: 1.3;
+    }
+
+    .effectPill {
+      display: inline-flex;
+      align-items: center;
+      margin-top: 8px;
+      border-radius: 999px;
+      background: rgba(255,220,0,.28);
+      color: var(--ink);
+      padding: 6px 8px;
+      font-size: 9.5px;
+      font-weight: 700;
+      line-height: 1.2;
+    }
+
+    .pricePill {
+      display: inline-flex;
+      align-items: center;
+      min-height: 31px;
+      border-radius: 999px;
+      background: rgba(36,84,214,.1);
+      color: var(--blue);
+      padding: 0 12px;
+      font-size: 13px;
+      font-weight: 750;
+    }
+
+    .sectionDividerTitle {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin: 22px 2px 12px;
+      font-size: clamp(24px, 7vw, 36px);
+      line-height: 1;
+      letter-spacing: -.055em;
+      font-weight: 700;
+    }
+
+    .sectionDividerTitle:first-child {
+      margin-top: 0;
+    }
+
+    .sectionDividerTitle::after {
+      content: "";
+      flex: 1;
+      height: 3px;
+      border-radius: 999px;
+      background: linear-gradient(90deg, var(--yellow), rgba(36,84,214,.18), transparent);
+    }
+
+    .sectionDividerSub {
+      margin: -5px 2px 12px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .qtyRow {
+      display: grid;
+      grid-template-columns: 52px minmax(0, 1fr) 52px;
+      gap: 10px;
+      align-items: center;
+      margin-top: 12px;
+    }
+
+    .qtyBtn {
+      height: 52px;
+      border: 0;
+      border-radius: 999px;
+      background: var(--yellow);
+      color: var(--ink);
+      font-size: 26px;
+      font-weight: 800;
+      transition: transform .16s cubic-bezier(.2,.9,.22,1.25);
+    }
+    .qtyBtn:active { transform: scale(.93, 1.08); }
+
+    .qtyRow input {
+      height: 56px;
+      border-radius: 999px;
+      text-align: center;
+      font-size: 24px;
+      font-weight: 700;
+    }
+
+    .totalBox {
+      margin-top: 12px;
+      border-radius: 24px;
+      background: var(--blue);
+      color: #fff;
+      padding: 17px;
+      text-align: center;
+      box-shadow: 0 16px 30px rgba(36,84,214,.22);
+    }
+    .totalBox span {
+      display: block;
+      margin-bottom: 5px;
+      color: rgba(255,255,255,.78);
+      font-size: 13px;
+      font-weight: 600;
+    }
+    .totalBox strong {
+      display: block;
+      font-size: clamp(34px, 10vw, 54px);
+      line-height: 1;
+      letter-spacing: -.05em;
+    }
+
+    .slideWrap { position: relative; }
+    .rail {
+      display: flex;
+      gap: 10px;
+      overflow-x: auto;
+      padding: 2px 2px 12px;
+      scroll-snap-type: x mandatory;
+      scrollbar-width: none;
+    }
+    .rail::-webkit-scrollbar { display: none; }
+
+    .slideBtn {
+      position: absolute;
+      top: 50%;
+      z-index: 4;
+      display: grid;
+      place-items: center;
+      width: 38px;
+      height: 38px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: rgba(255,255,255,.96);
+      color: var(--blue);
+      font-size: 24px;
+      font-weight: 750;
+      box-shadow: var(--soft-shadow);
+      transform: translateY(-50%);
+    }
+    .slideBtn.left { left: 4px; }
+    .slideBtn.right { right: 4px; }
+
+    .galleryCard {
+      flex: 0 0 72%;
+      max-width: 280px;
+      scroll-snap-align: start;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: 22px;
+      background: #fff;
+      box-shadow: var(--soft-shadow);
+    }
+    .galleryPhoto { aspect-ratio: 3 / 4; }
+    .galleryCaption {
+      display: block;
+      padding: 9px 11px 11px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 650;
+    }
+
+    .quoteGrid {
+      display: grid;
+      gap: 14px;
+    }
+
+    .quoteRows {
+      display: grid;
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .quoteLine {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 10px;
+      align-items: center;
+      border-bottom: 1px solid var(--line);
+      padding: 10px 0;
+    }
+    .quoteLine span {
+      color: var(--muted);
+      font-size: 13px;
+    }
+    .quoteLine b { text-align: right; }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 48px;
+      border: 0;
+      border-radius: 999px;
+      padding: 0 18px;
+      font-weight: 750;
+      text-decoration: none;
+      transition: transform .16s cubic-bezier(.2,.9,.22,1.25), box-shadow .16s;
+    }
+    .btn:active { transform: scale(.96, 1.03); }
+    .btn.blue { background: var(--blue); color: #fff; box-shadow: 0 12px 24px rgba(36,84,214,.22); }
+    .btn.yellow { background: var(--yellow); color: var(--ink); }
+    .btn.ghost { background: #fff; color: var(--blue); border: 1px solid var(--line); }
+    .btn.full { width: 100%; }
+
+    .floatingSummary {
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: 80;
+      background: linear-gradient(135deg, var(--blue), var(--blue2));
+      color: #fff;
+      box-shadow: 0 -6px 24px rgba(0,0,0,.16);
+      padding: 10px 0 calc(10px + env(safe-area-inset-bottom, 0px));
+    }
+
+    .floatingInner {
+      display: grid;
+      grid-template-columns: 58px minmax(0,.58fr) minmax(0,1fr) 72px;
+      gap: 8px;
+      align-items: center;
+      width: min(980px, 100%);
+      min-height: 58px;
+      margin: 0 auto;
+      padding: 0 10px;
+    }
+
+    .floatingBack, .floatingNext {
+      min-height: 52px;
+      border: 0;
+      border-radius: 999px;
+      font-weight: 700;
+    }
+    .floatingBack { background: rgba(255,255,255,.14); color: #fff; }
+    .floatingNext { background: #fff; color: var(--blue); }
+
+    .floatingMeta, .floatingCart {
+      min-width: 0;
+      display: grid;
+      gap: 2px;
+    }
+    .floatingMeta small {
+      color: rgba(255,255,255,.68);
+      font-size: 11px;
+    }
+    .floatingMeta strong, .floatingCart strong {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-weight: 700;
+      line-height: 1.08;
+    }
+    .floatingMeta strong { font-size: 12px; }
+    .floatingCart strong { font-size: 14px; }
+    .floatingCart span {
+      overflow: hidden;
+      color: rgba(255,255,255,.78);
+      font-size: 10px;
+      line-height: 1.12;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .toast {
+      position: fixed;
+      left: 50%;
+      bottom: 94px;
+      z-index: 100;
+      display: none;
+      transform: translateX(-50%);
+      border-radius: 999px;
+      background: #15110f;
+      color: #fff;
+      padding: 12px 16px;
+      font-size: 13px;
+      font-weight: 650;
+      box-shadow: var(--shadow);
+    }
+    .toast.show { display: block; animation: fadeIn .18s ease both; }
+
+    @media (min-width: 760px) {
+      .headerInner { padding-inline: 24px; }
+      main { padding-inline: 24px; }
+      .fieldGrid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+      .setIntro { grid-template-columns: .9fr 1.1fr; align-items: start; }
+      .quoteGrid { grid-template-columns: 1.15fr .85fr; }
+    }
+
+    @media (max-width: 380px) {
+      .floatingInner { grid-template-columns: 52px minmax(0,.5fr) minmax(0,1.08fr) 64px; }
+      .galleryCard { flex-basis: 78%; }
+      .setGrid { gap: 8px; }
+      .setCard { padding: 8px; }
+      .setCard h3 { font-size: 13px; }
+      .setCard p, .setCard small { font-size: 9.5px; }
+      .effectPill { font-size: 9px; padding: 5px 7px; }
+      .sectionDividerTitle { font-size: 22px; margin-top: 18px; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; }
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes pop {
+      0% { transform: scale(.98); }
+      60% { transform: scale(1.025); }
+      100% { transform: scale(1); }
+    }
+  </style>
+</head>
+<body>
+  <header class="siteHeader">
+    <div class="headerInner">
+      <a class="brand" href="#top">NOTHINGMATTERS.</a>
+      <nav class="stepIndicator" aria-label="주문 단계">
+        <a class="topStep active" href="#top" data-step-link="1" data-icon="📋"><span class="topStepDot">📋</span><span>기본정보</span></a>
+        <span class="topStepLine" aria-hidden="true"></span>
+        <a class="topStep" href="#top" data-step-link="2" data-icon="🍀"><span class="topStepDot">🍀</span><span>갯수</span></a>
+        <span class="topStepLine" aria-hidden="true"></span>
+        <a class="topStep" href="#top" data-step-link="3" data-icon="📄"><span class="topStepDot">📄</span><span>견적서</span></a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="top">
+    <section class="stepPage active" data-step-page="1" aria-labelledby="basicTitle">
+      <div class="heroImage imageFrame">
+        <img src="public/lucky-assets/gallery/gallery-05.webp" alt="nothingmatters 행운쿠키 대표 이미지" onerror="imageFallback(this)" />
+        <span class="fallback">이미지 준비 중</span>
+      </div>
+      <div class="pageHead">
+        <p class="eyebrow">Step 01</p>
+        <h1 id="basicTitle">기본정보 입력</h1>
+        <p class="lead">행운쿠키 견적서에 들어갈 주문자 정보와 수령 정보를 먼저 적어주세요.</p>
+      </div>
+      <div class="stack">
+        <article class="card">
+          <p class="eyebrow">Customer</p>
+          <div class="fieldGrid">
+            <label><span>고객명</span><input id="customerName" type="text" placeholder="성함" autocomplete="name" /></label>
+            <label><span>이메일</span><input id="customerEmail" type="email" placeholder="example@email.com" autocomplete="email" /></label>
+            <label><span>핸드폰</span><input id="customerPhone" type="tel" placeholder="010-0000-0000" autocomplete="tel" /></label>
+          </div>
+        </article>
+        <article class="card">
+          <p class="eyebrow">Pick up</p>
+          <div class="fieldGrid">
+            <label><span>수령희망일</span><input id="dateInput" type="date" /></label>
+            <label><span>희망 시간</span><select id="timeInput">
+              <option>12:00~13:00</option>
+              <option>13:00~14:00</option>
+              <option>14:00~15:00</option>
+              <option>15:00~16:00</option>
+              <option>16:00~17:00</option>
+              <option>17:00~18:00</option>
+            </select></label>
+            <label><span>요청사항</span><input id="requestInput" type="text" placeholder="행사명, 문구, 요청사항" /></label>
+          </div>
+        </article>
+        <article class="card">
+          <p class="eyebrow">Method</p>
+          <div class="methodGrid">
+            <button class="choiceBtn" type="button" data-method="매장 픽업" aria-pressed="true">매장 픽업<small>방문 수령</small></button>
+            <button class="choiceBtn" type="button" data-method="퀵 배송" aria-pressed="false">퀵 배송<small>지역 상담 필요</small></button>
+          </div>
+          <label id="addressWrap" style="display:none; margin-top:12px;"><span>퀵 배송 주소</span><input id="addressInput" type="text" placeholder="주소를 입력해 주세요" /></label>
+        </article>
+      </div>
+    </section>
+
+    <section class="stepPage" data-step-page="2" aria-labelledby="quantityTitle">
+      <div class="pageHead">
+        <p class="eyebrow">Step 02</p>
+        <h2 id="quantityTitle">세트 갯수 선택</h2>
+        <p class="lead">행운쿠키는 4가지맛 세트로만 판매해요. 필요한 세트 수량만 선택하면 됩니다.</p>
+      </div>
+      <div class="setIntro">
+        <article class="quantityCard">
+          <span class="pricePill">4가지맛 세트 · 15,000원</span>
+          <h3 style="margin:12px 0 6px;">nothingmatters 행운쿠키</h3>
+          <p class="lead">작은 응원과 기분 좋은 메시지를 전하는 행운쿠키 세트예요. 답례, 행사, 선물, 응원, 감사용으로 좋아요.</p>
+          <div class="qtyRow" aria-label="세트 수량">
+            <button class="qtyBtn" type="button" onclick="changeQty(-1)" aria-label="세트 수량 감소">−</button>
+            <input id="quantityInput" type="number" min="1" inputmode="numeric" value="1" onchange="setQty(this.value)" />
+            <button class="qtyBtn" type="button" onclick="changeQty(1)" aria-label="세트 수량 추가">+</button>
+          </div>
+          <div class="totalBox"><span>현재 예상 금액</span><strong id="liveTotal">15,000원</strong></div>
+        </article>
+
+        <h3 class="sectionDividerTitle">🍪 4가지 감정 쿠키</h3>
+        <p class="sectionDividerSub">HAPPY, RESET, MONEY, UP 네 가지 감정을 한 세트에 담았어요.</p>
+        <div class="setGrid" aria-label="4가지맛 구성">
+          <article class="setCard">
+            <span class="setPhoto imageFrame"><img src="public/lucky-assets/flavors/flavor-01.webp" alt="HAPPY 곰돌이 초코맛" onerror="imageFallback(this)" /><span class="fallback">이미지 준비 중</span></span>
+            <div>
+              <h3>🐻 HAPPY</h3>
+              <small>곰돌이 쿠키 · 초코맛</small>
+              <p>귀엽고 달달한 한 입이면, 일상에 작은 행복이 쌓여요.</p>
+              <span class="effectPill">행복 가득, 오늘은 미소 챙기기!</span>
+            </div>
+          </article>
+          <article class="setCard">
+            <span class="setPhoto imageFrame"><img src="public/lucky-assets/flavors/flavor-02.webp" alt="RESET 금붕어 코코넛맛" onerror="imageFallback(this)" /><span class="fallback">이미지 준비 중</span></span>
+            <div>
+              <h3>🐟 RESET</h3>
+              <small>금붕어 쿠키 · 코코넛맛</small>
+              <p>금붕어처럼, 답답함 3초 만에 싹 리셋!</p>
+              <span class="effectPill">잡생각 리셋, 머릿속 새로고침 가자!</span>
+            </div>
+          </article>
+          <article class="setCard">
+            <span class="setPhoto imageFrame"><img src="public/lucky-assets/flavors/flavor-03.webp" alt="MONEY 복돼지 흑임자맛" onerror="imageFallback(this)" /><span class="fallback">이미지 준비 중</span></span>
+            <div>
+              <h3>🐷 MONEY</h3>
+              <small>복돼지 쿠키 · 흑임자맛</small>
+              <p>복돼지가 행운을 불러오는 느낌, 오늘은 내 통장도 두둑!</p>
+              <span class="effectPill">돈복 들어오는 상상, 현실로 소환!</span>
+            </div>
+          </article>
+          <article class="setCard">
+            <span class="setPhoto imageFrame"><img src="public/lucky-assets/flavors/flavor-04.webp" alt="UP 하트 피넛버터맛" onerror="imageFallback(this)" /><span class="fallback">이미지 준비 중</span></span>
+            <div>
+              <h3>💙 UP</h3>
+              <small>하트 쿠키 · 피넛버터맛</small>
+              <p>하트 한 입, 오늘 기분 UP!</p>
+              <span class="effectPill">에너지 풀충전, 오늘도 파이팅!</span>
+            </div>
+          </article>
+        </div>
+      </div>
+
+      <article class="card" style="margin-top:14px;">
+        <h3 class="sectionDividerTitle">📦 박스 내부 보기</h3>
+        <p class="sectionDividerSub">세트가 박스 안에 어떻게 들어가는지 확인해 주세요.</p>
+        <div class="slideWrap">
+          <button class="slideBtn left" type="button" aria-label="박스 예시 왼쪽으로 보기" onclick="slideRail('boxRail', -1)">‹</button>
+          <div class="rail" id="boxRail">
+            <article class="galleryCard"><span class="galleryPhoto imageFrame"><img src="public/lucky-assets/box/box-01.webp" alt="박스 내부 예시 1" onerror="imageFallback(this)" /><span class="fallback">이미지 준비 중</span></span><span class="galleryCaption">박스 내부 1</span></article>
+            <article class="galleryCard"><span class="galleryPhoto imageFrame"><img src="public/lucky-assets/box/box-02.webp" alt="박스 내부 예시 2" onerror="imageFallback(this)" /><span class="fallback">이미지 준비 중</span></span><span class="galleryCaption">박스 내부 2</span></article>
+            <article class="galleryCard"><span class="galleryPhoto imageFrame"><img src="public/lucky-assets/box/box-03.webp" alt="박스 내부 예시 3" onerror="imageFallback(this)" /><span class="fallback">이미지 준비 중</span></span><span class="galleryCaption">박스 내부 3</span></article>
+            <article class="galleryCard"><span class="galleryPhoto imageFrame"><img src="public/lucky-assets/box/box-04.webp" alt="박스 내부 예시 4" onerror="imageFallback(this)" /><span class="fallback">이미지 준비 중</span></span><span class="galleryCaption">박스 내부 4</span></article>
+          </div>
+          <button class="slideBtn right" type="button" aria-label="박스 예시 오른쪽으로 보기" onclick="slideRail('boxRail', 1)">›</button>
+        </div>
+      </article>
+
+      <article class="card" style="margin-top:14px;">
+        <h3 class="sectionDividerTitle">📸 실물컷 보기</h3>
+        <p class="sectionDividerSub">행사, 답례, 선물용으로 사용된 실제 이미지예요.</p>
+        <div class="slideWrap">
+          <button class="slideBtn left" type="button" aria-label="실물컷 왼쪽으로 보기" onclick="slideRail('galleryRail', -1)">‹</button>
+          <div class="rail" id="galleryRail"></div>
+          <button class="slideBtn right" type="button" aria-label="실물컷 오른쪽으로 보기" onclick="slideRail('galleryRail', 1)">›</button>
+        </div>
+      </article>
+    </section>
+
+    <section class="stepPage" data-step-page="3" aria-labelledby="quoteTitle">
+      <div class="pageHead">
+        <p class="eyebrow">Step 03</p>
+        <h2 id="quoteTitle">견적서 확인</h2>
+        <p class="lead">선택 내용을 확인한 뒤 견적서 이미지를 받아주세요.</p>
+      </div>
+      <div class="quoteGrid">
+        <article class="quoteCard">
+          <h3>견적서 미리보기</h3>
+          <div class="quoteRows" id="quoteRows"></div>
+          <div class="totalBox"><span>총 합계</span><strong id="quoteTotal">15,000원</strong></div>
+        </article>
+        <article class="quoteCard">
+          <h3>📄 견적서 받기</h3>
+          <p class="lead">버튼을 누르면 견적서 이미지가 생성되고 카카오톡 상담으로 이어집니다.</p>
+          <div class="stack" style="margin-top:14px;">
+            <button class="btn blue full" id="quoteButton" type="button">견적서 받기</button>
+            <button class="btn ghost full" id="copyButton" type="button">선택 내용 복사</button>
+            <a class="btn yellow full" href="https://pf.kakao.com/_QdCaK/chat">카카오톡 상담하기</a>
+          </div>
+        </article>
+      </div>
+    </section>
+  </main>
+
+  <div class="floatingSummary" aria-label="선택 요약">
+    <div class="floatingInner">
+      <button class="floatingBack" id="prevButton" type="button">이전</button>
+      <div class="floatingMeta">
+        <small id="stepLabel">기본정보</small>
+        <strong id="stepTitle">정보 입력</strong>
+      </div>
+      <div class="floatingCart" aria-live="polite">
+        <strong id="cartTitle">🍀 행운쿠키 1세트 · 15,000원</strong>
+        <span id="cartDetail">4가지맛 세트</span>
+      </div>
+      <button class="floatingNext" id="nextButton" type="button">다음</button>
+    </div>
+  </div>
+  <div class="toast" id="toast" role="status" aria-live="polite">선택 내용이 복사됐어요.</div>
+
+  <script>
+    const kakaoUrl = "https://pf.kakao.com/_QdCaK/chat";
+    const setPrice = 15000;
+    const galleryImages = [
+      "gallery-01.webp", "gallery-02.webp", "gallery-03.webp", "gallery-04.webp",
+      "gallery-05.webp", "gallery-06.webp", "gallery-07.webp", "gallery-08.webp",
+      "gallery-09.webp", "gallery-10.webp", "gallery-11.webp", "gallery-12.webp",
+      "gallery-13.webp", "gallery-14.webp", "gallery-15.webp", "gallery-16.webp",
+      "gallery-17.webp", "gallery-18.webp", "gallery-19.webp"
+    ];
+
+    const state = {
+      step: 1,
+      customerName: "",
+      customerEmail: "",
+      customerPhone: "",
+      date: "",
+      time: "12:00~13:00",
+      method: "매장 픽업",
+      address: "",
+      request: "",
+      quantity: 1
+    };
+
+    const $ = (id) => document.getElementById(id);
+    const won = (n) => `${Math.max(0, n).toLocaleString("ko-KR")}원`;
+    const totalPrice = () => state.quantity * setPrice;
+
+    function tomorrowString() {
+      const d = new Date();
+      d.setDate(d.getDate() + 1);
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, "0");
+      const day = String(d.getDate()).padStart(2, "0");
+      return `${y}-${m}-${day}`;
+    }
+
+    function imageFallback(img) {
+      img.style.display = "none";
+      const fallback = img.parentElement && img.parentElement.querySelector(".fallback");
+      if (fallback) fallback.style.display = "grid";
+    }
+
+    function landingApiUrl() {
+      return location.protocol === "file:"
+        ? "https://thingmattersreserve-production.up.railway.app/api/landing-orders"
+        : "/api/landing-orders";
+    }
+
+    async function submitLandingOrder() {
+      const response = await fetch(landingApiUrl(), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          source: "lucky",
+          customerName: state.customerName,
+          customerEmail: state.customerEmail,
+          customerPhone: state.customerPhone,
+          deliveryDate: state.date,
+          deliveryMethod: state.method,
+          pickupTime: state.time,
+          deliveryAddress: state.address,
+          request: state.request,
+          quantity: state.quantity
+        })
+      });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok || result.success === false) {
+        throw new Error(result.message || "주문 저장에 실패했어요.");
+      }
+      return result;
+    }
+
+    function slideRail(id, direction) {
+      const rail = $(id);
+      if (!rail) return;
+      rail.scrollBy({ left: direction * Math.max(220, rail.clientWidth * .78), behavior: "smooth" });
+    }
+
+    function renderGallery() {
+      $("galleryRail").innerHTML = galleryImages.map((name, index) => `
+        <article class="galleryCard">
+          <span class="galleryPhoto imageFrame">
+            <img src="public/lucky-assets/gallery/${name}" alt="행운쿠키 실물컷 ${index + 1}" onerror="imageFallback(this)" />
+            <span class="fallback">이미지 준비 중</span>
+          </span>
+          <span class="galleryCaption">실물컷 ${index + 1}</span>
+        </article>
+      `).join("");
+    }
+
+    function renderQuote() {
+      $("quoteRows").innerHTML = `
+        <div class="quoteLine"><span>상품</span><b>nothingmatters 행운쿠키 4가지맛 세트</b></div>
+        <div class="quoteLine"><span>세트 수량</span><b>${state.quantity}세트</b></div>
+        <div class="quoteLine"><span>단가</span><b>${won(setPrice)}</b></div>
+        <div class="quoteLine"><span>고객명</span><b>${state.customerName || "미입력"}</b></div>
+        <div class="quoteLine"><span>연락처</span><b>${state.customerPhone || "미입력"}</b></div>
+        <div class="quoteLine"><span>수령</span><b>${state.method} · ${state.date || "미입력"} · ${state.time}</b></div>
+      `;
+      $("quoteTotal").textContent = won(totalPrice());
+    }
+
+    function renderFloating() {
+      const labels = {
+        1: ["기본정보", "정보 입력"],
+        2: ["갯수", "세트 수량"],
+        3: ["견적서", "최종 확인"]
+      };
+      $("stepLabel").textContent = labels[state.step][0];
+      $("stepTitle").textContent = labels[state.step][1];
+      $("cartTitle").textContent = `🍀 행운쿠키 ${state.quantity}세트 · ${won(totalPrice())}`;
+      $("cartDetail").textContent = "HAPPY · RESET · MONEY · UP";
+      $("prevButton").style.visibility = state.step === 1 ? "hidden" : "visible";
+      $("nextButton").textContent = state.step === 3 ? "견적서" : "다음";
+      document.querySelectorAll("[data-step-link]").forEach((link) => {
+        const step = Number(link.dataset.stepLink);
+        const dot = link.querySelector(".topStepDot");
+        link.classList.toggle("active", step === state.step);
+        link.classList.toggle("completed", step < state.step);
+        if (dot) dot.textContent = step < state.step ? "✓" : link.dataset.icon;
+      });
+      document.querySelectorAll("[data-step-page]").forEach((page) => {
+        page.classList.toggle("active", Number(page.dataset.stepPage) === state.step);
+      });
+    }
+
+    function render() {
+      $("quantityInput").value = state.quantity;
+      $("liveTotal").textContent = won(totalPrice());
+      renderQuote();
+      renderFloating();
+    }
+
+    function changeQty(delta) {
+      state.quantity = Math.max(1, state.quantity + delta);
+      render();
+    }
+
+    function setQty(value) {
+      state.quantity = Math.max(1, Number(value) || 1);
+      render();
+    }
+
+    function validateStep(step) {
+      if (step !== 1) return true;
+      if (!state.customerName.trim()) return focusWarn("customerName", "고객명을 입력해 주세요.");
+      if (!state.customerPhone.trim()) return focusWarn("customerPhone", "핸드폰 번호를 입력해 주세요.");
+      if (!state.date) return focusWarn("dateInput", "수령희망일을 선택해 주세요.");
+      return true;
+    }
+
+    function focusWarn(id, msg) {
+      showToast(msg);
+      $(id).focus();
+      return false;
+    }
+
+    function setStep(step) {
+      const next = Math.max(1, Math.min(3, step));
+      if (next > state.step && !validateStep(state.step)) return;
+      state.step = next;
+      render();
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    function nextStep() {
+      if (state.step === 3) return receiveQuote();
+      setStep(state.step + 1);
+    }
+
+    function syncInputs() {
+      state.customerName = $("customerName").value;
+      state.customerEmail = $("customerEmail").value;
+      state.customerPhone = $("customerPhone").value;
+      state.date = $("dateInput").value;
+      state.time = $("timeInput").value;
+      state.address = $("addressInput").value;
+      state.request = $("requestInput").value;
+      renderFloating();
+      if (state.step === 3) renderQuote();
+    }
+
+    function buildText() {
+      return `[행운쿠키 주문 상담]
+고객명: ${state.customerName || "미입력"}
+연락처: ${state.customerPhone || "미입력"}
+이메일: ${state.customerEmail || "미입력"}
+수령 방법: ${state.method}
+희망 수령일: ${state.date || "미입력"}
+시간: ${state.time}
+
+상품: nothingmatters 행운쿠키 4가지맛 세트
+구성: HAPPY 곰돌이 / RESET 금붕어 / MONEY 복돼지 / UP 쿠키
+수량: ${state.quantity}세트
+단가: ${won(setPrice)}
+총 금액: ${won(totalPrice())}
+요청사항: ${state.request || "없음"}
+
+위 구성으로 주문 상담하고 싶어요.`;
+    }
+
+    function copyOrder() {
+      const text = buildText();
+      if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(text).then(() => showToast("선택 내용이 복사됐어요."), () => fallbackCopy(text));
+      } else {
+        fallbackCopy(text);
+      }
+    }
+
+    function fallbackCopy(text) {
+      const area = document.createElement("textarea");
+      area.value = text;
+      area.style.position = "fixed";
+      area.style.opacity = "0";
+      document.body.appendChild(area);
+      area.select();
+      document.execCommand("copy");
+      document.body.removeChild(area);
+      showToast("선택 내용이 복사됐어요.");
+    }
+
+    function receiveQuote() {
+      if (!validateStep(1)) return;
+      const canvas = document.createElement("canvas");
+      const width = 1080;
+      const height = 1320;
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext("2d");
+      ctx.fillStyle = "#fff";
+      ctx.fillRect(0, 0, width, height);
+      ctx.strokeStyle = "#111";
+      ctx.lineWidth = 3;
+
+      function rect(x, y, w, h, fill) {
+        ctx.fillStyle = fill || "#fff";
+        ctx.fillRect(x, y, w, h);
+        ctx.strokeRect(x, y, w, h);
+      }
+      function text(t, x, y, size, weight = 500, color = "#111", align = "left") {
+        ctx.fillStyle = color;
+        ctx.font = `${weight} ${size}px Pretendard, Apple SD Gothic Neo, sans-serif`;
+        ctx.textAlign = align;
+        ctx.textBaseline = "middle";
+        ctx.fillText(t, x, y);
+      }
+
+      rect(20, 20, 1040, 88, "#5548e8");
+      text("nothingmatters 견적서", 540, 65, 36, 700, "#fff", "center");
+      rect(20, 108, 1040, 70);
+      text(`고객명: ${state.customerName || "미입력"} | 이메일: ${state.customerEmail || "미입력"} | 핸드폰: ${state.customerPhone || "미입력"}`, 32, 143, 24);
+      rect(20, 178, 1040, 70);
+      text(`수령 방법: ${state.method} | 수령 희망일: ${state.date || "미입력"} | 시간: ${state.time}`, 32, 213, 24);
+
+      const tableY = 274;
+      rect(20, tableY, 1040, 74, "#f0f1f5");
+      text("제품명", 250, tableY + 37, 26, 700, "#111", "center");
+      text("수량", 570, tableY + 37, 26, 700, "#111", "center");
+      text("단가", 760, tableY + 37, 26, 700, "#111", "center");
+      text("합계", 975, tableY + 37, 26, 700, "#111", "right");
+
+      let y = tableY + 74;
+      rect(20, y, 1040, 84);
+      text("행운쿠키 4가지맛 세트", 250, y + 42, 24, 500, "#111", "center");
+      text(`${state.quantity}`, 570, y + 42, 24, 500, "#111", "center");
+      text(won(setPrice), 805, y + 42, 24, 500, "#111", "right");
+      text(won(totalPrice()), 1040, y + 42, 24, 500, "#111", "right");
+      y += 84;
+
+      rect(20, y, 1040, 84, "#5548e8");
+      text("총 합계", 540, y + 42, 28, 700, "#fff", "center");
+      text(won(totalPrice()), 1040, y + 42, 30, 700, "#fff", "right");
+      y += 122;
+
+      rect(20, y, 1040, 74, "#f7f8fa");
+      text("주문 상세 옵션", 32, y + 37, 26, 700);
+      y += 74;
+      [
+        "행운쿠키 4가지맛 세트",
+        "HAPPY 곰돌이 / RESET 금붕어 / MONEY 복돼지 / UP 쿠키",
+        `수량: ${state.quantity}세트`,
+        `요청사항: ${state.request || "없음"}`
+      ].forEach((line) => {
+        rect(20, y, 1040, 58);
+        text(`• ${line}`, 32, y + 29, 22);
+        y += 58;
+      });
+      rect(20, 1120, 1040, 84, "#fff3bf");
+      text("입금 계좌: 83050104204736 국민은행 (낫띵메터스)", 540, 1162, 26, 700, "#111", "center");
+      rect(20, 1204, 1040, 80);
+      text("주문 문의: 카카오톡 @nothingmatters 또는 010-2866-7976", 540, 1244, 24, 500, "#111", "center");
+
+      canvas.toBlob(async (blob) => {
+        if (!blob) {
+          showToast("견적서 이미지를 만들지 못했어요.");
+          return;
+        }
+        try {
+          await submitLandingOrder();
+        } catch (error) {
+          showToast(error.message || "주문 저장에 실패했어요.");
+          return;
+        }
+        const fileName = `nothingmatters-lucky-cookie-quote-${Date.now()}.png`;
+        const file = new File([blob], fileName, { type: "image/png" });
+        if (navigator.canShare && navigator.canShare({ files: [file] }) && navigator.share) {
+          navigator.share({ title: "nothingmatters 견적서", text: "행운쿠키 견적서입니다.", files: [file] }).finally(() => {
+            location.href = kakaoUrl;
+          });
+        } else {
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = fileName;
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+          URL.revokeObjectURL(url);
+          setTimeout(() => { location.href = kakaoUrl; }, 500);
+        }
+      }, "image/png");
+    }
+
+    function showToast(message) {
+      const toast = $("toast");
+      toast.textContent = message;
+      toast.classList.add("show");
+      clearTimeout(showToast.timer);
+      showToast.timer = setTimeout(() => toast.classList.remove("show"), 1800);
+    }
+
+    function init() {
+      const minDate = tomorrowString();
+      $("dateInput").min = minDate;
+      $("dateInput").value = minDate;
+      state.date = minDate;
+      renderGallery();
+      ["customerName", "customerEmail", "customerPhone", "dateInput", "timeInput", "addressInput", "requestInput"].forEach((id) => {
+        $(id).addEventListener("input", syncInputs);
+        $(id).addEventListener("change", () => {
+          syncInputs();
+          if (id === "dateInput") $(id).blur();
+        });
+      });
+      document.querySelectorAll("[data-method]").forEach((button) => {
+        button.addEventListener("click", () => {
+          state.method = button.dataset.method;
+          document.querySelectorAll("[data-method]").forEach((b) => b.setAttribute("aria-pressed", b === button));
+          $("addressWrap").style.display = state.method === "퀵 배송" ? "block" : "none";
+          render();
+        });
+      });
+      document.querySelectorAll("[data-step-link]").forEach((link) => {
+        link.addEventListener("click", (event) => {
+          event.preventDefault();
+          setStep(Number(link.dataset.stepLink));
+        });
+      });
+      $("prevButton").addEventListener("click", () => setStep(state.step - 1));
+      $("nextButton").addEventListener("click", nextStep);
+      $("copyButton").addEventListener("click", copyOrder);
+      $("quoteButton").addEventListener("click", receiveQuote);
+      render();
+    }
+
+    init();
+  </script>
+</body>
+</html>

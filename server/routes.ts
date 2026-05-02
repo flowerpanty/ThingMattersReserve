@@ -33,6 +33,258 @@ function createAttachmentHeader(fileName: string): string {
 export async function registerRoutes(app: Express): Promise<Server> {
   const excelGenerator = new ExcelGenerator();
   const kakaoTemplateService = new KakaoTemplateService();
+  const landingSourceLabels: Record<string, string> = {
+    brookie: '브루키',
+    cookie7: '수제꾸덕쿠키',
+    lucky: '행운쿠키',
+  };
+
+  const toPositiveInt = (value: any, fallback = 0) => {
+    const next = Math.floor(Number(value));
+    return Number.isFinite(next) && next > 0 ? next : fallback;
+  };
+
+  const asText = (value: any) => (typeof value === 'string' ? value.trim() : '');
+
+  const normalizeDeliveryMethod = (value: any) => {
+    const text = asText(value);
+    return text === 'quick' || text.includes('퀵') || text.includes('배송') ? 'quick' : 'pickup';
+  };
+
+  const getLandingCustomer = (body: any) => {
+    const customerName = asText(body.customerName);
+    const customerEmail = asText(body.customerEmail || body.customerContact);
+    const customerPhone = asText(body.customerPhone);
+    const customerContact = customerEmail || customerPhone;
+    const deliveryDate = asText(body.deliveryDate || body.date);
+
+    if (!customerName) {
+      throw new Error('고객명을 입력해주세요.');
+    }
+    if (!customerContact) {
+      throw new Error('연락처를 입력해주세요.');
+    }
+    if (!deliveryDate) {
+      throw new Error('수령 희망일을 선택해주세요.');
+    }
+
+    return {
+      customerName,
+      customerContact,
+      customerEmail,
+      customerPhone,
+      deliveryDate,
+      deliveryMethod: normalizeDeliveryMethod(body.deliveryMethod || body.method),
+      pickupTime: asText(body.pickupTime || body.time),
+      deliveryAddress: asText(body.deliveryAddress || body.address),
+      request: asText(body.request),
+    };
+  };
+
+  const buildCookie7LandingItems = (body: any) => {
+    const flavorLabels: Record<string, string> = {
+      'double-choco': '더블초코',
+      'walnut-choco': '호두초코',
+      'oreo-choco': '오레오초코',
+      butterscotch: '버터스카치',
+      'black-peanut': '블랙피넛',
+      'lotus-caramel': '로투스카라멜',
+      'matcha-macadamia': '말차마카다미아',
+    };
+    const packageMap: Record<string, { name: string; fee: number; unit: number }> = {
+      'one-box': { name: '1구박스', fee: 600, unit: 1 },
+      'vinyl-tag': { name: '비닐탭 포장', fee: 500, unit: 1 },
+      'drink-set': { name: '1구+음료세트', fee: 6500, unit: 1 },
+      'two-box': { name: '2구박스', fee: 1500, unit: 2 },
+      'four-box': { name: '4구박스', fee: 0, unit: 4 },
+    };
+    const groups = Array.isArray(body.items) && body.items.length
+      ? body.items
+      : [{ packageId: body.packageId, flavorQty: body.flavorQty, drink: body.drink, ribbon: body.ribbon }];
+    const orderItems: any[] = [];
+    let totalPrice = 0;
+
+    groups.forEach((group: any, index: number) => {
+      const flavorQty = group?.flavorQty && typeof group.flavorQty === 'object' ? group.flavorQty : {};
+      const flavors = Object.entries(flavorQty)
+        .map(([id, qty]) => ({ id, name: flavorLabels[id] || id, quantity: toPositiveInt(qty) }))
+        .filter((item) => item.quantity > 0);
+      const cookieQuantity = flavors.reduce((sum, item) => sum + item.quantity, 0);
+      if (cookieQuantity <= 0) return;
+
+      const pkg = packageMap[asText(group?.packageId)] || packageMap['one-box'];
+      const boxQuantity = Math.max(1, Math.ceil(cookieQuantity / pkg.unit));
+      const flavorText = flavors.map((item) => `${item.name} ${item.quantity}개`).join(', ');
+
+      orderItems.push({
+        type: 'regular',
+        name: `${pkg.name} 쿠키${groups.length > 1 ? ` 세트 ${index + 1}` : ''}`,
+        quantity: cookieQuantity,
+        price: cookiePrices.regular,
+        options: {
+          landingSource: 'cookie7',
+          packageName: pkg.name,
+          packageId: group?.packageId,
+          flavors,
+          flavorText,
+          drink: asText(group?.drink),
+          ribbon: !!group?.ribbon,
+        },
+      });
+      totalPrice += cookieQuantity * cookiePrices.regular;
+
+      if (pkg.fee > 0) {
+        orderItems.push({
+          type: 'packaging',
+          name: pkg.name,
+          quantity: boxQuantity,
+          price: pkg.fee,
+          options: { landingSource: 'cookie7', packageId: group.packageId },
+        });
+        totalPrice += boxQuantity * pkg.fee;
+      }
+
+      if (group?.ribbon) {
+        orderItems.push({
+          type: 'packaging',
+          name: '리본 추가',
+          quantity: boxQuantity,
+          price: 500,
+          options: { landingSource: 'cookie7', packageId: group?.packageId },
+        });
+        totalPrice += boxQuantity * 500;
+      }
+    });
+
+    if (body.sticker) {
+      orderItems.push({
+        type: 'addon',
+        name: '스티커 제작',
+        quantity: 1,
+        price: 20000,
+        options: { landingSource: 'cookie7' },
+      });
+      totalPrice += 20000;
+    }
+
+    return { orderItems, totalPrice };
+  };
+
+  const buildBrookieLandingItems = (body: any) => {
+    const characterLabels: Record<string, string> = {
+      bear: '곰돌이',
+      rabbit: '토끼',
+      tiger: '호랑이',
+      birthday_bear: '생일곰',
+      miss_bear: '미스곰',
+      horse: '말',
+    };
+    const paperLabels: Record<string, string> = {
+      navy: '네이비',
+      red: '레드',
+      green: '초록',
+      white: '화이트',
+      black: '블랙',
+      custom: '커스텀 종이',
+    };
+    const premiumCharacters = new Set(['birthday_bear', 'miss_bear', 'horse']);
+    const shapeMap: Record<string, string> = {
+      bear: 'bear',
+      rabbit: 'rabbit',
+      tiger: 'tiger',
+      birthday_bear: 'birthdayBear',
+    };
+    const combos = Array.isArray(body.combos) && body.combos.length
+      ? body.combos
+      : [{
+        character: body.character,
+        paper: body.paper,
+        heartTextEnabled: body.heartTextEnabled,
+        heartText: body.heartText,
+        customPaperLine1: body.customPaperLine1,
+        customPaperLine2: body.customPaperLine2,
+        qty: body.qty,
+      }];
+    const orderItems: any[] = [];
+    let totalPrice = 0;
+    let totalQuantity = 0;
+
+    combos.forEach((combo: any, index: number) => {
+      const quantity = toPositiveInt(combo.qty || combo.quantity, 1);
+      const character = asText(combo.character) || 'bear';
+      const paper = asText(combo.paper) || 'navy';
+      const heartText = asText(combo.heartText);
+      const hasHeartText = !!combo.heartTextEnabled && !!heartText;
+      const unitAddons =
+        (premiumCharacters.has(character) ? 500 : 0) +
+        (hasHeartText ? 500 : 0) +
+        (paper === 'custom' ? 700 : 0);
+      const unitPrice = cookiePrices.brownie + unitAddons;
+
+      orderItems.push({
+        type: 'brownie',
+        name: `브루키 ${characterLabels[character] || character}${combos.length > 1 ? ` 조합 ${index + 1}` : ''}`,
+        quantity,
+        price: unitPrice,
+        options: {
+          landingSource: 'brookie',
+          character,
+          characterName: characterLabels[character] || character,
+          shape: shapeMap[character],
+          paper,
+          paperName: paperLabels[paper] || paper,
+          heartMessage: hasHeartText ? heartText : undefined,
+          customPaperLine1: asText(combo.customPaperLine1),
+          customPaperLine2: asText(combo.customPaperLine2),
+          premiumCharacter: premiumCharacters.has(character),
+          customPaper: paper === 'custom',
+        },
+      });
+      totalQuantity += quantity;
+      totalPrice += unitPrice * quantity;
+    });
+
+    if (body.topper) {
+      orderItems.push({
+        type: 'addon',
+        name: '토퍼 추가',
+        quantity: totalQuantity,
+        price: 700,
+        options: { landingSource: 'brookie', topperKind: asText(body.topperKind) },
+      });
+      totalPrice += totalQuantity * 700;
+    }
+
+    if (body.sticker) {
+      orderItems.push({
+        type: 'addon',
+        name: '스티커 제작',
+        quantity: 1,
+        price: 20000,
+        options: { landingSource: 'brookie' },
+      });
+      totalPrice += 20000;
+    }
+
+    return { orderItems, totalPrice };
+  };
+
+  const buildLuckyLandingItems = (body: any) => {
+    const quantity = toPositiveInt(body.quantity, 1);
+    return {
+      orderItems: [{
+        type: 'fortune',
+        name: '행운쿠키 4가지맛 세트',
+        quantity,
+        price: cookiePrices.fortune,
+        options: {
+          landingSource: 'lucky',
+          flavors: ['HAPPY 곰돌이', 'RESET 금붕어', 'MONEY 복돼지', 'UP 하트'],
+        },
+      }],
+      totalPrice: quantity * cookiePrices.fortune,
+    };
+  };
 
   // Calculate price function
   const calculatePrice = (orderData: any) => {
@@ -250,6 +502,101 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(result);
     } catch (error) {
       res.status(400).json({ message: "잘못된 요청입니다.", error: error instanceof Error ? error.message : String(error) });
+    }
+  });
+
+  app.options("/api/landing-orders", (_req, res) => {
+    res.setHeader("Access-Control-Allow-Origin", "*");
+    res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
+    res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+    res.status(204).end();
+  });
+
+  // Landing pages submit here before sending users to KakaoTalk.
+  app.post("/api/landing-orders", async (req, res) => {
+    res.setHeader("Access-Control-Allow-Origin", "*");
+
+    try {
+      const body = req.body || {};
+      const source = asText(body.source);
+      const sourceLabel = landingSourceLabels[source];
+
+      if (!sourceLabel) {
+        return res.status(400).json({ message: "지원하지 않는 랜딩페이지 주문입니다." });
+      }
+
+      const customer = getLandingCustomer(body);
+      const built = source === 'brookie'
+        ? buildBrookieLandingItems(body)
+        : source === 'cookie7'
+          ? buildCookie7LandingItems(body)
+          : buildLuckyLandingItems(body);
+
+      if (!built.orderItems.length || built.totalPrice <= 0) {
+        return res.status(400).json({ message: "주문할 상품을 선택해주세요." });
+      }
+
+      const orderItems = [
+        ...built.orderItems,
+        {
+          type: 'meta' as const,
+          name: 'metadata',
+          quantity: 0,
+          price: 0,
+          options: {
+            ...body,
+            source,
+            landingSource: source,
+            landingSourceLabel: sourceLabel,
+            customerPhone: customer.customerPhone,
+            customerEmail: customer.customerEmail,
+            deliveryAddress: customer.deliveryAddress,
+            request: customer.request,
+            serverCalculatedTotal: built.totalPrice,
+          },
+        },
+      ];
+
+      const order = await storage.createOrder({
+        customerName: customer.customerName,
+        customerContact: customer.customerContact,
+        deliveryDate: customer.deliveryDate,
+        deliveryMethod: customer.deliveryMethod,
+        pickupTime: customer.pickupTime,
+        orderItems,
+        totalPrice: built.totalPrice,
+      });
+
+      pushNotificationService.sendNewOrderNotification(customer.customerName, order.id)
+        .catch((error) => console.error('❌ 랜딩 주문 푸시 알림 전송 실패:', error));
+
+      if (kakaoAlimtalkService.isEnabled()) {
+        kakaoAlimtalkService.sendAdminNotification({
+          customerName: customer.customerName,
+          customerContact: customer.customerContact,
+          deliveryDate: customer.deliveryDate,
+          deliveryMethod: customer.deliveryMethod,
+          totalPrice: built.totalPrice,
+        }).catch((error) => console.error('❌ 랜딩 주문 관리자 알림톡 실패:', error));
+      }
+
+      if (googleSheetsService.isEnabled()) {
+        googleSheetsService.appendOrderToSheet(order)
+          .catch((error) => console.error('❌ 랜딩 주문 Google Sheets 저장 실패:', error));
+      }
+
+      res.json({
+        success: true,
+        message: "주문이 관리자 대시보드에 저장되었습니다.",
+        orderId: order.id,
+        totalPrice: built.totalPrice,
+      });
+    } catch (error) {
+      console.error('Landing order error:', error);
+      res.status(400).json({
+        success: false,
+        message: error instanceof Error ? error.message : "주문 저장 중 오류가 발생했습니다.",
+      });
     }
   });
 

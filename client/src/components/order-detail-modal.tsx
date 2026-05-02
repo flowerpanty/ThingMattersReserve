@@ -35,6 +35,18 @@ interface Order {
 
 import { useToast } from "@/hooks/use-toast";
 
+function getLandingSourceInfo(order: Pick<Order, 'orderItems'>) {
+    const meta = order.orderItems.find((item) => item.type === 'meta')?.options || {};
+    const source = meta.landingSource || meta.source;
+    const labels: Record<string, { label: string; tone: string }> = {
+        brookie: { label: '브루키', tone: 'border-orange-200 bg-orange-50 text-orange-700' },
+        cookie7: { label: '수제꾸덕쿠키', tone: 'border-blue-200 bg-blue-50 text-blue-700' },
+        lucky: { label: '행운쿠키', tone: 'border-emerald-200 bg-emerald-50 text-emerald-700' },
+    };
+
+    return labels[source as string] || null;
+}
+
 interface OrderDetailModalProps {
     order: Order | null;
     isOpen: boolean;
@@ -50,6 +62,7 @@ export function OrderDetailModal({ order, isOpen, onClose, onDelete }: OrderDeta
     const [isDownloadingImage, setIsDownloadingImage] = useState(false);
     const [isCopyingToSheet, setIsCopyingToSheet] = useState(false);
     const { toast } = useToast();
+    const landingSource = getLandingSourceInfo(order);
 
     const closePreOpenedWindow = (openedWindow?: Window | null) => {
         if (openedWindow && !openedWindow.closed) {
@@ -690,6 +703,32 @@ export function OrderDetailModal({ order, isOpen, onClose, onDelete }: OrderDeta
                     <div>🎀 커스텀 토퍼 추가</div>
                 )}
 
+                {/* 랜딩페이지 주문 옵션 */}
+                {item.options.characterName && (
+                    <div>🐻 캐릭터: {item.options.characterName}</div>
+                )}
+                {item.options.paperName && (
+                    <div>🎁 포장 종이: {item.options.paperName}</div>
+                )}
+                {(item.options.customPaperLine1 || item.options.customPaperLine2) && (
+                    <div>✍️ 커스텀 종이: {[item.options.customPaperLine1, item.options.customPaperLine2].filter(Boolean).join(' / ')}</div>
+                )}
+                {item.options.packageName && (
+                    <div>📦 패키지: {item.options.packageName}</div>
+                )}
+                {item.options.flavorText && (
+                    <div>🍪 맛 구성: {item.options.flavorText}</div>
+                )}
+                {item.options.drink && (
+                    <div>🥤 음료: {item.options.drink}</div>
+                )}
+                {item.options.ribbon && (
+                    <div>🎀 리본 추가</div>
+                )}
+                {Array.isArray(item.options.flavors) && item.options.landingSource === 'lucky' && (
+                    <div>🍀 구성: {item.options.flavors.join(', ')}</div>
+                )}
+
                 {/* 스콘 옵션 */}
                 {item.options.flavor && (
                     <div>
@@ -710,6 +749,11 @@ export function OrderDetailModal({ order, isOpen, onClose, onDelete }: OrderDeta
                     <DialogTitle className="text-2xl font-bold flex items-center gap-2">
                         <Package className="w-6 h-6" />
                         주문 상세 정보
+                        {landingSource && (
+                            <Badge className={`ml-1 rounded-full border px-2.5 py-0.5 text-xs font-semibold shadow-none ${landingSource.tone}`}>
+                                {landingSource.label}
+                            </Badge>
+                        )}
                     </DialogTitle>
                     <DialogDescription>
                         주문번호: {order.id.slice(0, 8)}...
