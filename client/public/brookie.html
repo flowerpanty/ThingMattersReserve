@@ -594,7 +594,6 @@
         radial-gradient(circle at 76% 26%, rgba(0, 87, 255, 0.15), transparent 31%),
         radial-gradient(circle at 52% 82%, rgba(255, 122, 0, 0.18), transparent 35%);
       filter: blur(16px);
-      animation: glowFloat 8s ease-in-out infinite;
       content: "";
     }
 
@@ -608,10 +607,6 @@
       border-radius: 34px;
       background: var(--paper);
       box-shadow: var(--shadow), 0 0 0 3px rgba(255, 122, 0, 0.12);
-      transition: box-shadow 0.4s;
-    }
-    .preview:hover {
-      box-shadow: var(--shadow), 0 0 24px 4px rgba(255, 122, 0, 0.18);
     }
 
     .preview::after {
@@ -2104,19 +2099,6 @@
       outline: 3px solid var(--blue);
       outline-offset: 2px;
       border-radius: 8px;
-    }
-
-    /* ── Image Transition ── */
-    .render {
-      transition: opacity 0.3s ease, transform 0.3s ease;
-    }
-    .render.switching {
-      opacity: 0.4;
-      transform: scale(0.96);
-    }
-
-    @keyframes glowFloat {
-      50% { transform: translate(2%, -2%) scale(1.04); }
     }
 
     @keyframes jellyPop {
@@ -3638,17 +3620,6 @@ ${custom ? `${custom}\n` : ""}
         });
       }, { threshold: 0.12 });
       document.querySelectorAll(".reveal-ready").forEach(el => observer.observe(el));
-    })();
-
-    /* ── Image Transition on Character/Paper Switch ── */
-    (function patchImageTransition() {
-      const origRenderOptionButtons = renderOptionButtons;
-      renderOptionButtons = function() {
-        const render = $("render");
-        render.classList.add("switching");
-        setTimeout(() => render.classList.remove("switching"), 320);
-        origRenderOptionButtons();
-      };
     })();
 
     init();
