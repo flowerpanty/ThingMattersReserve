@@ -1899,13 +1899,14 @@
       #papers { gap: 4px; padding: 2px 1px 4px; }
       .paperPill {
         min-height: 38px;
-        gap: 5px;
-        padding-inline: 7px 14px;
+        gap: 4px;
+        padding-inline: 6px 12px;
         border-radius: 999px;
-        font-size: 10.5px;
+        font-size: 9px;
       }
       .paperPill.custom { min-width: auto; }
       .paperPill .pillSwatch { width: 13px; height: 13px; }
+      .paperPill.custom .pillText { font-size: 8.4px; letter-spacing: -0.03em; }
       input,
       select {
         height: 44px;
@@ -1959,12 +1960,13 @@
       #papers { gap: 3px; padding: 2px 0 4px; }
       .paperPill {
         min-height: 36px;
-        gap: 4px;
-        padding-inline: 6px 13px;
-        font-size: 9.5px;
+        gap: 3px;
+        padding-inline: 5px 11px;
+        font-size: 8.4px;
       }
       .paperPill.custom { min-width: auto; }
       .paperPill .pillSwatch { width: 12px; height: 12px; }
+      .paperPill.custom .pillText { font-size: 7.9px; letter-spacing: -0.04em; }
       input,
       select {
         height: 42px;
@@ -2629,9 +2631,16 @@
       return Number.isFinite(next) ? Math.min(max, Math.max(min, next)) : fallback;
     }
 
+    function shouldRestorePageState() {
+      const navigationEntry = performance.getEntriesByType && performance.getEntriesByType("navigation")[0];
+      const navigationType = navigationEntry?.type
+        || (performance.navigation && performance.navigation.type === 1 ? "reload" : "");
+      return navigationType === "reload" || navigationType === "back_forward";
+    }
+
     function savePageState() {
       try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify({
+        sessionStorage.setItem(STORAGE_KEY, JSON.stringify({
           activeStep,
           state: { ...state }
         }));
@@ -2658,7 +2667,7 @@
 
     function restorePageState(minDate) {
       try {
-        const raw = localStorage.getItem(STORAGE_KEY);
+        const raw = sessionStorage.getItem(STORAGE_KEY);
         if (!raw) return;
         const parsed = JSON.parse(raw);
         const saved = parsed && typeof parsed === "object" ? parsed.state || {} : {};
@@ -3459,7 +3468,8 @@ ${custom ? `${custom}\n` : ""}
     function init() {
       const minDate = tomorrow();
       state.date = minDate;
-      restorePageState(minDate);
+      if (shouldRestorePageState()) restorePageState(minDate);
+      else sessionStorage.removeItem(STORAGE_KEY);
       $("needDate").min = minDate;
       $("needDate").value = state.date;
       $("customerName").value = state.customerName;

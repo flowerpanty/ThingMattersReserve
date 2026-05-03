@@ -864,6 +864,13 @@
       return Number.isFinite(next) ? Math.min(max, Math.max(min, next)) : fallback;
     }
 
+    function shouldRestorePageState() {
+      const navigationEntry = performance.getEntriesByType && performance.getEntriesByType("navigation")[0];
+      const navigationType = navigationEntry?.type
+        || (performance.navigation && performance.navigation.type === 1 ? "reload" : "");
+      return navigationType === "reload" || navigationType === "back_forward";
+    }
+
     function tomorrowString() {
       const d = new Date();
       d.setDate(d.getDate() + 1);
@@ -910,7 +917,7 @@
 
     function savePageState() {
       try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+        sessionStorage.setItem(STORAGE_KEY, JSON.stringify(state));
       } catch (error) {
         // Ignore storage failures in private browsing or constrained environments.
       }
@@ -918,7 +925,7 @@
 
     function restorePageState(minDate) {
       try {
-        const raw = localStorage.getItem(STORAGE_KEY);
+        const raw = sessionStorage.getItem(STORAGE_KEY);
         if (!raw) return;
         const saved = JSON.parse(raw);
         if (!saved || typeof saved !== "object") return;
@@ -1200,7 +1207,8 @@
       const minDate = tomorrowString();
       $("dateInput").min = minDate;
       state.date = minDate;
-      restorePageState(minDate);
+      if (shouldRestorePageState()) restorePageState(minDate);
+      else sessionStorage.removeItem(STORAGE_KEY);
       $("customerName").value = state.customerName;
       $("customerPhone").value = state.customerPhone;
       $("dateInput").value = state.date;
