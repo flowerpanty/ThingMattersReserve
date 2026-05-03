@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>행운쿠키 주문 | NOTHINGMATTERS.</title>
   <meta name="description" content="nothingmatters 행운쿠키 4가지맛 세트 주문 견적 시스템" />
+  <link rel="stylesheet" href="order.css" />
   <style>
     :root {
       --ink: #171313;
@@ -216,6 +217,27 @@
       box-shadow: 0 0 0 4px rgba(36,84,214,.13);
     }
 
+    input.is-invalid,
+    textarea.is-invalid,
+    select.is-invalid {
+      border-color: var(--danger);
+      box-shadow: 0 0 0 4px rgba(255,77,61,.14);
+    }
+
+    .fieldError {
+      display: block;
+      min-height: 16px;
+      margin-top: 6px;
+      color: var(--danger);
+      font-size: 11px;
+      font-weight: 800;
+      line-height: 1.35;
+    }
+
+    .fieldError[hidden] {
+      display: none;
+    }
+
     .methodGrid {
       display: grid;
       gap: 10px;
@@ -357,6 +379,27 @@
       padding: 0 12px;
       font-size: 13px;
       font-weight: 750;
+    }
+
+    .useCasePills {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin: 0 0 14px;
+    }
+
+    .useCasePills span {
+      display: inline-flex;
+      align-items: center;
+      min-height: 34px;
+      padding: 0 12px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: #fff;
+      color: var(--ink);
+      font-size: 12px;
+      font-weight: 800;
+      box-shadow: var(--soft-shadow);
     }
 
     .sectionDividerTitle {
@@ -649,9 +692,9 @@
     <div class="headerInner">
       <a class="brand" href="#top">NOTHINGMATTERS.</a>
       <nav class="stepIndicator" aria-label="주문 단계">
-        <a class="topStep active" href="#top" data-step-link="1" data-icon="📋"><span class="topStepDot">📋</span><span>기본정보</span></a>
+        <a class="topStep active" href="#top" data-step-link="1" data-icon="🍀"><span class="topStepDot">🍀</span><span>갯수</span></a>
         <span class="topStepLine" aria-hidden="true"></span>
-        <a class="topStep" href="#top" data-step-link="2" data-icon="🍀"><span class="topStepDot">🍀</span><span>갯수</span></a>
+        <a class="topStep" href="#top" data-step-link="2" data-icon="📋"><span class="topStepDot">📋</span><span>기본정보</span></a>
         <span class="topStepLine" aria-hidden="true"></span>
         <a class="topStep" href="#top" data-step-link="3" data-icon="📄"><span class="topStepDot">📄</span><span>견적서</span></a>
       </nav>
@@ -659,28 +702,28 @@
   </header>
 
   <main id="top">
-    <section class="stepPage active" data-step-page="1" aria-labelledby="basicTitle">
+    <section class="stepPage" data-step-page="2" aria-labelledby="basicTitle">
       <div class="heroImage imageFrame">
         <img src="public/lucky-assets/gallery/gallery-05.webp" alt="nothingmatters 행운쿠키 대표 이미지" onerror="imageFallback(this)" />
         <span class="fallback">이미지 준비 중</span>
       </div>
       <div class="pageHead">
-        <p class="eyebrow">Step 01</p>
+        <p class="eyebrow">Step 02</p>
         <h1 id="basicTitle">기본정보 입력</h1>
-        <p class="lead">행운쿠키 견적서에 들어갈 주문자 정보와 수령 정보를 먼저 적어주세요.</p>
+        <p class="lead">세트 수량을 고른 뒤, 견적서에 들어갈 주문자 정보와 수령 정보를 적어주세요.</p>
       </div>
       <div class="stack">
         <article class="card">
           <p class="eyebrow">Customer</p>
           <div class="fieldGrid">
-            <label><span>고객명</span><input id="customerName" type="text" placeholder="성함" autocomplete="name" /></label>
-            <label><span>핸드폰</span><input id="customerPhone" type="tel" placeholder="010-0000-0000" autocomplete="tel" /></label>
+            <label><span>고객명</span><input id="customerName" type="text" placeholder="성함" autocomplete="name" /><small class="fieldError" id="customerNameError" hidden></small></label>
+            <label><span>핸드폰</span><input id="customerPhone" type="tel" placeholder="010-0000-0000" autocomplete="tel" /><small class="fieldError" id="customerPhoneError" hidden></small></label>
           </div>
         </article>
         <article class="card">
           <p class="eyebrow">Pick up</p>
           <div class="fieldGrid">
-            <label><span>수령희망일</span><input id="dateInput" type="date" /></label>
+            <label><span>수령희망일</span><input id="dateInput" type="date" /><small class="fieldError" id="dateInputError" hidden></small></label>
             <label><span>희망 시간</span><select id="timeInput">
               <option>12:00~13:00</option>
               <option>13:00~14:00</option>
@@ -698,18 +741,24 @@
             <button class="choiceBtn" type="button" data-method="매장 픽업" aria-pressed="true">매장 픽업<small>방문 수령</small></button>
             <button class="choiceBtn" type="button" data-method="퀵 배송" aria-pressed="false">퀵 배송<small>지역 상담 필요</small></button>
           </div>
-          <label id="addressWrap" style="display:none; margin-top:12px;"><span>퀵 배송 주소</span><input id="addressInput" type="text" placeholder="주소를 입력해 주세요" /></label>
+          <label id="addressWrap" style="display:none; margin-top:12px;"><span>퀵 배송 주소</span><input id="addressInput" type="text" placeholder="주소를 입력해 주세요" /><small class="fieldError" id="addressInputError" hidden></small></label>
         </article>
       </div>
     </section>
 
-    <section class="stepPage" data-step-page="2" aria-labelledby="quantityTitle">
+    <section class="stepPage active" data-step-page="1" aria-labelledby="quantityTitle">
       <div class="pageHead">
-        <p class="eyebrow">Step 02</p>
+        <p class="eyebrow">Step 01</p>
         <h2 id="quantityTitle">세트 갯수 선택</h2>
         <p class="lead">행운쿠키는 4가지맛 세트로만 판매해요. 필요한 세트 수량만 선택하면 됩니다.</p>
       </div>
       <div class="setIntro">
+        <div class="useCasePills" aria-label="추천 상황">
+          <span>결혼식 답례</span>
+          <span>응원선물</span>
+          <span>퇴사선물</span>
+          <span>행사기념품</span>
+        </div>
         <article class="quantityCard">
           <span class="pricePill">4가지맛 세트 · 15,000원</span>
           <h3 style="margin:12px 0 6px;">nothingmatters 행운쿠키</h3>
@@ -726,7 +775,7 @@
         <p class="sectionDividerSub">HAPPY, RESET, MONEY, UP 네 가지 감정을 한 세트에 담았어요.</p>
         <div class="setGrid" aria-label="4가지맛 구성">
           <article class="setCard">
-            <span class="setPhoto imageFrame"><img src="public/lucky-assets/flavors/flavor-01.webp" alt="HAPPY 곰돌이 초코맛" onerror="imageFallback(this)" /><span class="fallback">이미지 준비 중</span></span>
+            <span class="setPhoto imageFrame"><img src="public/lucky-assets/flavors/flavor-01.webp" alt="HAPPY 곰돌이 초코맛" width="480" height="480" fetchpriority="high" decoding="async" onerror="imageFallback(this)" /><span class="fallback">이미지 준비 중</span></span>
             <div>
               <h3>🐻 HAPPY</h3>
               <small>곰돌이 쿠키 · 초코맛</small>
@@ -735,7 +784,7 @@
             </div>
           </article>
           <article class="setCard">
-            <span class="setPhoto imageFrame"><img src="public/lucky-assets/flavors/flavor-02.webp" alt="RESET 금붕어 코코넛맛" onerror="imageFallback(this)" /><span class="fallback">이미지 준비 중</span></span>
+            <span class="setPhoto imageFrame"><img src="public/lucky-assets/flavors/flavor-02.webp" alt="RESET 금붕어 코코넛맛" width="480" height="480" loading="lazy" decoding="async" onerror="imageFallback(this)" /><span class="fallback">이미지 준비 중</span></span>
             <div>
               <h3>🐟 RESET</h3>
               <small>금붕어 쿠키 · 코코넛맛</small>
@@ -744,7 +793,7 @@
             </div>
           </article>
           <article class="setCard">
-            <span class="setPhoto imageFrame"><img src="public/lucky-assets/flavors/flavor-03.webp" alt="MONEY 복돼지 흑임자맛" onerror="imageFallback(this)" /><span class="fallback">이미지 준비 중</span></span>
+            <span class="setPhoto imageFrame"><img src="public/lucky-assets/flavors/flavor-03.webp" alt="MONEY 복돼지 흑임자맛" width="480" height="480" loading="lazy" decoding="async" onerror="imageFallback(this)" /><span class="fallback">이미지 준비 중</span></span>
             <div>
               <h3>🐷 MONEY</h3>
               <small>복돼지 쿠키 · 흑임자맛</small>
@@ -753,7 +802,7 @@
             </div>
           </article>
           <article class="setCard">
-            <span class="setPhoto imageFrame"><img src="public/lucky-assets/flavors/flavor-04.webp" alt="UP 하트 피넛버터맛" onerror="imageFallback(this)" /><span class="fallback">이미지 준비 중</span></span>
+            <span class="setPhoto imageFrame"><img src="public/lucky-assets/flavors/flavor-04.webp" alt="UP 하트 피넛버터맛" width="480" height="480" loading="lazy" decoding="async" onerror="imageFallback(this)" /><span class="fallback">이미지 준비 중</span></span>
             <div>
               <h3>💙 UP</h3>
               <small>하트 쿠키 · 피넛버터맛</small>
@@ -819,8 +868,8 @@
     <div class="floatingInner">
       <button class="floatingBack" id="prevButton" type="button">이전</button>
       <div class="floatingMeta">
-        <small id="stepLabel">기본정보</small>
-        <strong id="stepTitle">정보 입력</strong>
+        <small id="stepLabel">세트</small>
+        <strong id="stepTitle">수량 선택</strong>
       </div>
       <div class="floatingCart" aria-live="polite">
         <strong id="cartTitle">🍀 행운쿠키 1세트 · 15,000원</strong>
@@ -831,6 +880,7 @@
   </div>
   <div class="toast" id="toast" role="status" aria-live="polite">선택 내용이 복사됐어요.</div>
 
+  <script src="order-core.js"></script>
   <script>
     const kakaoUrl = "https://pf.kakao.com/_QdCaK/chat";
     const setPrice = 15000;
@@ -853,6 +903,7 @@
       request: "",
       quantity: 1
     };
+    let pushOrderStep = () => {};
 
     const $ = (id) => document.getElementById(id);
     const STORAGE_KEY = "nm-lucky-state-v1";
@@ -975,14 +1026,16 @@
 
     function renderFloating() {
       const labels = {
-        1: ["기본정보", "정보 입력"],
-        2: ["갯수", "세트 수량"],
+        1: ["갯수", "세트 수량"],
+        2: ["기본정보", "정보 입력"],
         3: ["견적서", "최종 확인"]
       };
       $("stepLabel").textContent = labels[state.step][0];
       $("stepTitle").textContent = labels[state.step][1];
       $("cartTitle").textContent = `🍀 행운쿠키 ${state.quantity}세트 · ${won(totalPrice())}`;
-      $("cartDetail").textContent = "HAPPY · RESET · MONEY · UP";
+      $("cartDetail").textContent = state.step === 1
+        ? `${state.quantity}세트 선택됨 · 다음 단계에서 정보만 입력하면 견적서 생성`
+        : "HAPPY · RESET · MONEY · UP";
       $("prevButton").style.visibility = state.step === 1 ? "hidden" : "visible";
       $("nextButton").textContent = state.step === 3 ? "견적서" : "다음";
       document.querySelectorAll("[data-step-link]").forEach((link) => {
@@ -1007,33 +1060,57 @@
 
     function changeQty(delta) {
       state.quantity = Math.max(1, state.quantity + delta);
+      window.NMOrderCore?.track("option_select", {
+        product: "lucky",
+        option_group: "quantity",
+        qty: state.quantity
+      });
       render();
     }
 
     function setQty(value) {
       state.quantity = Math.max(1, Number(value) || 1);
+      window.NMOrderCore?.track("option_select", {
+        product: "lucky",
+        option_group: "quantity",
+        qty: state.quantity
+      });
       render();
     }
 
     function validateStep(step) {
-      if (step !== 1) return true;
-      if (!state.customerName.trim()) return focusWarn("customerName", "고객명을 입력해 주세요.");
-      if (!state.customerPhone.trim()) return focusWarn("customerPhone", "핸드폰 번호를 입력해 주세요.");
-      if (!state.date) return focusWarn("dateInput", "수령희망일을 선택해 주세요.");
+      if (step !== 2) return true;
+      ["customerName", "customerPhone", "dateInput", "addressInput"].forEach((id) => {
+        window.NMOrderCore?.clearFieldError(id);
+      });
+      if (!state.customerName.trim()) return focusWarn("customerName", "이름을 입력해주세요.");
+      if (!/^010[-\s]?\d{4}[-\s]?\d{4}$/.test(state.customerPhone.trim())) {
+        return focusWarn("customerPhone", "010 형식으로 입력해주세요.");
+      }
+      if (!state.date) return focusWarn("dateInput", "수령희망일을 선택해주세요.");
+      if (state.method === "퀵 배송" && !state.address.trim()) {
+        return focusWarn("addressInput", "퀵 배송은 주소가 필요해요.");
+      }
       return true;
     }
 
     function focusWarn(id, msg) {
-      showToast(msg);
-      $(id).focus();
+      window.NMOrderCore?.setFieldError(id, msg);
+      window.NMOrderCore?.focusField(id);
       return false;
     }
 
-    function setStep(step) {
+    function setStep(step, options = {}) {
       const next = Math.max(1, Math.min(3, step));
-      if (next > state.step && !validateStep(state.step)) return;
+      if (!options.skipValidation && next > state.step && !validateStep(state.step)) return;
       state.step = next;
       render();
+      if (!options.fromHistory) pushOrderStep(state.step);
+      window.NMOrderCore?.track("order_step_view", {
+        product: "lucky",
+        step: state.step,
+        step_label: $("stepLabel")?.textContent || ""
+      });
       window.scrollTo({ top: 0, behavior: "smooth" });
     }
 
@@ -1049,6 +1126,14 @@
       state.time = $("timeInput").value;
       state.address = $("addressInput").value;
       state.request = $("requestInput").value;
+      if (state.customerName.trim()) window.NMOrderCore?.clearFieldError("customerName");
+      if (/^010[-\s]?\d{4}[-\s]?\d{4}$/.test(state.customerPhone.trim())) {
+        window.NMOrderCore?.clearFieldError("customerPhone");
+      }
+      if (state.date) window.NMOrderCore?.clearFieldError("dateInput");
+      if (state.method !== "퀵 배송" || state.address.trim()) {
+        window.NMOrderCore?.clearFieldError("addressInput");
+      }
       renderFloating();
       if (state.step === 3) renderQuote();
       savePageState();
@@ -1094,7 +1179,23 @@
     }
 
     function receiveQuote() {
-      if (!validateStep(1)) return;
+      if (
+        state.step !== 2 &&
+        (!state.customerName.trim() ||
+          !/^010[-\s]?\d{4}[-\s]?\d{4}$/.test(state.customerPhone.trim()) ||
+          !state.date ||
+          (state.method === "퀵 배송" && !state.address.trim()))
+      ) {
+        setStep(2, { skipValidation: true });
+        requestAnimationFrame(() => validateStep(2));
+        return;
+      }
+      if (!validateStep(2)) return;
+      window.NMOrderCore?.track("quote_download", {
+        product: "lucky",
+        qty: state.quantity,
+        total_price: totalPrice()
+      });
       const canvas = document.createElement("canvas");
       const width = 1080;
       const height = 1320;
@@ -1171,7 +1272,16 @@
         }
         try {
           await submitLandingOrder();
+          window.NMOrderCore?.track("submit_success", {
+            product: "lucky",
+            qty: state.quantity,
+            total_price: totalPrice()
+          });
         } catch (error) {
+          window.NMOrderCore?.track("submit_error", {
+            product: "lucky",
+            message: error.message || "submit failed"
+          });
           showToast(error.message || "주문 저장에 실패했어요.");
           return;
         }
@@ -1232,6 +1342,7 @@
           state.method = button.dataset.method;
           document.querySelectorAll("[data-method]").forEach((b) => b.setAttribute("aria-pressed", b === button));
           $("addressWrap").style.display = state.method === "퀵 배송" ? "block" : "none";
+          if (state.method !== "퀵 배송") window.NMOrderCore?.clearFieldError("addressInput");
           render();
         });
       });
@@ -1245,7 +1356,16 @@
       $("nextButton").addEventListener("click", nextStep);
       $("copyButton").addEventListener("click", copyOrder);
       $("quoteButton").addEventListener("click", receiveQuote);
+      pushOrderStep = window.NMOrderCore?.setupStepHistory({
+        getStep: () => state.step,
+        setStep
+      }) || (() => {});
       render();
+      window.NMOrderCore?.track("order_step_view", {
+        product: "lucky",
+        step: state.step,
+        step_label: $("stepLabel")?.textContent || "갯수"
+      });
     }
 
     init();

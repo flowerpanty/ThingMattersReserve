@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>수제꾸덕쿠키 주문 | NOTHINGMATTERS.</title>
   <meta name="description" content="NOTHINGMATTERS. 수제꾸덕쿠키 7가지맛 주문 견적 시스템" />
+  <link rel="stylesheet" href="order.css" />
   <style>
     :root {
       --ink: #171313;
@@ -214,6 +215,27 @@
     input:focus, textarea:focus, select:focus {
       border-color: var(--blue);
       box-shadow: 0 0 0 4px rgba(36,84,214,.13);
+    }
+
+    input.is-invalid,
+    textarea.is-invalid,
+    select.is-invalid {
+      border-color: var(--danger);
+      box-shadow: 0 0 0 4px rgba(255,77,61,.14);
+    }
+
+    .fieldError {
+      display: block;
+      min-height: 16px;
+      margin-top: 6px;
+      color: var(--danger);
+      font-size: 11px;
+      font-weight: 800;
+      line-height: 1.35;
+    }
+
+    .fieldError[hidden] {
+      display: none;
     }
 
     .methodGrid, .optionGrid {
@@ -818,13 +840,13 @@
     <div class="headerInner">
       <a class="brand" href="#top">NOTHINGMATTERS.</a>
       <nav class="stepIndicator" aria-label="주문 단계">
-        <a class="topStep active" href="#top" data-step-link="1" data-icon="📋"><span class="topStepDot">📋</span><span>기본정보</span></a>
+        <a class="topStep active" href="#top" data-step-link="1" data-icon="🎁"><span class="topStepDot">🎁</span><span>패키지</span></a>
         <span class="topStepLine" aria-hidden="true"></span>
-        <a class="topStep" href="#top" data-step-link="2" data-icon="🎁"><span class="topStepDot">🎁</span><span>패키지</span></a>
+        <a class="topStep" href="#top" data-step-link="2" data-icon="🍪"><span class="topStepDot">🍪</span><span>맛 선택</span></a>
         <span class="topStepLine" aria-hidden="true"></span>
-        <a class="topStep" href="#top" data-step-link="3" data-icon="🍪"><span class="topStepDot">🍪</span><span>맛 선택</span></a>
+        <a class="topStep" href="#top" data-step-link="3" data-icon="➕"><span class="topStepDot">➕</span><span>추가옵션</span></a>
         <span class="topStepLine" aria-hidden="true"></span>
-        <a class="topStep" href="#top" data-step-link="4" data-icon="➕"><span class="topStepDot">➕</span><span>추가옵션</span></a>
+        <a class="topStep" href="#top" data-step-link="4" data-icon="📋"><span class="topStepDot">📋</span><span>기본정보</span></a>
         <span class="topStepLine" aria-hidden="true"></span>
         <a class="topStep" href="#top" data-step-link="5" data-icon="📄"><span class="topStepDot">📄</span><span>견적서</span></a>
       </nav>
@@ -832,28 +854,28 @@
   </header>
 
   <main id="top">
-    <section class="stepPage active" data-step-page="1" aria-labelledby="basicTitle">
+    <section class="stepPage" data-step-page="4" aria-labelledby="basicTitle">
       <div class="heroImage imageFrame">
         <img src="public/cookie-assets/hero/seven-flavors.webp" alt="수제꾸덕쿠키 7가지맛 대표 이미지" onerror="imageFallback(this)" />
         <span class="fallback">이미지 준비 중</span>
       </div>
       <div class="pageHead">
-        <p class="eyebrow">Step 01</p>
+        <p class="eyebrow">Step 04</p>
         <h1 id="basicTitle">기본정보 입력</h1>
-        <p class="lead">견적서에 들어갈 주문자 정보와 수령 정보를 먼저 적어주세요.</p>
+        <p class="lead">선택한 구성을 견적서로 받기 전에 주문자 정보와 수령 정보를 적어주세요.</p>
       </div>
       <div class="stack">
         <article class="card">
           <p class="eyebrow">Customer</p>
           <div class="fieldGrid">
-            <label><span>고객명</span><input id="customerName" type="text" placeholder="성함" autocomplete="name" /></label>
-            <label><span>핸드폰</span><input id="customerPhone" type="tel" placeholder="010-0000-0000" autocomplete="tel" /></label>
+            <label><span>고객명</span><input id="customerName" type="text" placeholder="성함" autocomplete="name" /><small class="fieldError" id="customerNameError" hidden></small></label>
+            <label><span>핸드폰</span><input id="customerPhone" type="tel" placeholder="010-0000-0000" autocomplete="tel" /><small class="fieldError" id="customerPhoneError" hidden></small></label>
           </div>
         </article>
         <article class="card">
           <p class="eyebrow">Pick up</p>
           <div class="fieldGrid">
-            <label><span>수령희망일</span><input id="dateInput" type="date" /></label>
+            <label><span>수령희망일</span><input id="dateInput" type="date" /><small class="fieldError" id="dateInputError" hidden></small></label>
             <label><span>희망 시간</span><select id="timeInput">
               <option>12:00~13:00</option>
               <option>13:00~14:00</option>
@@ -871,14 +893,14 @@
             <button class="choiceBtn" type="button" data-method="매장 픽업" aria-pressed="true">매장 픽업<small>방문 수령</small></button>
             <button class="choiceBtn" type="button" data-method="퀵 배송" aria-pressed="false">퀵 배송<small>지역 상담 필요</small></button>
           </div>
-          <label id="addressWrap" style="display:none; margin-top:12px;"><span>퀵 배송 주소</span><input id="addressInput" type="text" placeholder="주소를 입력해 주세요" /></label>
+          <label id="addressWrap" style="display:none; margin-top:12px;"><span>퀵 배송 주소</span><input id="addressInput" type="text" placeholder="주소를 입력해 주세요" /><small class="fieldError" id="addressInputError" hidden></small></label>
         </article>
       </div>
     </section>
 
-    <section class="stepPage" data-step-page="2" aria-labelledby="packageTitle">
+    <section class="stepPage active" data-step-page="1" aria-labelledby="packageTitle">
       <div class="pageHead">
-        <p class="eyebrow">Step 02</p>
+        <p class="eyebrow">Step 01</p>
         <h2 id="packageTitle">패키지 선택</h2>
         <p class="lead">사진을 보면서 포장 형태를 먼저 골라주세요.</p>
       </div>
@@ -890,11 +912,17 @@
       <div class="packagePreview" id="packagePreview"></div>
     </section>
 
-    <section class="stepPage" data-step-page="3" aria-labelledby="flavorTitle">
+    <section class="stepPage" data-step-page="2" aria-labelledby="flavorTitle">
       <div class="pageHead">
-        <p class="eyebrow">Step 03</p>
+        <p class="eyebrow">Step 02</p>
         <h2 id="flavorTitle">맛 수량 선택</h2>
         <p class="lead" id="flavorGuide">원하는 맛을 누르거나 + 버튼으로 수량을 담아주세요.</p>
+      </div>
+      <div class="presetPills" aria-label="빠른 추천 조합">
+        <button type="button" onclick="applyFlavorPreset('popular')">인기 조합</button>
+        <button type="button" onclick="applyFlavorPreset('choco')">초코 좋아요</button>
+        <button type="button" onclick="applyFlavorPreset('bulk')">단체 답례 추천</button>
+        <button type="button" onclick="applyFlavorPreset('kids')">아이들 간식 추천</button>
       </div>
       <div class="flavorGrid" id="flavorGrid"></div>
       <div class="currentBox">
@@ -907,9 +935,9 @@
       <div class="cartBox" id="flavorCartBox"></div>
     </section>
 
-    <section class="stepPage" data-step-page="4" aria-labelledby="addonTitle">
+    <section class="stepPage" data-step-page="3" aria-labelledby="addonTitle">
       <div class="pageHead">
-        <p class="eyebrow">Step 04</p>
+        <p class="eyebrow">Step 03</p>
         <h2 id="addonTitle">추가옵션</h2>
         <p class="lead">필요한 옵션만 선택하면 견적서에 바로 반영돼요.</p>
       </div>
@@ -984,8 +1012,8 @@
     <div class="floatingInner">
       <button class="floatingBack" id="prevButton" type="button">이전</button>
       <div class="floatingMeta">
-        <small id="stepLabel">기본정보</small>
-        <strong id="stepTitle">정보 입력</strong>
+        <small id="stepLabel">패키지</small>
+        <strong id="stepTitle">패키지 선택</strong>
       </div>
       <div class="floatingCart" aria-live="polite">
         <strong id="cartTitle">🛒 현재 상품 · 0개 · 0원</strong>
@@ -996,6 +1024,7 @@
   </div>
   <div class="toast" id="toast" role="status" aria-live="polite">선택 내용이 복사됐어요.</div>
 
+  <script src="order-core.js"></script>
   <script>
     const kakaoUrl = "https://pf.kakao.com/_QdCaK/chat";
     const cookieUnitPrice = 4500;
@@ -1011,6 +1040,13 @@
       { id: "lotus-caramel", name: "로투스카라멜", character: "눈알", image: "public/cookie-assets/flavors/flavor-06.webp", short: "로투스 카라멜" },
       { id: "matcha-macadamia", name: "말차마카다미아", character: "개구리", image: "public/cookie-assets/flavors/flavor-07.webp", short: "말차 마카다미아" }
     ];
+
+    const flavorPresets = {
+      popular: ["walnut-choco", "double-choco", "butterscotch", "matcha-macadamia"],
+      choco: ["double-choco", "walnut-choco", "oreo-choco", "black-peanut"],
+      bulk: ["walnut-choco", "butterscotch", "lotus-caramel", "matcha-macadamia"],
+      kids: ["oreo-choco", "lotus-caramel", "butterscotch", "double-choco"]
+    };
 
     const packages = [
       { id: "one-box", name: "1구박스", fee: 600, unit: 1, image: "public/cookie-assets/gallery/one-box-01.webp", desc: "깔끔한 단일 선물용", badge: "쿠키 1개당 +600원", examples: ["one-box-01", "one-box-12"] },
@@ -1036,6 +1072,7 @@
       ribbon: false,
       sticker: false
     };
+    let pushOrderStep = () => {};
 
     const $ = (id) => document.getElementById(id);
     const STORAGE_KEY = "nm-cookies-state-v1";
@@ -1212,10 +1249,10 @@
     }
 
     function renderPackages() {
-      $("packageRail").innerHTML = packages.map((pkg) => `
+      $("packageRail").innerHTML = packages.map((pkg, index) => `
         <button class="packageCard" type="button" aria-pressed="${state.packageId === pkg.id}" onclick="selectPackage('${pkg.id}')">
           <span class="packageImage imageFrame">
-            <img src="${pkg.image}" alt="${pkg.name}" onerror="imageFallback(this)" />
+            <img src="${pkg.image}" alt="${pkg.name}" width="640" height="480" ${index === 0 ? 'fetchpriority="high"' : 'loading="lazy"'} decoding="async" onerror="imageFallback(this)" />
             <span class="fallback">이미지 준비 중</span>
           </span>
           <span class="badge">${pkg.badge}</span>
@@ -1259,7 +1296,7 @@
     }
 
     function renderFlavors() {
-      $("flavorGuide").textContent = `${selectedPackage().name} 선택 중 · 현재 쿠키 ${flavorTotal()}개`;
+      $("flavorGuide").textContent = `${selectedPackage().name} 선택 중 · ${packageProgressText()}`;
       $("flavorGrid").innerHTML = flavors.map((f) => {
         const qty = Number(state.flavorQty[f.id] || 0);
         return `
@@ -1279,6 +1316,27 @@
       }).join("");
       $("currentBuildText").textContent = `${selectedPackage().name} · ${flavorNames().join(", ") || "맛 미선택"} · ${won(currentTotal())}`;
       renderFlavorCart();
+    }
+
+    function applyFlavorPreset(presetId) {
+      const preset = flavorPresets[presetId] || flavorPresets.popular;
+      const unit = selectedPackage().unit || 1;
+      const nextQty = {};
+      for (let index = 0; index < unit; index += 1) {
+        const flavorId = preset[index % preset.length];
+        nextQty[flavorId] = Number(nextQty[flavorId] || 0) + 1;
+      }
+      state.flavorQty = nextQty;
+      saveState();
+      renderFlavors();
+      renderFloating();
+      showToast(`${packageProgressText()} 추천 조합을 담았어요.`);
+      window.NMOrderCore?.track("option_select", {
+        page: "cookies",
+        option_type: "flavor_preset",
+        option_value: presetId,
+        package_id: state.packageId
+      });
     }
 
     function renderFlavorCart() {
@@ -1332,10 +1390,10 @@
 
     function renderFloating() {
       const labels = {
-        1: ["기본정보", "정보 입력"],
-        2: ["패키지선택", selectedPackage().name],
-        3: ["맛 선택", "장바구니 담기"],
-        4: ["추가옵션", "옵션 선택"],
+        1: ["패키지", selectedPackage().name],
+        2: ["맛 선택", "장바구니 담기"],
+        3: ["추가옵션", "옵션 선택"],
+        4: ["기본정보", "정보 입력"],
         5: ["견적서", "최종 확인"]
       };
       $("stepLabel").textContent = labels[state.step][0];
@@ -1347,7 +1405,7 @@
       $("cartTitle").textContent = title;
       $("cartDetail").textContent = state.items.length
         ? state.items.map((item) => `${(packages.find(p => p.id === item.packageId) || packages[0]).name}: ${flavorNames(item.flavorQty).join(",")}`).join(" / ")
-        : `${selectedPackage().name} · ${flavorNames().join(", ") || "맛 미선택"}`;
+        : floatingActionHint();
       $("prevButton").style.visibility = state.step === 1 ? "hidden" : "visible";
       $("nextButton").textContent = state.step === 5 ? "견적서" : "다음";
       document.querySelectorAll("[data-step-link]").forEach((link) => {
@@ -1360,6 +1418,24 @@
       document.querySelectorAll("[data-step-page]").forEach((page) => {
         page.classList.toggle("active", Number(page.dataset.stepPage) === state.step);
       });
+    }
+
+    function packageProgressText() {
+      const pkg = selectedPackage();
+      const count = flavorTotal();
+      const unit = Math.max(1, Number(pkg.unit || 1));
+      if (!count) return `${pkg.name} 기준으로 맛을 골라주세요.`;
+      const remainder = count % unit;
+      if (remainder === 0) return `${pkg.name} 구성 완료 · 장바구니 담기 가능`;
+      return `${pkg.name} ${unit}구 중 ${remainder}개 선택 · ${unit - remainder}개 더 고르면 딱 맞아요`;
+    }
+
+    function floatingActionHint() {
+      if (state.step === 1) return "패키지를 먼저 고르면 맛 선택이 쉬워져요.";
+      if (state.step === 2) return packageProgressText();
+      if (state.step === 3) return "리본/스티커가 필요 없으면 기본정보로 넘어가도 돼요.";
+      if (state.step === 4) return "이름, 연락처, 날짜를 입력하면 견적서 생성 가능";
+      return `${selectedPackage().name} · ${flavorNames().join(", ") || "맛 미선택"}`;
     }
 
     function render() {
@@ -1375,6 +1451,11 @@
     function selectPackage(id) {
       state.packageId = id;
       if (id !== "drink-set") state.drink = "수제초코";
+      window.NMOrderCore?.track("option_select", {
+        product: "cookies",
+        option_group: "package",
+        option_value: id
+      });
       render();
     }
 
@@ -1398,6 +1479,12 @@
 
     function touchFlavor(id) {
       if (!state.flavorQty[id]) state.flavorQty[id] = 1;
+      window.NMOrderCore?.track("option_select", {
+        product: "cookies",
+        option_group: "flavor",
+        option_value: id,
+        qty: state.flavorQty[id]
+      });
       render();
     }
 
@@ -1417,6 +1504,12 @@
         drink: state.packageId === "drink-set" ? state.drink : "",
         ribbon: state.ribbon
       });
+      window.NMOrderCore?.track("cart_add_combo", {
+        product: "cookies",
+        package_id: state.packageId,
+        total_cookies: flavorTotal(qty),
+        total_price: currentTotal()
+      });
       state.flavorQty = {};
       showToast("장바구니에 담았어요.");
       render();
@@ -1429,34 +1522,48 @@
     }
 
     function validateStep(step) {
-      if (step === 1) {
-        if (!state.customerName.trim()) return focusWarn("customerName", "고객명을 입력해 주세요.");
-        if (!state.customerPhone.trim()) return focusWarn("customerPhone", "핸드폰 번호를 입력해 주세요.");
-        if (!state.date) return focusWarn("dateInput", "수령희망일을 선택해 주세요.");
-      }
-      if (step === 3 && !state.items.length && flavorTotal() < 1) {
+      if (step === 2 && !state.items.length && flavorTotal() < 1) {
         showToast("맛 수량을 선택해 주세요.");
         return false;
+      }
+      if (step === 4) {
+        ["customerName", "customerPhone", "dateInput", "addressInput"].forEach((id) => {
+          window.NMOrderCore?.clearFieldError(id);
+        });
+        if (!state.customerName.trim()) return focusWarn("customerName", "이름을 입력해주세요.");
+        if (!/^010[-\s]?\d{4}[-\s]?\d{4}$/.test(state.customerPhone.trim())) {
+          return focusWarn("customerPhone", "010 형식으로 입력해주세요.");
+        }
+        if (!state.date) return focusWarn("dateInput", "수령희망일을 선택해주세요.");
+        if (state.method === "퀵 배송" && !state.address.trim()) {
+          return focusWarn("addressInput", "퀵 배송은 주소가 필요해요.");
+        }
       }
       return true;
     }
 
     function focusWarn(id, msg) {
-      showToast(msg);
-      $(id).focus();
+      window.NMOrderCore?.setFieldError(id, msg);
+      window.NMOrderCore?.focusField(id);
       return false;
     }
 
-    function setStep(step) {
+    function setStep(step, options = {}) {
       const next = Math.max(1, Math.min(5, step));
-      if (next > state.step && !validateStep(state.step)) return;
+      if (!options.skipValidation && next > state.step && !validateStep(state.step)) return;
       state.step = next;
       render();
+      if (!options.fromHistory) pushOrderStep(state.step);
+      window.NMOrderCore?.track("order_step_view", {
+        product: "cookies",
+        step: state.step,
+        step_label: $("stepLabel")?.textContent || ""
+      });
       window.scrollTo({ top: 0, behavior: "smooth" });
     }
 
     function nextStep() {
-      if (state.step === 3 && flavorTotal() > 0) addCurrentItem();
+      if (state.step === 2 && flavorTotal() > 0) addCurrentItem();
       if (state.step === 5) return receiveQuote();
       setStep(state.step + 1);
     }
@@ -1523,13 +1630,29 @@ ${lines}
     }
 
     function receiveQuote() {
-      if (!validateStep(1)) return;
+      if (
+        state.step !== 4 &&
+        (!state.customerName.trim() ||
+          !/^010[-\s]?\d{4}[-\s]?\d{4}$/.test(state.customerPhone.trim()) ||
+          !state.date ||
+          (state.method === "퀵 배송" && !state.address.trim()))
+      ) {
+        setStep(4, { skipValidation: true });
+        requestAnimationFrame(() => validateStep(4));
+        return;
+      }
+      if (!validateStep(4)) return;
       if (!state.items.length && flavorTotal() < 1) {
         showToast("견적서에 넣을 맛을 선택해 주세요.");
-        state.step = 3;
+        state.step = 2;
         render();
         return;
       }
+      window.NMOrderCore?.track("quote_download", {
+        product: "cookies",
+        total_cookies: totalCookies(),
+        total_price: subtotal()
+      });
       const canvas = document.createElement("canvas");
       const width = 1080;
       const height = 1320;
@@ -1605,7 +1728,16 @@ ${lines}
         }
         try {
           await submitLandingOrder();
+          window.NMOrderCore?.track("submit_success", {
+            product: "cookies",
+            total_cookies: totalCookies(),
+            total_price: subtotal()
+          });
         } catch (error) {
+          window.NMOrderCore?.track("submit_error", {
+            product: "cookies",
+            message: error.message || "submit failed"
+          });
           showToast(error.message || "주문 저장에 실패했어요.");
           return;
         }
@@ -1644,6 +1776,14 @@ ${lines}
       state.time = $("timeInput").value;
       state.address = $("addressInput").value;
       state.request = $("requestInput").value;
+      if (state.customerName.trim()) window.NMOrderCore?.clearFieldError("customerName");
+      if (/^010[-\s]?\d{4}[-\s]?\d{4}$/.test(state.customerPhone.trim())) {
+        window.NMOrderCore?.clearFieldError("customerPhone");
+      }
+      if (state.date) window.NMOrderCore?.clearFieldError("dateInput");
+      if (state.method !== "퀵 배송" || state.address.trim()) {
+        window.NMOrderCore?.clearFieldError("addressInput");
+      }
       renderFloating();
       if (state.step === 5) renderQuote();
       savePageState();
@@ -1677,6 +1817,7 @@ ${lines}
           state.method = button.dataset.method;
           document.querySelectorAll("[data-method]").forEach((b) => b.setAttribute("aria-pressed", b === button));
           $("addressWrap").style.display = state.method === "퀵 배송" ? "block" : "none";
+          if (state.method !== "퀵 배송") window.NMOrderCore?.clearFieldError("addressInput");
           render();
         });
       });
@@ -1693,7 +1834,16 @@ ${lines}
       $("stickerButton").addEventListener("click", () => { state.sticker = !state.sticker; render(); });
       $("copyButton").addEventListener("click", copyOrder);
       $("quoteButton").addEventListener("click", receiveQuote);
+      pushOrderStep = window.NMOrderCore?.setupStepHistory({
+        getStep: () => state.step,
+        setStep
+      }) || (() => {});
       render();
+      window.NMOrderCore?.track("order_step_view", {
+        product: "cookies",
+        step: state.step,
+        step_label: $("stepLabel")?.textContent || "패키지"
+      });
     }
 
     init();
