@@ -530,6 +530,24 @@
       font-weight: 600;
     }
 
+    .comboMinimum {
+      border: 1px solid rgba(255, 122, 0, 0.22);
+      border-radius: 12px;
+      background: rgba(255, 122, 0, 0.08);
+      color: #b45309;
+      padding: 9px 10px;
+      text-align: center;
+      font-size: 11px;
+      font-weight: 800;
+      line-height: 1.35;
+    }
+
+    .comboMinimum.ok {
+      border-color: rgba(22, 163, 74, 0.2);
+      background: rgba(22, 163, 74, 0.08);
+      color: #15803d;
+    }
+
     .comboRemove {
       border: 0;
       border-radius: 999px;
@@ -2535,7 +2553,7 @@
             </label>
           </div>
           <button class="comboAddButton" id="comboAdd" type="button">🛒 장바구니에 담기</button>
-          <p class="cartHint">담으면 선택이 초기화돼요. 다른 캐릭터를 이어서 고를 수 있어요.</p>
+          <p class="cartHint">브루키는 총 12개부터 주문 가능해요. 여러 조합을 담아 합산할 수 있어요.</p>
           <div class="comboList" id="comboList" aria-live="polite"></div>
         </section>
       </aside>
@@ -2801,6 +2819,7 @@
     const $ = (id) => document.getElementById(id);
     const KAKAO_URL = "https://pf.kakao.com/_QdCaK/chat";
     const STORAGE_KEY = "nm-brookie-state-v1";
+    const MIN_BROOKIE_QTY = 12;
     const won = (value) => `${value.toLocaleString("ko-KR")}원`;
     const nameOf = (list, id) => (list.find((item) => item[0] === id) || [id, id])[1];
     const renderSrc = () => `public/renders/${state.character}_${state.paper}.webp`;
@@ -3137,6 +3156,24 @@
       return orderCombos().reduce((sum, combo) => sum + combo.qty, 0);
     }
 
+    function minimumQtyRemaining() {
+      return Math.max(0, MIN_BROOKIE_QTY - totalQty());
+    }
+
+    function hasMinimumOrderQty() {
+      return minimumQtyRemaining() === 0;
+    }
+
+    function minimumOrderMessage() {
+      if (!state.items.length) {
+        return `브루키는 최소 ${MIN_BROOKIE_QTY}개부터 주문 가능해요. 조합을 장바구니에 담아주세요.`;
+      }
+      const remaining = minimumQtyRemaining();
+      return remaining > 0
+        ? `브루키는 최소 ${MIN_BROOKIE_QTY}개부터 주문 가능해요. ${remaining}개 더 담아주세요.`
+        : `최소 주문 수량 ${MIN_BROOKIE_QTY}개를 충족했어요.`;
+    }
+
     function comboUnitItems(combo) {
       const items = [["기본 브루키", 7800]];
       if (premiumChars.has(combo.character)) items.push([`${nameOf(chars, combo.character)} 캐릭터`, 500]);
@@ -3154,9 +3191,17 @@
       $("comboStepHint").textContent = `${state.items.length ? `${state.items.length}개 담김` : `${state.qty}개`}`;
       const list = $("comboList");
       if (!state.items.length) {
-        list.innerHTML = `<div class="comboItem"><div><strong>장바구니 비어 있음</strong><span>현재 보이는 상품 ${state.qty}개로 견적이 계산돼요.</span></div></div>`;
+        const currentRemaining = Math.max(0, MIN_BROOKIE_QTY - state.qty);
+        const currentNotice = currentRemaining > 0
+          ? `현재 ${state.qty}개 선택됨 · ${currentRemaining}개를 더 늘리거나 다른 조합과 합산해 주세요.`
+          : `현재 ${state.qty}개 선택됨 · 장바구니에 담으면 최소 수량 충족`;
+        list.innerHTML = `
+          <div class="comboItem"><div><strong>장바구니 비어 있음</strong><span>현재 보이는 상품 ${state.qty}개로 견적이 계산돼요.</span></div></div>
+          <div class="comboMinimum${currentRemaining ? "" : " ok"}">${currentNotice}</div>
+        `;
         return;
       }
+      const remaining = minimumQtyRemaining();
       list.innerHTML = state.items.map((combo) => `
         <div class="comboItem">
           <div>
@@ -3165,7 +3210,7 @@
           </div>
           <button class="comboRemove" type="button" data-remove-combo="${combo.id}">삭제</button>
         </div>
-      `).join("");
+      `).join("") + `<div class="comboMinimum${remaining ? "" : " ok"}">${minimumOrderMessage()}</div>`;
     }
 
     function addCurrentCombo() {
@@ -3374,6 +3419,11 @@ ${custom ? `${custom}\n` : ""}
     }
 
     async function receiveQuote() {
+      if (!state.items.length || !hasMinimumOrderQty()) {
+        setActiveStep(1, { skipValidation: true });
+        showToast(minimumOrderMessage());
+        return;
+      }
       if (
         activeStep !== 3 &&
         (!state.customerName.trim() ||
@@ -3538,8 +3588,9 @@ ${custom ? `${custom}\n` : ""}
 
     function floatingNextHint() {
       if (activeStep === 1 && !state.items.length) {
-        return "조합을 담으면 다음 단계로 넘어갈 수 있어요.";
+        return `총 ${MIN_BROOKIE_QTY}개 이상 담아야 다음 단계로 넘어갈 수 있어요.`;
       }
+      if (activeStep === 1 && !hasMinimumOrderQty()) return `${minimumQtyRemaining()}개 더 담으면 주문 가능해요.`;
       if (activeStep === 1) return `${cartDetail()} · 추가 옵션 확인하기`;
       if (activeStep === 2) return "토퍼/스티커가 필요 없다면 바로 기본 정보로 가도 돼요.";
       if (activeStep === 3) return "이름, 연락처, 날짜, 시간을 입력하면 견적서 생성 가능";
@@ -3548,7 +3599,7 @@ ${custom ? `${custom}\n` : ""}
 
     function cartTitle() {
       if (!state.items.length) return `🛒 현재 상품 · ${state.qty}개`;
-      return `🛒 장바구니 ${state.items.length}종 · 총 ${totalQty()}개`;
+      return `🛒 장바구니 ${state.items.length}종 · 총 ${totalQty()}/${MIN_BROOKIE_QTY}개`;
     }
 
     function cartDetail() {
@@ -3605,9 +3656,15 @@ ${custom ? `${custom}\n` : ""}
     }
 
     function validateStep(step) {
-      if (step === 1 && !state.items.length) {
-        showToast("먼저 브루키 조합을 장바구니에 담아주세요.");
-        return false;
+      if (step === 1) {
+        if (!state.items.length) {
+          showToast(minimumOrderMessage());
+          return false;
+        }
+        if (!hasMinimumOrderQty()) {
+          showToast(minimumOrderMessage());
+          return false;
+        }
       }
       if (step !== 3) return true;
       ["customerName", "customerPhone", "needDate", "pickupTime", "deliveryAddress"].forEach((id) => {

@@ -38,6 +38,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     cookie7: '수제꾸덕쿠키',
     lucky: '행운쿠키',
   };
+  const brookieMinimumQuantity = 12;
 
   const toPositiveInt = (value: any, fallback = 0) => {
     const next = Math.floor(Number(value));
@@ -243,6 +244,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       totalQuantity += quantity;
       totalPrice += unitPrice * quantity;
     });
+
+    if (totalQuantity < brookieMinimumQuantity) {
+      throw new Error(`브루키는 최소 ${brookieMinimumQuantity}개부터 주문 가능해요.`);
+    }
 
     if (body.topper) {
       orderItems.push({

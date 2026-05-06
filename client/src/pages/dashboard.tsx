@@ -60,6 +60,51 @@ interface DashboardStats {
   popularProducts: Array<{ name: string; count: number; }>;
 }
 
+const KOREA_TIME_ZONE = 'Asia/Seoul';
+const DAY_IN_MS = 24 * 60 * 60 * 1000;
+
+const koreanDateKeyFormatter = new Intl.DateTimeFormat('en-US', {
+  timeZone: KOREA_TIME_ZONE,
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
+});
+
+const koreanHeaderDateFormatter = new Intl.DateTimeFormat('ko-KR', {
+  timeZone: KOREA_TIME_ZONE,
+  month: 'long',
+  day: 'numeric',
+  weekday: 'long',
+});
+
+function getKoreanDateKey(value: Date | string | number = new Date()) {
+  const date = value instanceof Date ? value : new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return '';
+  }
+
+  const parts = koreanDateKeyFormatter.formatToParts(date);
+  const year = parts.find((part) => part.type === 'year')?.value;
+  const month = parts.find((part) => part.type === 'month')?.value;
+  const day = parts.find((part) => part.type === 'day')?.value;
+
+  return year && month && day ? `${year}-${month}-${day}` : '';
+}
+
+function getKoreanDateKeyWithOffset(baseDate: Date, offsetDays: number) {
+  return getKoreanDateKey(baseDate.getTime() + offsetDays * DAY_IN_MS);
+}
+
+function formatKoreanDateKeyShort(dateKey: string) {
+  const [, month, day] = dateKey.split('-');
+  return month && day ? `${Number(month)}/${Number(day)}` : dateKey;
+}
+
+function formatKoreanHeaderDate(date: Date) {
+  return koreanHeaderDateFormatter.format(date);
+}
+
 function getLandingSourceInfo(order: Pick<Order, 'orderItems'>) {
   const meta = order.orderItems.find((item) => item.type === 'meta')?.options || {};
   const source = meta.landingSource || meta.source;
@@ -645,6 +690,7 @@ export function Dashboard() {
   const [statusFilter, setStatusFilter] = useState('all');
   const [isSelectionMode, setIsSelectionMode] = useState(false);
   const [selectedOrderIds, setSelectedOrderIds] = useState<string[]>([]);
+  const [now, setNow] = useState(() => new Date());
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -653,6 +699,11 @@ export function Dashboard() {
     if (authStatus === 'true') {
       setIsAuthenticated(true);
     }
+  }, []);
+
+  useEffect(() => {
+    const intervalId = window.setInterval(() => setNow(new Date()), 60 * 1000);
+    return () => window.clearInterval(intervalId);
   }, []);
 
   const handleAuthenticate = () => setIsAuthenticated(true);
@@ -895,11 +946,12 @@ export function Dashboard() {
     return counts;
   }, [orders]);
 
-  // 통계
-  const today = new Date().toISOString().split('T')[0];
+  // 통계: 날짜 집계는 매장 운영 기준인 한국시간 자정에 맞춘다.
+  const today = getKoreanDateKey(now);
+  const todayLabel = formatKoreanHeaderDate(now);
   const stats: DashboardStats = useMemo(() => ({
     totalOrders: orders.length,
-    todayOrders: orders.filter(o => new Date(o.createdAt).toDateString() === new Date().toDateString()).length,
+    todayOrders: orders.filter(o => getKoreanDateKey(o.createdAt) === today).length,
     totalRevenue: orders.reduce((sum, o) => sum + o.totalPrice, 0),
     unpaidCount: orders.filter(o => !o.paymentConfirmed && o.orderStatus !== 'completed').length,
     todayPickups: orders.filter(o => o.deliveryDate === today).length,
@@ -933,7 +985,7 @@ export function Dashboard() {
               🍪 주문 관리
             </h1>
             <p className="text-xs text-muted-foreground mt-0.5">
-              {headerOrderSummary} • {format(new Date(), 'M월 d일 EEEE', { locale: ko })}
+              {headerOrderSummary} • {todayLabel} • 한국시간 기준
             </p>
           </div>
           <div className="flex items-center gap-1.5">
@@ -1186,12 +1238,10 @@ export function Dashboard() {
                   {(() => {
                     const last7Days = [];
                     for (let i = 6; i >= 0; i--) {
-                      const date = new Date();
-                      date.setDate(date.getDate() - i);
-                      const dateStr = date.toDateString();
-                      const dayOrders = orders.filter(o => new Date(o.createdAt).toDateString() === dateStr);
+                      const dateKey = getKoreanDateKeyWithOffset(now, -i);
+                      const dayOrders = orders.filter(o => getKoreanDateKey(o.createdAt) === dateKey);
                       last7Days.push({
-                        date: format(date, 'M/d'),
+                        date: formatKoreanDateKeyShort(dateKey),
                         orders: dayOrders.length,
                         revenue: dayOrders.reduce((sum, o) => sum + o.totalPrice, 0)
                       });
