@@ -2,7 +2,7 @@ import { useState, useCallback, useEffect } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
-import { orderDataSchema, type OrderData } from '@shared/schema';
+import { getMinimumDeliveryDate, minimumOrderQuantities, orderDataSchema, type OrderData } from '@shared/schema';
 
 const initialFormData: OrderData = {
   customerName: '',
@@ -100,8 +100,8 @@ export function useOrderForm() {
       try {
         const parsed = JSON.parse(savedData);
         // 날짜가 과거인 경우 무시
-        const today = new Date().toISOString().split('T')[0];
-        if (parsed.deliveryDate && parsed.deliveryDate <= today) {
+        const minDate = getMinimumDeliveryDate();
+        if (parsed.deliveryDate && parsed.deliveryDate < minDate) {
           // 과거 날짜는 제거
           delete parsed.deliveryDate;
         }
@@ -166,10 +166,10 @@ export function useOrderForm() {
 
       // Check minimum quantity for 1구+음료 (minimum 12)
       const totalSingleWithDrinkQuantity = validatedData.singleWithDrinkSets.reduce((sum, set) => sum + set.quantity, 0);
-      if (totalSingleWithDrinkQuantity > 0 && totalSingleWithDrinkQuantity < 12) {
+      if (totalSingleWithDrinkQuantity > 0 && totalSingleWithDrinkQuantity < minimumOrderQuantities.singleWithDrink) {
         toast({
           title: "수량 확인",
-          description: "1구+음료는 최소 12개 이상 주문해주세요.",
+          description: `1구+음료는 최소 ${minimumOrderQuantities.singleWithDrink}개 이상 주문해주세요.`,
           variant: "destructive",
         });
         return;
@@ -177,10 +177,10 @@ export function useOrderForm() {
 
       // Check minimum quantity for 브라우니쿠키 (minimum 12)
       const totalBrownieQuantity = validatedData.brownieCookieSets.reduce((sum, set) => sum + set.quantity, 0);
-      if (totalBrownieQuantity > 0 && totalBrownieQuantity < 12) {
+      if (totalBrownieQuantity > 0 && totalBrownieQuantity < minimumOrderQuantities.brownie) {
         toast({
           title: "수량 확인",
-          description: "브라우니쿠키는 최소 12개 이상 주문해주세요.",
+          description: `브라우니쿠키는 최소 ${minimumOrderQuantities.brownie}개 이상 주문해주세요.`,
           variant: "destructive",
         });
         return;
@@ -188,18 +188,18 @@ export function useOrderForm() {
 
       // Check minimum quantity for 스콘 (minimum 12)
       const totalSconeQuantity = validatedData.sconeSets.reduce((sum, set) => sum + set.quantity, 0);
-      if (totalSconeQuantity > 0 && totalSconeQuantity < 12) {
+      if (totalSconeQuantity > 0 && totalSconeQuantity < minimumOrderQuantities.scone) {
         toast({
           title: "수량 확인",
-          description: "스콘은 최소 12개 이상 주문해주세요.",
+          description: `스콘은 최소 ${minimumOrderQuantities.scone}개 이상 주문해주세요.`,
           variant: "destructive",
         });
         return;
       }
 
       // Check if delivery date is not today
-      const today = new Date().toISOString().split('T')[0];
-      if (validatedData.deliveryDate <= today) {
+      const minDate = getMinimumDeliveryDate();
+      if (validatedData.deliveryDate < minDate) {
         toast({
           title: "날짜 확인",
           description: "당일 예약은 불가능합니다. 내일 이후 날짜를 선택해주세요.",

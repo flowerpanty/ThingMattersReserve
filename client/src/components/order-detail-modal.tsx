@@ -238,28 +238,7 @@ export function OrderDetailModal({ order, isOpen, onClose, onDelete }: OrderDeta
             const metaItem = order.orderItems.find((item: any) => item.type === 'meta');
             const orderData = metaItem ? metaItem.options : orderAny.originalOrderData;
 
-            // 가격 상수
-            const PRICES = {
-                regular: 4500,
-                brownie: 7800,
-                scone: 5000,
-                twoPackSet: 10500,
-                singleWithDrink: 11000,
-                fortune: 15000,
-                airplane: 22000,
-                brownieOptions: {
-                    birthdayBear: 500,
-                    customSticker: 20000,
-                    heartMessage: 500,
-                },
-                sconeOptions: {
-                    strawberryJam: 500,
-                },
-                packaging: {
-                    single_box: 600,
-                    plastic_wrap: 500,
-                }
-            };
+            const PRICES = cookiePrices;
 
             const detailedRows: any[] = [];
             let detailOptionText = '';

@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useState, useCallback } from "react";
 import { CustomerInfo } from "@/components/customer-info";
 import { DeliveryDate } from "@/components/delivery-date";
 import { DeliveryMethod } from "@/components/delivery-method";
@@ -12,7 +12,6 @@ import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
 import { BarChart3, Check } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { minimumOrderQuantities } from "@shared/schema";
 
 const STEPS = [
   { number: 1, label: "기본 정보", icon: "📋" },
@@ -83,29 +82,7 @@ export default function OrderForm() {
     resetForm,
   } = useOrderForm();
   const [currentStep, setCurrentStep] = useState(1);
-  const [isAdminSession, setIsAdminSession] = useState(false);
   const { toast } = useToast();
-
-  useEffect(() => {
-    let isMounted = true;
-
-    fetch('/api/admin/me', { credentials: 'include' })
-      .then((response) => response.ok ? response.json() : { authenticated: false })
-      .then((data) => {
-        if (isMounted) {
-          setIsAdminSession(data.authenticated === true);
-        }
-      })
-      .catch(() => {
-        if (isMounted) {
-          setIsAdminSession(false);
-        }
-      });
-
-    return () => {
-      isMounted = false;
-    };
-  }, []);
 
   // Calculate total items for floating summary
   const totalItems = (() => {
@@ -133,34 +110,6 @@ export default function OrderForm() {
     count += formData.fortuneCookie || 0;
     count += formData.airplaneSandwich || 0;
     return count;
-  })();
-
-  const minimumQuantityIssue = (() => {
-    const singleWithDrinkQty = (formData.singleWithDrinkSets || []).reduce(
-      (sum, set) => sum + (set.quantity || 0),
-      0
-    );
-    if (singleWithDrinkQty > 0 && singleWithDrinkQty < minimumOrderQuantities.singleWithDrink) {
-      return `1구+음료는 최소 ${minimumOrderQuantities.singleWithDrink}개 이상 주문해주세요.`;
-    }
-
-    const brownieQty = (formData.brownieCookieSets || []).reduce(
-      (sum, set) => sum + (set.quantity || 0),
-      0
-    );
-    if (brownieQty > 0 && brownieQty < minimumOrderQuantities.brownie) {
-      return `브라우니쿠키는 최소 ${minimumOrderQuantities.brownie}개 이상 주문해주세요.`;
-    }
-
-    const sconeQty = (formData.sconeSets || []).reduce(
-      (sum, set) => sum + (set.quantity || 0),
-      0
-    );
-    if (sconeQty > 0 && sconeQty < minimumOrderQuantities.scone) {
-      return `스콘은 최소 ${minimumOrderQuantities.scone}개 이상 주문해주세요.`;
-    }
-
-    return "";
   })();
 
   const goToStep = useCallback(
@@ -206,17 +155,8 @@ export default function OrderForm() {
       return;
     }
 
-    if (currentStep === 2 && minimumQuantityIssue) {
-      toast({
-        title: "최소 수량을 확인해주세요",
-        description: minimumQuantityIssue,
-        variant: "destructive",
-      });
-      return;
-    }
-
     if (currentStep < 3) goToStep(currentStep + 1);
-  }, [currentStep, goToStep, minimumQuantityIssue, toast, totalItems]);
+  }, [currentStep, goToStep, toast, totalItems]);
 
   const handlePrev = useCallback(() => {
     if (currentStep > 1) goToStep(currentStep - 1);
@@ -243,7 +183,7 @@ export default function OrderForm() {
                 수제 쿠키 주문
               </p>
             </div>
-            {isAdminSession && (
+            {localStorage.getItem("admin_authenticated") === "true" && (
               <Link href="/dashboard">
                 <div
                   className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors cursor-pointer"

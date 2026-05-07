@@ -7,14 +7,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { ChevronDown, ChevronRight } from "lucide-react";
 import { useState, useCallback } from "react";
-import {
-  cookieTypes,
-  drinkTypes,
-  formatWon,
-  minimumOrderQuantities,
-  productCatalog,
-  type OrderData,
-} from "@shared/schema";
+import { cookieTypes, drinkTypes, type OrderData } from "@shared/schema";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface ProductSelectionProps {
@@ -44,37 +37,6 @@ interface ProductSelectionProps {
   fortuneCookie: number;
   airplaneSandwich: number;
   onUpdate: (field: keyof OrderData, value: any) => void;
-}
-
-function MinimumQuantityHint({
-  label,
-  totalQuantity,
-  minimumQuantity,
-}: {
-  label: string;
-  totalQuantity: number;
-  minimumQuantity: number;
-}) {
-  const remaining = Math.max(0, minimumQuantity - totalQuantity);
-
-  if (totalQuantity === 0) {
-    return (
-      <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-700">
-        {label}은 최소 {minimumQuantity}개부터 주문 가능해요.
-      </div>
-    );
-  }
-
-  return (
-    <div className={`rounded-lg border px-3 py-2 text-xs font-semibold ${remaining > 0
-      ? "border-amber-200 bg-amber-50 text-amber-700"
-      : "border-emerald-200 bg-emerald-50 text-emerald-700"
-      }`}>
-      {remaining > 0
-        ? `${minimumQuantity}개까지 ${remaining}개 남았어요.`
-        : `${totalQuantity}개 선택됨 · 주문 가능 수량입니다.`}
-    </div>
-  );
 }
 
 export function ProductSelection({
@@ -290,38 +252,6 @@ export function ProductSelection({
 
   const fortuneSummary = fortuneCookie > 0 ? `${fortuneCookie}박스 선택됨` : '아직 선택 없음';
   const airplaneSummary = airplaneSandwich > 0 ? `${airplaneSandwich}박스 선택됨` : '아직 선택 없음';
-  const purposeShortcuts = [
-    {
-      key: 'gift',
-      icon: '🎁',
-      title: '답례품/단체',
-      description: regularCookieTotal > 0 ? `${regularCookieTotal}개 선택됨` : '일반 쿠키와 포장부터',
-      action: () => openAndFocusSection('regular'),
-    },
-    {
-      key: 'brookie',
-      icon: '🧸',
-      title: '브루키 커스텀',
-      description: brownieTotalQuantity > 0 ? `${brownieTotalQuantity}개 선택됨` : `최소 ${minimumOrderQuantities.brownie}개`,
-      action: () => openAndFocusSection('brownie'),
-    },
-    {
-      key: 'lucky',
-      icon: '🥠',
-      title: '행운쿠키',
-      description: fortuneCookie > 0 ? `${fortuneCookie}박스 선택됨` : `${formatWon(productCatalog.fortune.price)} / 박스`,
-      action: () => openAndFocusSection('fortune'),
-    },
-    {
-      key: 'etc',
-      icon: '☕',
-      title: '세트/기타',
-      description: singleWithDrinkTotalQuantity + sconeTotalQuantity + airplaneSandwich > 0
-        ? `${singleWithDrinkTotalQuantity + sconeTotalQuantity + airplaneSandwich}개 선택됨`
-        : '음료세트, 스콘, 샌드',
-      action: () => openAndFocusSection(singleWithDrinkTotalQuantity > 0 ? 'singledrink' : 'scone'),
-    },
-  ];
 
   // Quick presets
   const applyPreset = (preset: string) => {
@@ -364,26 +294,6 @@ export function ProductSelection({
   return (
     <Card className="card-shadow">
       <CardContent className="p-6">
-        <div className="mb-6">
-          <h3 className="text-sm font-semibold text-muted-foreground mb-3 flex items-center gap-2">
-            주문 목적부터 빠르게 고르기
-          </h3>
-          <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-            {purposeShortcuts.map((shortcut) => (
-              <button
-                key={shortcut.key}
-                type="button"
-                onClick={shortcut.action}
-                className="rounded-xl border border-border bg-card p-3 text-left transition-colors hover:border-primary/40 hover:bg-primary/5"
-              >
-                <div className="text-xl">{shortcut.icon}</div>
-                <div className="mt-2 text-sm font-semibold">{shortcut.title}</div>
-                <div className="mt-1 text-xs text-muted-foreground">{shortcut.description}</div>
-              </button>
-            ))}
-          </div>
-        </div>
-
         {/* Quick Presets */}
         <div className="mb-6">
           <h3 className="text-sm font-semibold text-muted-foreground mb-3 flex items-center gap-2">
@@ -683,8 +593,8 @@ export function ProductSelection({
                 <div className="flex items-center gap-3">
                   <span className="text-2xl">🍪☕</span>
                   <div className="text-left">
-                    <div className="font-semibold">1구+음료 (최소수량 {minimumOrderQuantities.singleWithDrink}개)</div>
-                    <div className="text-sm text-muted-foreground">세트당 {formatWon(productCatalog.singleWithDrink.price)}</div>
+                    <div className="font-semibold">1구+음료 (최소수량 12개)</div>
+                    <div className="text-sm text-muted-foreground">세트당 11,000원</div>
                     <div className="text-xs text-muted-foreground mt-1 max-w-[15rem] truncate sm:max-w-[26rem]" title={singleWithDrinkSummary}>
                       현재 선택: {singleWithDrinkSummary}
                     </div>
@@ -700,11 +610,6 @@ export function ProductSelection({
 
               <CollapsibleContent className="px-4 pb-4">
                 <div className="space-y-4">
-                  <MinimumQuantityHint
-                    label="1구+음료"
-                    totalQuantity={singleWithDrinkTotalQuantity}
-                    minimumQuantity={minimumOrderQuantities.singleWithDrink}
-                  />
                   {singleWithDrinkSets.map((set, index) => (
                     <div key={index} className="bg-accent/20 rounded-lg p-3">
                       <div className="flex items-center justify-between mb-3">
@@ -820,8 +725,8 @@ export function ProductSelection({
                 <div className="flex items-center gap-3">
                   <span className="text-2xl">🧸</span>
                   <div className="text-left">
-                    <div className="font-semibold">브라우니쿠키 (최소수량 {minimumOrderQuantities.brownie}개)</div>
-                    <div className="text-sm text-muted-foreground">개당 {formatWon(productCatalog.brownie.price)}</div>
+                    <div className="font-semibold">브라우니쿠키(최소수량12개)</div>
+                    <div className="text-sm text-muted-foreground">개당 7,800원</div>
                     <div className="text-xs text-muted-foreground mt-1 max-w-[15rem] truncate sm:max-w-[26rem]" title={brownieSummary}>
                       현재 선택: {brownieSummary}
                     </div>
@@ -837,11 +742,6 @@ export function ProductSelection({
 
               <CollapsibleContent className="px-4 pb-4">
                 <div className="space-y-3">
-                  <MinimumQuantityHint
-                    label="브라우니쿠키"
-                    totalQuantity={brownieTotalQuantity}
-                    minimumQuantity={minimumOrderQuantities.brownie}
-                  />
                   {brownieCookieSets && brownieCookieSets.map((set, index) => (
                     <div key={index} className="border border-muted rounded-lg p-3">
                       <div className="flex items-center justify-between mb-3">
@@ -1015,7 +915,7 @@ export function ProductSelection({
                   <span className="text-2xl">🥠</span>
                   <div className="text-left">
                     <div className="font-semibold">행운쿠키</div>
-                    <div className="text-sm text-muted-foreground">박스당 {formatWon(productCatalog.fortune.price)}</div>
+                    <div className="text-sm text-muted-foreground">박스당 17,000원</div>
                     <div className="text-xs text-muted-foreground mt-1 max-w-[15rem] truncate sm:max-w-[26rem]" title={fortuneSummary}>
                       현재 선택: {fortuneSummary}
                     </div>
@@ -1088,7 +988,7 @@ export function ProductSelection({
                   <span className="text-2xl">✈️</span>
                   <div className="text-left">
                     <div className="font-semibold">비행기샌드쿠키</div>
-                    <div className="text-sm text-muted-foreground">박스당 {formatWon(productCatalog.airplane.price)}</div>
+                    <div className="text-sm text-muted-foreground">박스당 22,000원</div>
                     <div className="text-xs text-muted-foreground mt-1 max-w-[15rem] truncate sm:max-w-[26rem]" title={airplaneSummary}>
                       현재 선택: {airplaneSummary}
                     </div>
@@ -1160,8 +1060,8 @@ export function ProductSelection({
                 <div className="flex items-center gap-3">
                   <span className="text-2xl">🥐</span>
                   <div className="text-left">
-                    <div className="font-semibold">스콘 (최소수량 {minimumOrderQuantities.scone}개)</div>
-                    <div className="text-sm text-muted-foreground">개당 {formatWon(productCatalog.scone.price)} (딸기잼 +{formatWon(500)})</div>
+                    <div className="font-semibold">스콘 (최소수량 12개)</div>
+                    <div className="text-sm text-muted-foreground">개당 5,000원 (딸기잼 +500원)</div>
                     <div className="text-xs text-muted-foreground mt-1 max-w-[15rem] truncate sm:max-w-[26rem]" title={sconeSummary}>
                       현재 선택: {sconeSummary}
                     </div>
@@ -1177,11 +1077,6 @@ export function ProductSelection({
 
               <CollapsibleContent className="px-4 pb-4">
                 <div className="space-y-3">
-                  <MinimumQuantityHint
-                    label="스콘"
-                    totalQuantity={sconeTotalQuantity}
-                    minimumQuantity={minimumOrderQuantities.scone}
-                  />
                   {sconeSets && sconeSets.map((set, index) => (
                     <div key={index} className="p-3 bg-muted/30 rounded-lg space-y-3">
                       <div className="flex items-center justify-between">

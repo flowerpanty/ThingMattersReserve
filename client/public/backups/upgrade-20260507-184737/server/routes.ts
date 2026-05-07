@@ -1,7 +1,7 @@
-import type { Express, RequestHandler } from "express";
+import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { cookiePrices, minimumOrderQuantities, orderDataSchema } from "@shared/schema";
+import { orderDataSchema, cookiePrices } from "@shared/schema";
 import { ExcelGenerator } from "./services/excel-generator";
 import { EmailService } from "./services/email-service";
 import { KakaoTemplateService } from "./services/kakao-template";
@@ -9,12 +9,6 @@ import { pushNotificationService } from "./services/push-notification-service";
 import { kakaoAlimtalkService } from "./services/kakao-alimtalk-service";
 import { googleSheetsService } from "./services/google-sheets-service";
 import { buildOrderDataFromOrder } from "./services/order-data-utils";
-
-declare module "express-session" {
-  interface SessionData {
-    adminAuthenticated?: boolean;
-  }
-}
 
 function toAsciiFallbackFileName(fileName: string): string {
   const fallback = fileName
@@ -44,7 +38,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     cookie7: '수제꾸덕쿠키',
     lucky: '행운쿠키',
   };
-  const brookieMinimumQuantity = minimumOrderQuantities.brookieLanding;
+  const brookieMinimumQuantity = 12;
 
   const toPositiveInt = (value: any, fallback = 0) => {
     const next = Math.floor(Number(value));
@@ -52,59 +46,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
   };
 
   const asText = (value: any) => (typeof value === 'string' ? value.trim() : '');
-
-  const requireAdmin: RequestHandler = (req, res, next) => {
-    if (req.session.adminAuthenticated === true) {
-      return next();
-    }
-
-    return res.status(401).json({ message: "관리자 로그인이 필요합니다." });
-  };
-
-  app.get("/api/admin/me", (req, res) => {
-    res.json({ authenticated: req.session.adminAuthenticated === true });
-  });
-
-  app.post("/api/admin/login", (req, res) => {
-    const adminPassword = asText(process.env.ADMIN_PASSWORD);
-
-    if (!adminPassword) {
-      return res.status(503).json({
-        message: "ADMIN_PASSWORD 환경변수가 설정되어 있지 않습니다.",
-      });
-    }
-
-    if (asText(req.body?.password) !== adminPassword) {
-      return res.status(401).json({ message: "관리자 비밀번호가 올바르지 않습니다." });
-    }
-
-    req.session.regenerate((regenerateError) => {
-      if (regenerateError) {
-        return res.status(500).json({ message: "관리자 세션을 만들지 못했습니다." });
-      }
-
-      req.session.adminAuthenticated = true;
-      req.session.save((saveError) => {
-        if (saveError) {
-          return res.status(500).json({ message: "관리자 세션을 저장하지 못했습니다." });
-        }
-
-        return res.json({ authenticated: true });
-      });
-    });
-  });
-
-  app.post("/api/admin/logout", requireAdmin, (req, res) => {
-    req.session.destroy((error) => {
-      res.clearCookie("nm.sid");
-
-      if (error) {
-        return res.status(500).json({ message: "로그아웃 처리 중 오류가 발생했습니다." });
-      }
-
-      return res.json({ authenticated: false });
-    });
-  });
 
   const normalizeDeliveryMethod = (value: any) => {
     const text = asText(value);
@@ -350,26 +291,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     };
   };
 
-  const validateOrderBusinessRules = (orderData: any) => {
-    const singleWithDrinkQuantity = (orderData.singleWithDrinkSets || [])
-      .reduce((sum: number, set: any) => sum + (set.quantity || 0), 0);
-    if (singleWithDrinkQuantity > 0 && singleWithDrinkQuantity < minimumOrderQuantities.singleWithDrink) {
-      throw new Error(`1구+음료는 최소 ${minimumOrderQuantities.singleWithDrink}개 이상 주문해주세요.`);
-    }
-
-    const brownieQuantity = (orderData.brownieCookieSets || [])
-      .reduce((sum: number, set: any) => sum + (set.quantity || 0), 0);
-    if (brownieQuantity > 0 && brownieQuantity < minimumOrderQuantities.brownie) {
-      throw new Error(`브라우니쿠키는 최소 ${minimumOrderQuantities.brownie}개 이상 주문해주세요.`);
-    }
-
-    const sconeQuantity = (orderData.sconeSets || [])
-      .reduce((sum: number, set: any) => sum + (set.quantity || 0), 0);
-    if (sconeQuantity > 0 && sconeQuantity < minimumOrderQuantities.scone) {
-      throw new Error(`스콘은 최소 ${minimumOrderQuantities.scone}개 이상 주문해주세요.`);
-    }
-  };
-
   // Calculate price function
   const calculatePrice = (orderData: any) => {
     let totalPrice = 0;
@@ -565,7 +486,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get all orders endpoint
-  app.get("/api/orders", requireAdmin, async (req, res) => {
+  app.get("/api/orders", async (req, res) => {
     try {
       const orders = await storage.getAllOrders();
       // Sort by creation date, newest first
@@ -689,7 +610,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       console.log('Excel 견적서 다운로드 요청 받음');
       const orderData = orderDataSchema.parse(req.body);
-      validateOrderBusinessRules(orderData);
       const buffer = await excelGenerator.generateQuote(orderData);
       const fileName = `견적서_${orderData.customerName}_${new Date().toISOString().split('T')[0]}.xlsx`;
 
@@ -713,7 +633,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/orders/:id/quote-excel", requireAdmin, async (req, res) => {
+  app.get("/api/orders/:id/quote-excel", async (req, res) => {
     try {
       const order = await storage.getOrder(req.params.id);
       if (!order) {
@@ -750,7 +670,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const processPromise = async () => {
         const orderData = orderDataSchema.parse(req.body);
-        validateOrderBusinessRules(orderData);
 
         // Validate email for sending quote
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -1018,7 +937,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Generate KakaoTalk message template
-  app.post("/api/generate-kakao-message", requireAdmin, async (req, res) => {
+  app.post("/api/generate-kakao-message", async (req, res) => {
     try {
       const { orderId, messageType } = req.body;
 
@@ -1121,7 +1040,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // 푸시 알림 구독 등록
-  app.post('/api/push/subscribe', requireAdmin, async (req, res) => {
+  app.post('/api/push/subscribe', async (req, res) => {
     try {
       const subscription = req.body;
       await pushNotificationService.addSubscription(subscription, req.get('user-agent'));
@@ -1136,7 +1055,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // 푸시 알림 구독 해제
-  app.post('/api/push/unsubscribe', requireAdmin, async (req, res) => {
+  app.post('/api/push/unsubscribe', async (req, res) => {
     try {
       const subscription = req.body;
       await pushNotificationService.removeSubscription(subscription);
@@ -1151,7 +1070,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // 테스트 푸시 알림 전송
-  app.post('/api/push/test', requireAdmin, async (req, res) => {
+  app.post('/api/push/test', async (req, res) => {
     try {
       const subscriberCount = await pushNotificationService.sendTestNotification();
       res.json({
@@ -1171,7 +1090,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // 주문 상태 변경
-  app.patch('/api/orders/:id/status', requireAdmin, async (req, res) => {
+  app.patch('/api/orders/:id/status', async (req, res) => {
     try {
       const { id } = req.params;
       const { status } = req.body;
@@ -1197,7 +1116,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // 입금 확인 상태 변경
-  app.patch('/api/orders/:id/payment', requireAdmin, async (req, res) => {
+  app.patch('/api/orders/:id/payment', async (req, res) => {
     try {
       const { id } = req.params;
       const { confirmed } = req.body;
@@ -1223,7 +1142,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // 결제 방법 업데이트
-  app.patch('/api/orders/:id/payment-method', requireAdmin, async (req, res) => {
+  app.patch('/api/orders/:id/payment-method', async (req, res) => {
     try {
       const { id } = req.params;
       const { method } = req.body;
@@ -1249,7 +1168,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // 주문 일괄 삭제
-  app.post('/api/orders/bulk-delete', requireAdmin, async (req, res) => {
+  app.post('/api/orders/bulk-delete', async (req, res) => {
     try {
       const ids = Array.isArray(req.body?.ids)
         ? req.body.ids.filter((id: unknown): id is string => typeof id === 'string' && id.trim().length > 0)
@@ -1288,7 +1207,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // 주문 삭제
-  app.delete('/api/orders/:id', requireAdmin, async (req, res) => {
+  app.delete('/api/orders/:id', async (req, res) => {
     try {
       const { id } = req.params;
 
@@ -1309,7 +1228,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // 기존 주문으로 Google Sheets 견적서 탭 생성
-  app.post('/api/sheets/orders/:id/append', requireAdmin, async (req, res) => {
+  app.post('/api/sheets/orders/:id/append', async (req, res) => {
     try {
       const { id } = req.params;
 
@@ -1356,7 +1275,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Google Sheets 헤더 초기화 (선택사항 - 최초 1회만 실행)
-  app.post('/api/sheets/init-headers', requireAdmin, async (req, res) => {
+  app.post('/api/sheets/init-headers', async (req, res) => {
     try {
       if (!googleSheetsService.isEnabled()) {
         return res.status(400).json({
@@ -1387,7 +1306,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Google Sheets 연동 테스트
-  app.get('/api/sheets/test', requireAdmin, async (req, res) => {
+  app.get('/api/sheets/test', async (req, res) => {
     try {
       console.log('=== Google Sheets 테스트 시작 ===');
 

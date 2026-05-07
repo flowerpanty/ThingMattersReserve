@@ -3,7 +3,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Lock, Eye, EyeOff } from 'lucide-react';
-import { apiRequest } from '@/lib/queryClient';
 
 interface AdminAuthProps {
   onAuthenticated: () => void;
@@ -15,22 +14,30 @@ export function AdminAuth({ onAuthenticated }: AdminAuthProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
+  // 간단한 관리자 비밀번호 (실제 운영시에는 더 보안이 강화된 방식 사용)
+  const ADMIN_PASSWORD = 'nothingmatters2025';
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     setError('');
 
-    try {
-      await apiRequest('POST', '/api/admin/login', { password });
-      onAuthenticated();
-    } catch (loginError) {
-      const message = loginError instanceof Error ? loginError.message : '로그인에 실패했습니다.';
-      setError(message.includes('503')
-        ? '서버에 ADMIN_PASSWORD 환경변수가 설정되어 있지 않습니다.'
-        : '잘못된 관리자 비밀번호입니다.');
-    } finally {
+    // 비밀번호 확인 시뮬레이션 (0.5초 딜레이)
+    setTimeout(() => {
+      if (password === ADMIN_PASSWORD) {
+        // 로컬 스토리지에 인증 상태 저장 (영구 유지)
+        console.log('Authentication successful, setting localStorage...');
+        localStorage.setItem('admin_authenticated', 'true');
+        console.log('LocalStorage set, reloading page...');
+
+        // 캐시 문제 해결을 위해 강제 새로고침
+        window.location.reload();
+        // onAuthenticated(); // reload가 발생하므로 이 콜백은 실행되지 않을 수 있으나, App.tsx에서 초기 로드시 체크함
+      } else {
+        setError('잘못된 관리자 비밀번호입니다.');
+      }
       setIsLoading(false);
-    }
+    }, 500);
   };
 
   return (
@@ -81,9 +88,12 @@ export function AdminAuth({ onAuthenticated }: AdminAuthProps) {
             </Button>
           </form>
 
-          <p className="mt-6 text-center text-xs text-muted-foreground">
-            서버 관리자 세션으로 보호됩니다.
-          </p>
+          <div className="mt-6 text-center">
+            <div className="text-xs text-muted-foreground space-y-1">
+              <p>💡 힌트: 브랜드명 + 연도</p>
+              <p>🔒 관리자만 접근 가능합니다</p>
+            </div>
+          </div>
         </CardContent>
       </Card>
     </div>

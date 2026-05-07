@@ -2827,7 +2827,15 @@
     const getHeartPlacement = () => heartPositions[placementKey()] || { left: 50, top: 50, rotate: -4, width: 16 };
 
     function tomorrow() {
-      return window.NMOrderCore?.getMinDeliveryDate?.() || "";
+      const date = new Date();
+      date.setDate(date.getDate() + 1);
+      return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+    }
+
+    function landingApiUrl() {
+      return location.protocol === "file:"
+        ? "https://thingmattersreserve-production.up.railway.app/api/landing-orders"
+        : "/api/landing-orders";
     }
 
     function landingDeliveryMethod() {
@@ -2847,19 +2855,28 @@
     }
 
     async function submitLandingOrder() {
-      return window.NMOrderCore.postLandingOrder({
-        source: "brookie",
-        customerName: state.customerName,
-        customerPhone: state.customerPhone,
-        deliveryDate: state.date,
-        deliveryMethod: landingDeliveryMethod(),
-        pickupTime: state.pickupTime,
-        deliveryAddress: state.deliveryAddress,
-        combos: landingCombos(),
-        topper: state.topper,
-        topperKind: state.topperKind,
-        sticker: state.sticker
+      const response = await fetch(landingApiUrl(), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          source: "brookie",
+          customerName: state.customerName,
+          customerPhone: state.customerPhone,
+          deliveryDate: state.date,
+          deliveryMethod: landingDeliveryMethod(),
+          pickupTime: state.pickupTime,
+          deliveryAddress: state.deliveryAddress,
+          combos: landingCombos(),
+          topper: state.topper,
+          topperKind: state.topperKind,
+          sticker: state.sticker
+        })
       });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok || result.success === false) {
+        throw new Error(result.message || "주문 저장에 실패했어요.");
+      }
+      return result;
     }
 
     function clampHeartText(value, character = state.character) {
@@ -3412,7 +3429,7 @@ ${custom ? `${custom}\n` : ""}
       if (
         activeStep !== 3 &&
         (!state.customerName.trim() ||
-          !window.NMOrderCore?.validateKoreanPhone?.(state.customerPhone) ||
+          !/^010[-\s]?\d{4}[-\s]?\d{4}$/.test(state.customerPhone.trim()) ||
           !state.date ||
           !state.pickupTime ||
           (state.deliveryMethod === "퀵 배송" && !state.deliveryAddress.trim()))
@@ -3630,7 +3647,7 @@ ${custom ? `${custom}\n` : ""}
     function validateCustomerFieldsSoft() {
       if (activeStep !== 3) return;
       if (state.customerName.trim()) window.NMOrderCore?.clearFieldError("customerName");
-      if (window.NMOrderCore?.validateKoreanPhone?.(state.customerPhone)) {
+      if (/^010[-\s]?\d{4}[-\s]?\d{4}$/.test(state.customerPhone.trim())) {
         window.NMOrderCore?.clearFieldError("customerPhone");
       }
       if (state.date) window.NMOrderCore?.clearFieldError("needDate");
@@ -3660,7 +3677,7 @@ ${custom ? `${custom}\n` : ""}
         window.NMOrderCore?.focusField("customerName");
         return false;
       }
-      if (!window.NMOrderCore?.validateKoreanPhone?.(state.customerPhone)) {
+      if (!/^010[-\s]?\d{4}[-\s]?\d{4}$/.test(state.customerPhone.trim())) {
         window.NMOrderCore?.setFieldError("customerPhone", "010 형식으로 입력해주세요.");
         window.NMOrderCore?.focusField("customerPhone");
         return false;
@@ -3892,7 +3909,7 @@ ${custom ? `${custom}\n` : ""}
         updateSummary();
       });
       $("needDate").addEventListener("change", (event) => {
-        state.date = event.target.value < minDate || window.NMOrderCore?.isUnavailableDeliveryDate?.(event.target.value) ? minDate : event.target.value;
+        state.date = event.target.value < minDate ? minDate : event.target.value;
         event.target.value = state.date;
         updateDateNotice();
         validateCustomerFieldsSoft();

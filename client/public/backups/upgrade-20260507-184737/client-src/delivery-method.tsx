@@ -10,7 +10,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { orderOperatingSettings } from "@shared/schema";
 
 interface DeliveryMethodProps {
   deliveryMethod: string;
@@ -20,7 +19,15 @@ interface DeliveryMethodProps {
 }
 
 export function DeliveryMethod({ deliveryMethod, deliveryAddress, pickupTime, onUpdate }: DeliveryMethodProps) {
-  const timeOptions = orderOperatingSettings.pickupTimeOptions;
+  const timeOptions = [
+    "10:00~11:00",
+    "11:00~12:00",
+    "12:00~13:00",
+    "13:00~14:00",
+    "14:00~15:00",
+    "15:00~16:00",
+    "16:00~17:00",
+  ];
 
   return (
     <Card className="card-shadow">

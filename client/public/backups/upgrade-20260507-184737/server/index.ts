@@ -8,32 +8,16 @@ if (process.env.NODE_ENV !== "production") {
 }
 
 import express, { type Request, Response, NextFunction } from "express";
-import session from "express-session";
-import { randomBytes } from "node:crypto";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 
 const app = express();
-app.set("trust proxy", 1);
-const sessionSecret = process.env.SESSION_SECRET || randomBytes(32).toString("hex");
 
 // server/index.ts (초반 아무 데나)
 app.get('/healthz', (_req, res) => res.status(200).send('ok'))
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
-app.use(session({
-  name: "nm.sid",
-  secret: sessionSecret,
-  resave: false,
-  saveUninitialized: false,
-  cookie: {
-    httpOnly: true,
-    maxAge: 1000 * 60 * 60 * 24 * 7,
-    sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
-  },
-}));
 
 app.use((req, res, next) => {
   const start = Date.now();

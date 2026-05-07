@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { ShoppingCart, ChevronRight, ChevronLeft, Loader2 } from "lucide-react";
+import { ShoppingCart, ChevronRight, ChevronLeft } from "lucide-react";
 
 interface FloatingSummaryProps {
     totalItems: number;
@@ -79,20 +79,9 @@ export function FloatingSummary({
                 {/* Right: Next/Submit button */}
                 <div className="flex-shrink-0">
                     {isLastStep ? (
-                        <Button
-                            type="submit"
-                            disabled={isSubmitting}
-                            className="bg-white text-primary hover:bg-white/90 font-bold px-5 py-2 rounded-full shadow-lg gap-1"
-                        >
-                            {isSubmitting ? (
-                                <>
-                                    <Loader2 className="w-4 h-4 animate-spin" />
-                                    생성 중
-                                </>
-                            ) : (
-                                "견적서 받기"
-                            )}
-                        </Button>
+                        <div className="min-w-[96px] text-right text-xs font-semibold text-white/75">
+                            최종 확인 단계
+                        </div>
                     ) : (
                         <Button
                             type="button"

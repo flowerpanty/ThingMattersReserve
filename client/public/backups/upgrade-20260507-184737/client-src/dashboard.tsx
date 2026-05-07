@@ -305,17 +305,14 @@ function PaymentMethodSelector({ order, onUpdate }: { order: Order; onUpdate: (m
       {methods.map(m => (
         <button
           key={m.key}
-          type="button"
           onClick={() => onUpdate(order.paymentMethod === m.key ? null : m.key)}
-          title={`결제 방법: ${m.label}`}
-          aria-label={`${order.customerName} 결제 방법 ${m.label}`}
           className={`
             flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium border transition-all
             ${order.paymentMethod === m.key ? m.color + ' ring-1 ring-offset-1' : 'bg-gray-50 text-gray-400 border-gray-200 hover:bg-gray-100'}
           `}
         >
           {m.icon}
-          <span>{m.label}</span>
+          <span className="hidden sm:inline">{m.label}</span>
         </button>
       ))}
     </div>
@@ -326,10 +323,11 @@ function PaymentMethodSelector({ order, onUpdate }: { order: Order; onUpdate: (m
 function TodaySummaryCards({ stats }: { stats: DashboardStats }) {
   const cards = [
     {
-      icon: <Package className="w-5 h-5" />,
-      label: '오늘 픽업',
-      value: stats.todayPickups,
-      color: stats.todayPickups > 0 ? 'text-blue-600 bg-blue-50 border-blue-200' : 'text-gray-500 bg-gray-50 border-gray-200',
+      icon: <Clock className="w-5 h-5" />,
+      label: '미확인 입금',
+      value: stats.unpaidCount,
+      color: stats.unpaidCount > 0 ? 'text-red-600 bg-red-50 border-red-200' : 'text-gray-500 bg-gray-50 border-gray-200',
+      pulse: stats.unpaidCount > 0,
     },
     {
       icon: <ChefHat className="w-5 h-5" />,
@@ -338,11 +336,10 @@ function TodaySummaryCards({ stats }: { stats: DashboardStats }) {
       color: stats.inProductionCount > 0 ? 'text-purple-600 bg-purple-50 border-purple-200' : 'text-gray-500 bg-gray-50 border-gray-200',
     },
     {
-      icon: <Clock className="w-5 h-5" />,
-      label: '미확인 입금',
-      value: stats.unpaidCount,
-      color: stats.unpaidCount > 0 ? 'text-red-600 bg-red-50 border-red-200' : 'text-gray-500 bg-gray-50 border-gray-200',
-      pulse: stats.unpaidCount > 0,
+      icon: <Package className="w-5 h-5" />,
+      label: '오늘 픽업',
+      value: stats.todayPickups,
+      color: stats.todayPickups > 0 ? 'text-blue-600 bg-blue-50 border-blue-200' : 'text-gray-500 bg-gray-50 border-gray-200',
     },
     {
       icon: <TrendingUp className="w-5 h-5" />,
@@ -353,7 +350,7 @@ function TodaySummaryCards({ stats }: { stats: DashboardStats }) {
   ];
 
   return (
-    <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 md:gap-3">
+    <div className="grid grid-cols-4 gap-2 md:gap-3">
       {cards.map((card, i) => (
         <div key={i} className={`${card.color} border rounded-xl p-3 text-center transition-all`}>
           <div className="flex justify-center mb-1">{card.icon}</div>
@@ -367,7 +364,7 @@ function TodaySummaryCards({ stats }: { stats: DashboardStats }) {
 
 function TodaySummaryCardsSkeleton() {
   return (
-    <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 md:gap-3">
+    <div className="grid grid-cols-4 gap-2 md:gap-3">
       {Array.from({ length: 4 }).map((_, index) => (
         <div key={index} className="rounded-xl border bg-white p-3">
           <Skeleton className="h-5 w-5 mx-auto mb-2 rounded-full" />
@@ -679,8 +676,14 @@ function OrderCard({
 }
 
 export function Dashboard() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+  const [isAuthenticated, setIsAuthenticated] = useState(() => {
+    try {
+      const authStatus = localStorage.getItem('admin_authenticated');
+      return authStatus === 'true';
+    } catch {
+      return false;
+    }
+  });
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -692,29 +695,10 @@ export function Dashboard() {
   const queryClient = useQueryClient();
 
   useEffect(() => {
-    let isMounted = true;
-
-    fetch('/api/admin/me', { credentials: 'include' })
-      .then((response) => response.ok ? response.json() : { authenticated: false })
-      .then((data) => {
-        if (isMounted) {
-          setIsAuthenticated(data.authenticated === true);
-        }
-      })
-      .catch(() => {
-        if (isMounted) {
-          setIsAuthenticated(false);
-        }
-      })
-      .finally(() => {
-        if (isMounted) {
-          setIsCheckingAuth(false);
-        }
-      });
-
-    return () => {
-      isMounted = false;
-    };
+    const authStatus = localStorage.getItem('admin_authenticated');
+    if (authStatus === 'true') {
+      setIsAuthenticated(true);
+    }
   }, []);
 
   useEffect(() => {
@@ -724,15 +708,10 @@ export function Dashboard() {
 
   const handleAuthenticate = () => setIsAuthenticated(true);
 
-  const handleLogout = async () => {
-    try {
-      await apiRequest('POST', '/api/admin/logout');
-    } catch {
-      // 세션이 이미 만료된 경우에도 화면에서는 로그아웃 상태로 전환한다.
-    } finally {
-      setIsAuthenticated(false);
-      queryClient.clear();
-    }
+  const handleLogout = () => {
+    localStorage.removeItem('admin_authenticated');
+    setIsAuthenticated(false);
+    window.location.reload();
   };
 
   // 주문 상태 업데이트
@@ -840,17 +819,20 @@ export function Dashboard() {
     }
   };
 
+  if (!isAuthenticated) {
+    return <AdminAuth onAuthenticated={handleAuthenticate} />;
+  }
+
   // 주문 목록 조회
   const { data: orders = [], isLoading: ordersLoading } = useQuery<Order[]>({
     queryKey: ['/api/orders'],
     queryFn: async () => {
-      const response = await fetch('/api/orders', { credentials: 'include' });
+      const response = await fetch('/api/orders');
       if (!response.ok) throw new Error('Failed to fetch orders');
       return await response.json() as Order[];
     },
     refetchInterval: 30000,
     retry: 3,
-    enabled: isAuthenticated,
   });
 
   // 필터링
@@ -989,24 +971,6 @@ export function Dashboard() {
   const headerOrderSummary = statusFilter === 'all'
     ? `${filteredOrders.length}건 진행 주문`
     : `${filteredOrders.length}건 표시`;
-
-  if (isCheckingAuth) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/5 to-secondary/5">
-        <Card className="w-full max-w-md mx-4">
-          <CardContent className="p-8 text-center">
-            <Skeleton className="mx-auto mb-4 h-16 w-16 rounded-full" />
-            <Skeleton className="mx-auto mb-3 h-6 w-40" />
-            <Skeleton className="mx-auto h-4 w-56" />
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
-  if (!isAuthenticated) {
-    return <AdminAuth onAuthenticated={handleAuthenticate} />;
-  }
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white">

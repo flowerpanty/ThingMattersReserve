@@ -1127,7 +1127,12 @@
     }
 
     function tomorrowString() {
-      return window.NMOrderCore?.getMinDeliveryDate?.() || "";
+      const d = new Date();
+      d.setDate(d.getDate() + 1);
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, "0");
+      const day = String(d.getDate()).padStart(2, "0");
+      return `${y}-${m}-${day}`;
     }
 
     function imageFallback(img) {
@@ -1136,18 +1141,33 @@
       if (fallback) fallback.style.display = "grid";
     }
 
+    function landingApiUrl() {
+      return location.protocol === "file:"
+        ? "https://thingmattersreserve-production.up.railway.app/api/landing-orders"
+        : "/api/landing-orders";
+    }
+
     async function submitLandingOrder() {
-      return window.NMOrderCore.postLandingOrder({
-        source: "lucky",
-        customerName: state.customerName,
-        customerPhone: state.customerPhone,
-        deliveryDate: state.date,
-        deliveryMethod: state.method,
-        pickupTime: state.time,
-        deliveryAddress: state.address,
-        request: state.request,
-        quantity: state.quantity
+      const response = await fetch(landingApiUrl(), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          source: "lucky",
+          customerName: state.customerName,
+          customerPhone: state.customerPhone,
+          deliveryDate: state.date,
+          deliveryMethod: state.method,
+          pickupTime: state.time,
+          deliveryAddress: state.address,
+          request: state.request,
+          quantity: state.quantity
+        })
       });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok || result.success === false) {
+        throw new Error(result.message || "주문 저장에 실패했어요.");
+      }
+      return result;
     }
 
     function savePageState() {
@@ -1268,7 +1288,7 @@
         window.NMOrderCore?.clearFieldError(id);
       });
       if (!state.customerName.trim()) return focusWarn("customerName", "이름을 입력해주세요.");
-      if (!window.NMOrderCore?.validateKoreanPhone?.(state.customerPhone)) {
+      if (!/^010[-\s]?\d{4}[-\s]?\d{4}$/.test(state.customerPhone.trim())) {
         return focusWarn("customerPhone", "010 형식으로 입력해주세요.");
       }
       if (!state.date) return focusWarn("dateInput", "수령희망일을 선택해주세요.");
@@ -1306,15 +1326,12 @@
     function syncInputs() {
       state.customerName = $("customerName").value;
       state.customerPhone = $("customerPhone").value;
-      const selectedDate = $("dateInput").value;
-      const minDate = tomorrowString();
-      state.date = selectedDate < minDate || window.NMOrderCore?.isUnavailableDeliveryDate?.(selectedDate) ? minDate : selectedDate;
-      if ($("dateInput").value !== state.date) $("dateInput").value = state.date;
+      state.date = $("dateInput").value;
       state.time = $("timeInput").value;
       state.address = $("addressInput").value;
       state.request = $("requestInput").value;
       if (state.customerName.trim()) window.NMOrderCore?.clearFieldError("customerName");
-      if (window.NMOrderCore?.validateKoreanPhone?.(state.customerPhone)) {
+      if (/^010[-\s]?\d{4}[-\s]?\d{4}$/.test(state.customerPhone.trim())) {
         window.NMOrderCore?.clearFieldError("customerPhone");
       }
       if (state.date) window.NMOrderCore?.clearFieldError("dateInput");
@@ -1369,7 +1386,7 @@
       if (
         state.step !== 2 &&
         (!state.customerName.trim() ||
-          !window.NMOrderCore?.validateKoreanPhone?.(state.customerPhone) ||
+          !/^010[-\s]?\d{4}[-\s]?\d{4}$/.test(state.customerPhone.trim()) ||
           !state.date ||
           (state.method === "퀵 배송" && !state.address.trim()))
       ) {

@@ -1,7 +1,6 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { getMinimumDeliveryDate, isUnavailableDeliveryDate } from "@shared/schema";
 
 interface DeliveryDateProps {
   deliveryDate: string;
@@ -9,11 +8,29 @@ interface DeliveryDateProps {
 }
 
 export function DeliveryDate({ deliveryDate, onUpdate }: DeliveryDateProps) {
-  const minDate = getMinimumDeliveryDate();
+  // Calculate tomorrow's date as minimum
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  const minDate = tomorrow.toISOString().split('T')[0];
+
+  // Define disabled dates (December 22-27, 2025)
+  const disabledDates = [
+    '2025-12-22',
+    '2025-12-23',
+    '2025-12-24',
+    '2025-12-25',
+    '2025-12-26',
+    '2025-12-27'
+  ];
+
+  // Check if a date is disabled
+  const isDateDisabled = (dateString: string): boolean => {
+    return disabledDates.includes(dateString);
+  };
 
   // Handle date change with validation
   const handleDateChange = (value: string) => {
-    if (isUnavailableDeliveryDate(value)) {
+    if (isDateDisabled(value)) {
       alert('선택하신 날짜는 수령이 불가능합니다. 다른 날짜를 선택해주세요.');
       return;
     }
