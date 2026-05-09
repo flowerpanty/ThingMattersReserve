@@ -1,3 +1,4 @@
+import { Card, CardContent } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -6,7 +7,6 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { ChevronDown, ChevronRight } from "lucide-react";
 import { useState, useCallback } from "react";
-import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import {
   cookieTypes,
   drinkTypes,
@@ -77,25 +77,6 @@ function MinimumQuantityHint({
   );
 }
 
-function AnimatedCount({ value, suffix = "" }: { value: number; suffix?: string }) {
-  const shouldReduce = useReducedMotion();
-
-  return (
-    <AnimatePresence mode="popLayout" initial={false}>
-      <motion.span
-        key={`${value}-${suffix}`}
-        initial={shouldReduce ? false : { y: 6, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        exit={shouldReduce ? undefined : { y: -6, opacity: 0 }}
-        transition={{ type: "spring", stiffness: 400, damping: 25 }}
-        className="tabular-nums"
-      >
-        {value}{suffix}
-      </motion.span>
-    </AnimatePresence>
-  );
-}
-
 export function ProductSelection({
   regularCookies,
   packaging,
@@ -107,7 +88,6 @@ export function ProductSelection({
   airplaneSandwich,
   onUpdate
 }: ProductSelectionProps) {
-  const shouldReduce = useReducedMotion();
 
   const [openSections, setOpenSections] = useState({
     regular: true,
@@ -344,25 +324,24 @@ export function ProductSelection({
   ];
 
   return (
-    <section className="cute-card p-6">
+    <Card className="card-shadow">
+      <CardContent className="p-6">
         <div className="mb-6">
-          <h3 className="text-sm font-black text-[#7b3f3f] mb-3 flex items-center gap-2">
-            ✨ 목적별로 빠르게 고르기
+          <h3 className="text-sm font-semibold text-muted-foreground mb-3 flex items-center gap-2">
+            주문 목적부터 빠르게 고르기
           </h3>
           <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
             {purposeShortcuts.map((shortcut) => (
-              <motion.button
+              <button
                 key={shortcut.key}
                 type="button"
                 onClick={shortcut.action}
-                whileTap={shouldReduce ? undefined : { scale: 0.94 }}
-                transition={{ type: "spring", stiffness: 360, damping: 24 }}
-                className={`shortcut-card text-left ${shortcut.description.includes('선택됨') ? 'active' : ''}`}
+                className="rounded-xl border border-border bg-card p-3 text-left transition-colors hover:border-primary/40 hover:bg-primary/5"
               >
                 <div className="text-xl">{shortcut.icon}</div>
                 <div className="mt-2 text-sm font-semibold">{shortcut.title}</div>
                 <div className="mt-1 text-xs text-muted-foreground">{shortcut.description}</div>
-              </motion.button>
+              </button>
             ))}
           </div>
         </div>
@@ -373,21 +352,20 @@ export function ProductSelection({
             open={openSections.regular}
             onOpenChange={(open) => setOpenSections(prev => ({ ...prev, regular: open }))}
           >
-            <div id="product-section-regular" className={`product-category-card ${hasRegularCookies || packaging ? "has-items" : ""}`}>
-              <CollapsibleTrigger className="product-category-header w-full">
+            <div id="product-section-regular" className="border border-border rounded-lg bg-card">
+              <CollapsibleTrigger className="w-full p-4 flex items-center justify-between hover:bg-muted/50 transition-colors">
                 <div className="flex items-center gap-3">
-                  {openSections.regular && <span className="h-9 w-1 rounded-full bg-gradient-to-b from-rose-300 to-orange-200" />}
                   <span className="text-2xl">🍪</span>
                   <div className="text-left">
-                    <div className="font-black text-[#7b3f3f]">일반 쿠키</div>
+                    <div className="font-semibold">일반 쿠키</div>
                     <div className="text-sm text-muted-foreground">개당 4,500원</div>
                     <div className="text-xs text-muted-foreground mt-1 max-w-[15rem] truncate sm:max-w-[26rem]" title={regularSummary}>
                       현재 선택: {regularSummary}
                     </div>
                   </div>
                   {regularCookieTotal > 0 && (
-                    <div className="bg-rose-100 text-rose-500 text-xs font-black px-2 py-1 rounded-full ml-2">
-                      <AnimatedCount value={regularCookieTotal} suffix="개" />
+                    <div className="bg-primary text-primary-foreground text-xs px-2 py-1 rounded-full ml-2">
+                      {regularCookieTotal}개
                     </div>
                   )}
                 </div>
@@ -396,36 +374,33 @@ export function ProductSelection({
 
               <CollapsibleContent className="px-4 pb-4">
                 {/* Step 1: 포장 방법 선택 (먼저 선택해야 함) */}
-                <div className="rounded-3xl border border-rose-100 bg-rose-50/60 p-4 mb-4">
-                  <h4 className="font-black mb-3 text-sm text-center text-[#7b3f3f]">🎁 포장 방법을 먼저 선택해주세요</h4>
+                <div className="bg-accent/20 rounded-lg p-4 mb-4">
+                  <h4 className="font-medium mb-3 text-sm text-center">🎁 포장 방법을 먼저 선택해주세요</h4>
                   <RadioGroup value={packaging} onValueChange={(value) => onUpdate('packaging', value)}>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                      <Label htmlFor="single_box" className={`selection-card block ${packaging === 'single_box' ? 'selected' : ''}`}>
-                        <RadioGroupItem value="single_box" id="single_box" data-testid="radio-packaging-single-box" className="sr-only" />
-                        <div className="text-2xl mb-2">🎁</div>
-                        <div className="text-sm">
-                          <div className="font-black text-[#7b3f3f]">1구박스</div>
+                      <div className="flex items-center space-x-2 p-3 bg-card rounded-lg border border-input hover:bg-muted/50 transition-colors cursor-pointer">
+                        <RadioGroupItem value="single_box" id="single_box" data-testid="radio-packaging-single-box" />
+                        <Label htmlFor="single_box" className="cursor-pointer text-sm flex-1">
+                          <div className="font-medium">1구박스</div>
                           <div className="text-xs text-muted-foreground">각 쿠키마다 +600원</div>
-                        </div>
-                      </Label>
+                        </Label>
+                      </div>
 
-                      <Label htmlFor="plastic_wrap" className={`selection-card block ${packaging === 'plastic_wrap' ? 'selected' : ''}`}>
-                        <RadioGroupItem value="plastic_wrap" id="plastic_wrap" data-testid="radio-packaging-plastic-wrap" className="sr-only" />
-                        <div className="text-2xl mb-2">🌿</div>
-                        <div className="text-sm">
-                          <div className="font-black text-[#7b3f3f]">비닐탭포장</div>
+                      <div className="flex items-center space-x-2 p-3 bg-card rounded-lg border border-input hover:bg-muted/50 transition-colors cursor-pointer">
+                        <RadioGroupItem value="plastic_wrap" id="plastic_wrap" data-testid="radio-packaging-plastic-wrap" />
+                        <Label htmlFor="plastic_wrap" className="cursor-pointer text-sm flex-1">
+                          <div className="font-medium">비닐탭포장</div>
                           <div className="text-xs text-muted-foreground">각 쿠키마다 +500원</div>
-                        </div>
-                      </Label>
+                        </Label>
+                      </div>
 
-                      <Label htmlFor="oil_paper" className={`selection-card block ${packaging === 'oil_paper' ? 'selected' : ''}`}>
-                        <RadioGroupItem value="oil_paper" id="oil_paper" data-testid="radio-packaging-oil-paper" className="sr-only" />
-                        <div className="text-2xl mb-2">📄</div>
-                        <div className="text-sm">
-                          <div className="font-black text-[#7b3f3f]">유산지</div>
+                      <div className="flex items-center space-x-2 p-3 bg-card rounded-lg border border-input hover:bg-muted/50 transition-colors cursor-pointer">
+                        <RadioGroupItem value="oil_paper" id="oil_paper" data-testid="radio-packaging-oil-paper" />
+                        <Label htmlFor="oil_paper" className="cursor-pointer text-sm flex-1">
+                          <div className="font-medium">유산지</div>
                           <div className="text-xs text-muted-foreground">무료</div>
-                        </div>
-                      </Label>
+                        </Label>
+                      </div>
                     </div>
                   </RadioGroup>
                   {!packaging && (
@@ -438,7 +413,7 @@ export function ProductSelection({
                 {/* Step 2: 쿠키 선택 (포장방법 선택 후에만 활성화) */}
                 {packaging ? (
                   <div className="space-y-3">
-                    <h4 className="font-black text-sm text-center text-emerald-600">✓ 포장방법 선택완료! 이제 쿠키를 골라주세요</h4>
+                    <h4 className="font-medium text-sm text-center text-green-600">✓ 포장방법 선택완료! 이제 쿠키를 골라주세요</h4>
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
                       {cookieTypes.map((type) => (
                         <div key={type} className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
@@ -458,7 +433,7 @@ export function ProductSelection({
                               type="button"
                               variant="outline"
                               size="sm"
-                              className="qty-pill-btn !h-10 !w-10 p-0 text-sm"
+                              className="w-7 h-7 rounded-full p-0 text-xs"
                               onClick={() => updateRegularCookie(type, (regularCookies[type] || 0) - 1)}
                               data-testid={`button-decrease-${type}`}
                             >
@@ -469,14 +444,14 @@ export function ProductSelection({
                               min={0}
                               value={regularCookies[type] || 0}
                               onChange={(e) => updateRegularCookie(type, Math.max(0, parseInt(e.target.value) || 0))}
-                              className="h-10 w-16 rounded-full border-rose-100 text-center text-sm font-bold tabular-nums"
+                              className="w-16 h-7 text-center text-sm"
                               data-testid={`input-quantity-${type}`}
                             />
                             <Button
                               type="button"
                               variant="outline"
                               size="sm"
-                              className="qty-pill-btn !h-10 !w-10 p-0 text-sm"
+                              className="w-7 h-7 rounded-full p-0 text-xs"
                               onClick={() => updateRegularCookie(type, (regularCookies[type] || 0) + 1)}
                               data-testid={`button-increase-${type}`}
                             >
@@ -501,21 +476,20 @@ export function ProductSelection({
             open={openSections.twopack}
             onOpenChange={(open) => setOpenSections(prev => ({ ...prev, twopack: open }))}
           >
-            <div id="product-section-twopack" className={`product-category-card ${twoPackSets.length > 0 ? "has-items" : ""}`}>
-              <CollapsibleTrigger className="product-category-header w-full">
+            <div id="product-section-twopack" className="border border-border rounded-lg bg-card">
+              <CollapsibleTrigger className="w-full p-4 flex items-center justify-between hover:bg-muted/50 transition-colors">
                 <div className="flex items-center gap-3">
-                  {openSections.twopack && <span className="h-9 w-1 rounded-full bg-gradient-to-b from-rose-300 to-orange-200" />}
                   <span className="text-2xl">📦</span>
                   <div className="text-left">
-                    <div className="font-black text-[#7b3f3f]">2구 패키지</div>
+                    <div className="font-semibold">2구 패키지</div>
                     <div className="text-sm text-muted-foreground">세트당 10,500원</div>
                     <div className="text-xs text-muted-foreground mt-1 max-w-[15rem] truncate sm:max-w-[26rem]" title={twoPackSummary}>
                       현재 선택: {twoPackSummary}
                     </div>
                   </div>
                   {twoPackSets.length > 0 && (
-                    <div className="bg-rose-100 text-rose-500 text-xs font-black px-2 py-1 rounded-full ml-2">
-                      <AnimatedCount value={twoPackSets.length} suffix="세트" />
+                    <div className="bg-primary text-primary-foreground text-xs px-2 py-1 rounded-full ml-2">
+                      {twoPackSets.length}세트
                     </div>
                   )}
                 </div>
@@ -534,7 +508,7 @@ export function ProductSelection({
                               type="button"
                               variant="outline"
                               size="sm"
-                              className="qty-pill-btn !h-10 !w-10 p-0 text-sm"
+                              className="w-7 h-7 rounded-full p-0 text-xs"
                               onClick={() => updateTwoPackSet(index, 'quantity', Math.max(1, (set.quantity || 1) - 1))}
                               data-testid={`button-decrease-twopack-${index}`}
                             >
@@ -545,14 +519,14 @@ export function ProductSelection({
                               min={1}
                               value={set.quantity || 1}
                               onChange={(e) => updateTwoPackSet(index, 'quantity', Math.max(1, parseInt(e.target.value) || 1))}
-                              className="h-10 w-16 rounded-full border-rose-100 text-center text-sm font-bold tabular-nums"
+                              className="w-16 h-7 text-center text-sm"
                               data-testid={`input-quantity-twopack-${index}`}
                             />
                             <Button
                               type="button"
                               variant="outline"
                               size="sm"
-                              className="qty-pill-btn !h-10 !w-10 p-0 text-sm"
+                              className="w-7 h-7 rounded-full p-0 text-xs"
                               onClick={() => updateTwoPackSet(index, 'quantity', (set.quantity || 1) + 1)}
                               data-testid={`button-increase-twopack-${index}`}
                             >
@@ -615,7 +589,7 @@ export function ProductSelection({
                     type="button"
                     variant="outline"
                     onClick={addTwoPackSet}
-                    className="w-full min-h-11 rounded-full active:scale-95"
+                    className="w-full"
                     data-testid="button-add-twopack-set"
                   >
                     + 2구 패키지 세트 추가
@@ -630,21 +604,20 @@ export function ProductSelection({
             open={openSections.singledrink}
             onOpenChange={(open) => setOpenSections(prev => ({ ...prev, singledrink: open }))}
           >
-            <div id="product-section-singledrink" className={`product-category-card ${singleWithDrinkSets.length > 0 ? "has-items" : ""}`}>
-              <CollapsibleTrigger className="product-category-header w-full">
+            <div id="product-section-singledrink" className="border border-border rounded-lg bg-card">
+              <CollapsibleTrigger className="w-full p-4 flex items-center justify-between hover:bg-muted/50 transition-colors">
                 <div className="flex items-center gap-3">
-                  {openSections.singledrink && <span className="h-9 w-1 rounded-full bg-gradient-to-b from-rose-300 to-orange-200" />}
                   <span className="text-2xl">🍪☕</span>
                   <div className="text-left">
-                    <div className="font-black text-[#7b3f3f]">1구+음료 (최소수량 {minimumOrderQuantities.singleWithDrink}개)</div>
+                    <div className="font-semibold">1구+음료 (최소수량 {minimumOrderQuantities.singleWithDrink}개)</div>
                     <div className="text-sm text-muted-foreground">세트당 {formatWon(productCatalog.singleWithDrink.price)}</div>
                     <div className="text-xs text-muted-foreground mt-1 max-w-[15rem] truncate sm:max-w-[26rem]" title={singleWithDrinkSummary}>
                       현재 선택: {singleWithDrinkSummary}
                     </div>
                   </div>
                   {singleWithDrinkSets.length > 0 && (
-                    <div className="bg-rose-100 text-rose-500 text-xs font-black px-2 py-1 rounded-full ml-2">
-                      <AnimatedCount value={singleWithDrinkSets.length} suffix="세트" />
+                    <div className="bg-primary text-primary-foreground text-xs px-2 py-1 rounded-full ml-2">
+                      {singleWithDrinkSets.length}세트
                     </div>
                   )}
                 </div>
@@ -668,7 +641,7 @@ export function ProductSelection({
                               type="button"
                               variant="outline"
                               size="sm"
-                              className="qty-pill-btn !h-10 !w-10 p-0 text-sm"
+                              className="w-7 h-7 rounded-full p-0 text-xs"
                               onClick={() => updateSingleWithDrinkSet(index, 'quantity', Math.max(1, (set.quantity || 1) - 1))}
                               data-testid={`button-decrease-single-drink-${index}`}
                             >
@@ -679,14 +652,14 @@ export function ProductSelection({
                               min={1}
                               value={set.quantity || 1}
                               onChange={(e) => updateSingleWithDrinkSet(index, 'quantity', Math.max(1, parseInt(e.target.value) || 1))}
-                              className="h-10 w-16 rounded-full border-rose-100 text-center text-sm font-bold tabular-nums"
+                              className="w-16 h-7 text-center text-sm"
                               data-testid={`input-quantity-single-drink-${index}`}
                             />
                             <Button
                               type="button"
                               variant="outline"
                               size="sm"
-                              className="qty-pill-btn !h-10 !w-10 p-0 text-sm"
+                              className="w-7 h-7 rounded-full p-0 text-xs"
                               onClick={() => updateSingleWithDrinkSet(index, 'quantity', (set.quantity || 1) + 1)}
                               data-testid={`button-increase-single-drink-${index}`}
                             >
@@ -753,7 +726,7 @@ export function ProductSelection({
                     type="button"
                     variant="outline"
                     onClick={addSingleWithDrinkSet}
-                    className="w-full min-h-11 rounded-full active:scale-95"
+                    className="w-full"
                     data-testid="button-add-single-drink-set"
                   >
                     + 1구 + 음료 세트 추가
@@ -768,21 +741,20 @@ export function ProductSelection({
             open={openSections.brownie}
             onOpenChange={(open) => setOpenSections(prev => ({ ...prev, brownie: open }))}
           >
-            <div id="product-section-brownie" className={`product-category-card ${brownieCookieSets.length > 0 ? "has-items" : ""}`}>
-              <CollapsibleTrigger className="product-category-header w-full">
+            <div id="product-section-brownie" className="border border-border rounded-lg bg-card">
+              <CollapsibleTrigger className="w-full p-4 flex items-center justify-between hover:bg-muted/50 transition-colors">
                 <div className="flex items-center gap-3">
-                  {openSections.brownie && <span className="h-9 w-1 rounded-full bg-gradient-to-b from-rose-300 to-orange-200" />}
                   <span className="text-2xl">🧸</span>
                   <div className="text-left">
-                    <div className="font-black text-[#7b3f3f]">브라우니쿠키 (최소수량 {minimumOrderQuantities.brownie}개)</div>
+                    <div className="font-semibold">브라우니쿠키 (최소수량 {minimumOrderQuantities.brownie}개)</div>
                     <div className="text-sm text-muted-foreground">개당 {formatWon(productCatalog.brownie.price)}</div>
                     <div className="text-xs text-muted-foreground mt-1 max-w-[15rem] truncate sm:max-w-[26rem]" title={brownieSummary}>
                       현재 선택: {brownieSummary}
                     </div>
                   </div>
                   {brownieCookieSets && brownieCookieSets.length > 0 && (
-                    <div className="bg-rose-100 text-rose-500 text-xs font-black px-2 py-1 rounded-full ml-2">
-                      <AnimatedCount value={brownieCookieSets.reduce((sum, set) => sum + set.quantity, 0)} suffix="개" />
+                    <div className="bg-primary text-primary-foreground text-xs px-2 py-1 rounded-full ml-2">
+                      {brownieCookieSets.reduce((sum, set) => sum + set.quantity, 0)}개
                     </div>
                   )}
                 </div>
@@ -805,7 +777,7 @@ export function ProductSelection({
                             type="button"
                             variant="outline"
                             size="sm"
-                            className="qty-pill-btn !h-10 !w-10 p-0 text-sm"
+                            className="w-7 h-7 rounded-full p-0 text-xs"
                             onClick={() => updateBrownieCookieSet(index, 'quantity', Math.max(1, set.quantity - 1))}
                             data-testid={`button-decrease-brownie-${index}`}
                           >
@@ -816,14 +788,14 @@ export function ProductSelection({
                             min={1}
                             value={set.quantity}
                             onChange={(e) => updateBrownieCookieSet(index, 'quantity', Math.max(1, parseInt(e.target.value) || 1))}
-                            className="h-10 w-16 rounded-full border-rose-100 text-center text-sm font-bold tabular-nums"
+                            className="w-16 h-7 text-center text-sm"
                             data-testid={`input-quantity-brownie-${index}`}
                           />
                           <Button
                             type="button"
                             variant="outline"
                             size="sm"
-                            className="qty-pill-btn !h-10 !w-10 p-0 text-sm"
+                            className="w-7 h-7 rounded-full p-0 text-xs"
                             onClick={() => updateBrownieCookieSet(index, 'quantity', set.quantity + 1)}
                             data-testid={`button-increase-brownie-${index}`}
                           >
@@ -948,7 +920,7 @@ export function ProductSelection({
                     type="button"
                     variant="outline"
                     onClick={addBrownieCookieSet}
-                    className="w-full min-h-11 rounded-full active:scale-95"
+                    className="w-full"
                     data-testid="button-add-brownie-set"
                   >
                     + 브라우니쿠키 세트 추가
@@ -963,21 +935,20 @@ export function ProductSelection({
             open={openSections.fortune}
             onOpenChange={(open) => setOpenSections(prev => ({ ...prev, fortune: open }))}
           >
-            <div id="product-section-fortune" className={`product-category-card ${fortuneCookie > 0 ? "has-items" : ""}`}>
-              <CollapsibleTrigger className="product-category-header w-full">
+            <div id="product-section-fortune" className="border border-border rounded-lg bg-card">
+              <CollapsibleTrigger className="w-full p-4 flex items-center justify-between hover:bg-muted/50 transition-colors">
                 <div className="flex items-center gap-3">
-                  {openSections.fortune && <span className="h-9 w-1 rounded-full bg-gradient-to-b from-rose-300 to-orange-200" />}
                   <span className="text-2xl">🥠</span>
                   <div className="text-left">
-                    <div className="font-black text-[#7b3f3f]">행운쿠키</div>
+                    <div className="font-semibold">행운쿠키</div>
                     <div className="text-sm text-muted-foreground">박스당 {formatWon(productCatalog.fortune.price)}</div>
                     <div className="text-xs text-muted-foreground mt-1 max-w-[15rem] truncate sm:max-w-[26rem]" title={fortuneSummary}>
                       현재 선택: {fortuneSummary}
                     </div>
                   </div>
                   {fortuneCookie > 0 && (
-                    <div className="bg-rose-100 text-rose-500 text-xs font-black px-2 py-1 rounded-full ml-2">
-                      <AnimatedCount value={fortuneCookie} suffix="박스" />
+                    <div className="bg-primary text-primary-foreground text-xs px-2 py-1 rounded-full ml-2">
+                      {fortuneCookie}박스
                     </div>
                   )}
                 </div>
@@ -1002,7 +973,7 @@ export function ProductSelection({
                       type="button"
                       variant="outline"
                       size="sm"
-                      className="qty-pill-btn !h-10 !w-10 p-0 text-sm"
+                      className="w-7 h-7 rounded-full p-0 text-xs"
                       onClick={() => onUpdate('fortuneCookie', Math.max(0, fortuneCookie - 1))}
                       data-testid="button-decrease-fortune"
                     >
@@ -1013,14 +984,14 @@ export function ProductSelection({
                       min={0}
                       value={fortuneCookie}
                       onChange={(e) => onUpdate('fortuneCookie', Math.max(0, parseInt(e.target.value) || 0))}
-                      className="h-10 w-16 rounded-full border-rose-100 text-center text-sm font-bold tabular-nums"
+                      className="w-16 h-7 text-center text-sm"
                       data-testid="input-quantity-fortune"
                     />
                     <Button
                       type="button"
                       variant="outline"
                       size="sm"
-                      className="qty-pill-btn !h-10 !w-10 p-0 text-sm"
+                      className="w-7 h-7 rounded-full p-0 text-xs"
                       onClick={() => onUpdate('fortuneCookie', fortuneCookie + 1)}
                       data-testid="button-increase-fortune"
                     >
@@ -1037,21 +1008,20 @@ export function ProductSelection({
             open={openSections.airplane}
             onOpenChange={(open) => setOpenSections(prev => ({ ...prev, airplane: open }))}
           >
-            <div id="product-section-airplane" className={`product-category-card ${airplaneSandwich > 0 ? "has-items" : ""}`}>
-              <CollapsibleTrigger className="product-category-header w-full">
+            <div id="product-section-airplane" className="border border-border rounded-lg bg-card">
+              <CollapsibleTrigger className="w-full p-4 flex items-center justify-between hover:bg-muted/50 transition-colors">
                 <div className="flex items-center gap-3">
-                  {openSections.airplane && <span className="h-9 w-1 rounded-full bg-gradient-to-b from-rose-300 to-orange-200" />}
                   <span className="text-2xl">✈️</span>
                   <div className="text-left">
-                    <div className="font-black text-[#7b3f3f]">비행기샌드쿠키</div>
+                    <div className="font-semibold">비행기샌드쿠키</div>
                     <div className="text-sm text-muted-foreground">박스당 {formatWon(productCatalog.airplane.price)}</div>
                     <div className="text-xs text-muted-foreground mt-1 max-w-[15rem] truncate sm:max-w-[26rem]" title={airplaneSummary}>
                       현재 선택: {airplaneSummary}
                     </div>
                   </div>
                   {airplaneSandwich > 0 && (
-                    <div className="bg-rose-100 text-rose-500 text-xs font-black px-2 py-1 rounded-full ml-2">
-                      <AnimatedCount value={airplaneSandwich} suffix="박스" />
+                    <div className="bg-primary text-primary-foreground text-xs px-2 py-1 rounded-full ml-2">
+                      {airplaneSandwich}박스
                     </div>
                   )}
                 </div>
@@ -1076,7 +1046,7 @@ export function ProductSelection({
                       type="button"
                       variant="outline"
                       size="sm"
-                      className="qty-pill-btn !h-10 !w-10 p-0 text-sm"
+                      className="w-7 h-7 rounded-full p-0 text-xs"
                       onClick={() => onUpdate('airplaneSandwich', Math.max(0, airplaneSandwich - 1))}
                       data-testid="button-decrease-airplane"
                     >
@@ -1087,14 +1057,14 @@ export function ProductSelection({
                       min={0}
                       value={airplaneSandwich}
                       onChange={(e) => onUpdate('airplaneSandwich', Math.max(0, parseInt(e.target.value) || 0))}
-                      className="h-10 w-16 rounded-full border-rose-100 text-center text-sm font-bold tabular-nums"
+                      className="w-16 h-7 text-center text-sm"
                       data-testid="input-quantity-airplane"
                     />
                     <Button
                       type="button"
                       variant="outline"
                       size="sm"
-                      className="qty-pill-btn !h-10 !w-10 p-0 text-sm"
+                      className="w-7 h-7 rounded-full p-0 text-xs"
                       onClick={() => onUpdate('airplaneSandwich', airplaneSandwich + 1)}
                       data-testid="button-increase-airplane"
                     >
@@ -1111,21 +1081,20 @@ export function ProductSelection({
             open={openSections.scone}
             onOpenChange={(open) => setOpenSections(prev => ({ ...prev, scone: open }))}
           >
-            <div id="product-section-scone" className={`product-category-card ${sconeSets.length > 0 ? "has-items" : ""}`}>
-              <CollapsibleTrigger className="product-category-header w-full">
+            <div id="product-section-scone" className="border border-border rounded-lg bg-card">
+              <CollapsibleTrigger className="w-full p-4 flex items-center justify-between hover:bg-muted/50 transition-colors">
                 <div className="flex items-center gap-3">
-                  {openSections.scone && <span className="h-9 w-1 rounded-full bg-gradient-to-b from-rose-300 to-orange-200" />}
                   <span className="text-2xl">🥐</span>
                   <div className="text-left">
-                    <div className="font-black text-[#7b3f3f]">스콘 (최소수량 {minimumOrderQuantities.scone}개)</div>
+                    <div className="font-semibold">스콘 (최소수량 {minimumOrderQuantities.scone}개)</div>
                     <div className="text-sm text-muted-foreground">개당 {formatWon(productCatalog.scone.price)} (딸기잼 +{formatWon(500)})</div>
                     <div className="text-xs text-muted-foreground mt-1 max-w-[15rem] truncate sm:max-w-[26rem]" title={sconeSummary}>
                       현재 선택: {sconeSummary}
                     </div>
                   </div>
                   {sconeSets && sconeSets.length > 0 && (
-                    <div className="bg-rose-100 text-rose-500 text-xs font-black px-2 py-1 rounded-full ml-2">
-                      <AnimatedCount value={sconeSets.reduce((sum, set) => sum + set.quantity, 0)} suffix="개" />
+                    <div className="bg-primary text-primary-foreground text-xs px-2 py-1 rounded-full ml-2">
+                      {sconeSets.reduce((sum, set) => sum + set.quantity, 0)}개
                     </div>
                   )}
                 </div>
@@ -1179,7 +1148,7 @@ export function ProductSelection({
                             type="button"
                             variant="outline"
                             size="sm"
-                            className="qty-pill-btn !h-10 !w-10 p-0 text-sm"
+                            className="w-7 h-7 rounded-full p-0 text-xs"
                             onClick={() => updateSconeSet(index, 'quantity', Math.max(1, set.quantity - 1))}
                             data-testid={`button-decrease-scone-${index}`}
                           >
@@ -1190,14 +1159,14 @@ export function ProductSelection({
                             min={1}
                             value={set.quantity}
                             onChange={(e) => updateSconeSet(index, 'quantity', Math.max(1, parseInt(e.target.value) || 1))}
-                            className="h-10 w-16 rounded-full border-rose-100 text-center text-sm font-bold tabular-nums"
+                            className="w-16 h-7 text-center text-sm"
                             data-testid={`input-quantity-scone-${index}`}
                           />
                           <Button
                             type="button"
                             variant="outline"
                             size="sm"
-                            className="qty-pill-btn !h-10 !w-10 p-0 text-sm"
+                            className="w-7 h-7 rounded-full p-0 text-xs"
                             onClick={() => updateSconeSet(index, 'quantity', set.quantity + 1)}
                             data-testid={`button-increase-scone-${index}`}
                           >
@@ -1222,7 +1191,7 @@ export function ProductSelection({
                     type="button"
                     variant="outline"
                     onClick={addSconeSet}
-                    className="w-full min-h-11 rounded-full active:scale-95"
+                    className="w-full"
                     data-testid="button-add-scone-set"
                   >
                     + 스콘 세트 추가
@@ -1232,6 +1201,7 @@ export function ProductSelection({
             </div>
           </Collapsible>
         </div>
-    </section>
+      </CardContent>
+    </Card>
   );
 }

@@ -1,5 +1,5 @@
-import { Card, CardContent } from "@/components/ui/card";
 import { cookiePrices, type OrderData } from "@shared/schema";
+import { motion, useReducedMotion } from "motion/react";
 
 interface PricingSummary {
   regularCookies: number;
@@ -244,15 +244,15 @@ function buildPreviewRows(formData: OrderData): { rows: PreviewRow[]; totalAmoun
 }
 
 export function QuotePreview({ formData, pricing }: QuotePreviewProps) {
+  const shouldReduce = useReducedMotion();
   const { rows, totalAmount } = buildPreviewRows(formData);
   const displayTotal = pricing.total > 0 ? pricing.total : totalAmount;
 
   return (
-    <Card className="card-shadow">
-      <CardContent className="p-6">
+    <section className="cute-card p-6">
         <div className="flex flex-col gap-6">
           <div>
-            <h3 className="text-lg font-semibold flex items-center gap-2">
+            <h3 className="text-lg font-black flex items-center gap-2 text-[#7b3f3f]">
               📦 주문 내역
             </h3>
             <p className="text-sm text-muted-foreground mt-1">
@@ -262,37 +262,40 @@ export function QuotePreview({ formData, pricing }: QuotePreviewProps) {
 
           <div className="space-y-3">
             {rows.length > 0 ? (
-              rows.map((row) => (
-                <div
+              rows.map((row, index) => (
+                <motion.div
                   key={`${row.title}-${row.summary}`}
-                  className="rounded-2xl border border-border/70 bg-muted/20 px-4 py-4"
+                  initial={shouldReduce ? false : { opacity: 0, x: -8 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ type: "spring", stiffness: 360, damping: 24, delay: shouldReduce ? 0 : index * 0.05 }}
+                  className="rounded-2xl border border-rose-100 bg-white/70 px-4 py-4"
                 >
                   <div className="flex items-start justify-between gap-4">
                     <div className="min-w-0 flex-1">
-                      <p className="font-semibold text-foreground">{row.title}</p>
+                      <p className="font-black text-[#7b3f3f]">{row.title}</p>
                       <p className="text-sm text-muted-foreground mt-1 leading-relaxed break-words">
                         {row.summary}
                       </p>
-                      <p className="text-xs font-medium text-primary/80 mt-2">{row.quantityLabel}</p>
+                      <p className="text-xs font-black text-rose-400 mt-2 tabular-nums">{row.quantityLabel}</p>
                     </div>
                     <div className="shrink-0 text-right">
-                      <p className="text-sm font-semibold text-foreground">
+                      <p className="text-sm font-black text-rose-500 tabular-nums">
                         {row.amount > 0 ? formatPrice(row.amount) : "무료"}
                       </p>
                     </div>
                   </div>
-                </div>
+                </motion.div>
               ))
             ) : (
-              <div className="rounded-2xl border border-dashed border-border bg-muted/10 px-4 py-8 text-center text-sm text-muted-foreground">
+              <div className="rounded-2xl border border-dashed border-rose-200 bg-rose-50/50 px-4 py-8 text-center text-sm font-medium text-muted-foreground">
                 선택한 제품이 아직 없습니다. 이전 단계에서 제품을 추가하면 여기에서 바로 확인할 수 있어요.
               </div>
             )}
           </div>
 
-          <div className="rounded-2xl border border-border/70 bg-card px-5 py-5">
+          <div className="rounded-3xl border border-rose-100 bg-white/70 px-5 py-5">
             <div className="flex flex-col gap-1 mb-4">
-              <h4 className="font-semibold text-foreground">고객 및 수령 정보</h4>
+              <h4 className="font-black text-[#7b3f3f]">고객 및 수령 정보</h4>
               <p className="text-sm text-muted-foreground">
                 이메일로 같은 내용의 견적서가 전송됩니다.
               </p>
@@ -301,34 +304,34 @@ export function QuotePreview({ formData, pricing }: QuotePreviewProps) {
             <div className="grid gap-3 text-sm">
               <div className="flex items-center justify-between gap-4 border-b border-border/60 pb-3">
                 <span className="text-muted-foreground">주문자</span>
-                <span className="font-medium text-right">{displayValue(formData.customerName)}</span>
+                <span className="font-bold text-right">{displayValue(formData.customerName)}</span>
               </div>
               <div className="flex items-center justify-between gap-4 border-b border-border/60 pb-3">
                 <span className="text-muted-foreground">이메일</span>
-                <span className="font-medium text-right">{displayValue(formData.customerContact)}</span>
+                <span className="font-bold text-right">{displayValue(formData.customerContact)}</span>
               </div>
               <div className="flex items-center justify-between gap-4 border-b border-border/60 pb-3">
                 <span className="text-muted-foreground">핸드폰</span>
-                <span className="font-medium text-right">{displayValue(formData.customerPhone, "미입력")}</span>
+                <span className="font-bold text-right">{displayValue(formData.customerPhone, "미입력")}</span>
               </div>
               <div className="flex items-center justify-between gap-4 border-b border-border/60 pb-3">
                 <span className="text-muted-foreground">수령일</span>
-                <span className="font-medium text-right">{formatDeliveryDate(formData.deliveryDate)}</span>
+                <span className="font-bold text-right">{formatDeliveryDate(formData.deliveryDate)}</span>
               </div>
               <div className="flex items-center justify-between gap-4 border-b border-border/60 pb-3">
                 <span className="text-muted-foreground">시간</span>
-                <span className="font-medium text-right">{displayValue(formData.pickupTime, "미선택")}</span>
+                <span className="font-bold text-right tabular-nums">{displayValue(formData.pickupTime, "미선택")}</span>
               </div>
               <div className="flex items-center justify-between gap-4 border-b border-border/60 pb-3">
                 <span className="text-muted-foreground">수령방법</span>
-                <span className="font-medium text-right">
+                <span className="font-bold text-right">
                   {formData.deliveryMethod === "pickup" ? "매장 픽업" : "퀵 배송"}
                 </span>
               </div>
               {formData.deliveryMethod === "quick" && (
                 <div className="flex items-start justify-between gap-4">
                   <span className="text-muted-foreground">배송 주소</span>
-                  <span className="font-medium text-right break-words max-w-[70%]">
+                  <span className="font-bold text-right break-words max-w-[70%]">
                     {displayValue(formData.deliveryAddress, "미입력")}
                   </span>
                 </div>
@@ -336,23 +339,22 @@ export function QuotePreview({ formData, pricing }: QuotePreviewProps) {
             </div>
           </div>
 
-          <div className="rounded-2xl border border-primary/20 bg-primary/12 px-5 py-5 shadow-sm">
+          <div className="rounded-3xl border border-rose-100 bg-gradient-to-r from-rose-50 to-orange-50 px-5 py-5 shadow-sm">
             <div className="flex items-end justify-between gap-4">
               <div>
-                <p className="text-sm font-semibold text-primary/80">예상 총 금액</p>
+                <p className="text-sm font-black text-rose-500">예상 총 금액</p>
                 <p className="text-xs text-muted-foreground mt-1">
                   {formData.deliveryMethod === "quick"
                     ? "퀵 배송비는 상담 후 별도로 안내됩니다."
                     : "옵션 포함 예상 합계입니다."}
                 </p>
               </div>
-              <span className="text-primary text-2xl md:text-3xl font-black tracking-tight">
+              <span className="text-[#7b3f3f] text-2xl md:text-3xl font-black tracking-normal tabular-nums">
                 {formatPrice(displayTotal)}
               </span>
             </div>
           </div>
         </div>
-      </CardContent>
-    </Card>
+    </section>
   );
 }

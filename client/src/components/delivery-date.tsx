@@ -1,7 +1,7 @@
-import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { getMinimumDeliveryDate, isUnavailableDeliveryDate } from "@shared/schema";
+import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 
 interface DeliveryDateProps {
   deliveryDate: string;
@@ -10,6 +10,7 @@ interface DeliveryDateProps {
 
 export function DeliveryDate({ deliveryDate, onUpdate }: DeliveryDateProps) {
   const minDate = getMinimumDeliveryDate();
+  const shouldReduce = useReducedMotion();
 
   // Handle date change with validation
   const handleDateChange = (value: string) => {
@@ -20,32 +21,39 @@ export function DeliveryDate({ deliveryDate, onUpdate }: DeliveryDateProps) {
     onUpdate(value);
   };
 
+  const selectedLabel = deliveryDate
+    ? new Date(deliveryDate + 'T00:00:00').toLocaleDateString('ko-KR', {
+      month: 'long',
+      day: 'numeric',
+      weekday: 'short'
+    })
+    : "";
+
   return (
-    <Card className="card-shadow">
-      <CardContent className="p-6">
-        <h2 className="text-lg font-semibold mb-5 flex items-center gap-2">
+    <section className="cute-card p-6">
+      <div className="mb-5 flex items-center justify-between gap-3">
+        <h2 className="flex items-center gap-2 text-lg font-black text-[#7b3f3f]">
           📅 수령 희망일
         </h2>
+        <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-black text-amber-600">
+          최소 1일 전
+        </span>
+      </div>
 
-        <div className="max-w-md mx-auto">
-          <div className="text-center mb-6">
-            {!deliveryDate ? (
-              <Label htmlFor="deliveryDate" className="block text-lg font-semibold text-foreground mb-3">
-                📅 수령 날짜 선택
-              </Label>
-            ) : (
-              <Label htmlFor="deliveryDate" className="block text-lg font-semibold text-foreground mb-3">
-                📅 선택된 수령일
-              </Label>
-            )}
-            {!deliveryDate && (
-              <p className="text-sm text-muted-foreground mb-4">
-                언제 받으실 건가요?
-              </p>
-            )}
-          </div>
+      <div className="mx-auto max-w-md">
+        <div className="mb-5 text-center">
+          <Label htmlFor="deliveryDate" className="block text-lg font-black text-[#7b3f3f] mb-2">
+            {deliveryDate ? "🎀 선택된 수령일" : "📅 수령 날짜 선택"}
+          </Label>
+          {!deliveryDate && (
+            <p className="text-sm font-medium text-muted-foreground">
+              가장 설레는 날짜를 골라주세요
+            </p>
+          )}
+        </div>
 
-          <div className="space-y-4">
+        <div className="space-y-4">
+          <div className="cute-input">
             <Input
               id="deliveryDate"
               type="date"
@@ -53,32 +61,34 @@ export function DeliveryDate({ deliveryDate, onUpdate }: DeliveryDateProps) {
               value={deliveryDate}
               min={minDate}
               onChange={(e) => handleDateChange(e.target.value)}
-              className="w-full px-4 py-3 text-base rounded-lg border border-input bg-background focus:ring-2 focus:ring-ring focus:border-ring transition-colors date-input"
+              className="date-input h-12 w-full border-0 bg-transparent px-4 text-center text-base font-bold shadow-none focus-visible:ring-0 focus-visible:ring-offset-0"
               data-testid="input-delivery-date"
             />
+          </div>
 
+          <AnimatePresence>
             {deliveryDate && (
-              <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                <p className="text-blue-800 font-medium text-center text-sm">
-                  ✅ {new Date(deliveryDate + 'T00:00:00').toLocaleDateString('ko-KR', {
-                    month: 'long',
-                    day: 'numeric',
-                    weekday: 'short'
-                  })} 선택완료
+              <motion.div
+                initial={shouldReduce ? false : { opacity: 0, scale: 0.94 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={shouldReduce ? undefined : { opacity: 0, scale: 0.94 }}
+                transition={{ type: "spring", stiffness: 360, damping: 24 }}
+                className="rounded-2xl border border-emerald-200 bg-emerald-50 p-3"
+              >
+                <p className="text-center text-sm font-black text-emerald-700">
+                  ✅ {selectedLabel} 선택완료
                 </p>
-              </div>
+              </motion.div>
             )}
+          </AnimatePresence>
 
-            <div className="space-y-2">
-              <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                <p className="text-yellow-800 text-xs text-center">
-                  ⚠️ 최소 1일 전 주문 필요
-                </p>
-              </div>
-            </div>
+          <div className="rounded-2xl border border-amber-200 bg-amber-50 p-3">
+            <p className="text-center text-xs font-bold text-amber-700">
+              🧈 제작 시간을 위해 최소 1일 전 주문이 필요해요
+            </p>
           </div>
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </section>
   );
 }

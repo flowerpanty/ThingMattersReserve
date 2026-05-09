@@ -1257,7 +1257,7 @@ export function Dashboard() {
                           <XAxis dataKey="name" tick={{ fontSize: 10 }} angle={-20} textAnchor="end" height={50} interval={0} />
                           <YAxis tick={{ fontSize: 10 }} />
                           <Tooltip formatter={(value) => [`${value}개`, '주문량']} />
-                          <Bar dataKey="count" fill="hsl(var(--primary))" radius={[6, 6, 0, 0]} />
+                          <Bar dataKey="count" fill="var(--primary)" radius={[6, 6, 0, 0]} />
                         </BarChart>
                       </ResponsiveContainer>
                     </div>
@@ -1293,7 +1293,7 @@ export function Dashboard() {
                               if (name === 'orders') return [`${value}건`, '주문 수'];
                               return [formatCurrency(Number(value)), '매출'];
                             }} />
-                            <Line type="monotone" dataKey="orders" stroke="hsl(var(--primary))" strokeWidth={2.5} dot={{ fill: 'hsl(var(--primary))', strokeWidth: 2, r: 4 }} />
+                            <Line type="monotone" dataKey="orders" stroke="var(--primary)" strokeWidth={2.5} dot={{ fill: 'var(--primary)', strokeWidth: 2, r: 4 }} />
                           </LineChart>
                         </ResponsiveContainer>
                       </div>

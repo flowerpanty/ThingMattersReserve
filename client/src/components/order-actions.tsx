@@ -1,70 +1,77 @@
 import { Button } from "@/components/ui/button";
-import { Mail, MessageCircle, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
+import { motion, useReducedMotion } from "motion/react";
 
 interface OrderActionsProps {
   isSubmitting: boolean;
 }
 
 export function OrderActions({ isSubmitting }: OrderActionsProps) {
+  const shouldReduce = useReducedMotion();
+
   return (
     <div className="space-y-6">
-      {/* 견적서 받기 메인 섹션 */}
-      <div className="bg-gradient-to-r from-primary/10 to-primary/5 rounded-2xl p-8 border-2 border-primary/20 shadow-sm">
-        <div className="text-center mb-6">
-          <div className="inline-flex items-center rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary mb-3">
-            마지막 단계
+      <div className="cute-card border-rose-100 bg-gradient-to-r from-rose-50 to-orange-50 p-8">
+        <div className="mb-6 text-center">
+          <div className="mb-3 inline-flex items-center rounded-full bg-white/70 px-3 py-1 text-xs font-black text-rose-500">
+            🎀 마지막 단계
           </div>
-          <h3 className="text-xl font-bold text-primary mb-2">📋 견적서 요청</h3>
-          <p className="text-sm text-muted-foreground">
-            아래 버튼을 누르면 견적서가 생성되고, 이후 카카오톡으로 최종 상담을 이어갑니다.
+          <h3 className="mb-2 text-xl font-black text-[#7b3f3f]">견적서 요청</h3>
+          <p className="text-sm font-medium text-muted-foreground">
+            버튼을 누르면 견적서가 생성되고, 이후 카카오톡으로 최종 상담을 이어갑니다.
           </p>
         </div>
-        
-        <Button
-          type="submit"
-          disabled={isSubmitting}
-          className="w-full py-8 px-10 bg-primary hover:bg-primary/90 text-primary-foreground font-bold text-xl rounded-xl transition-all duration-200 transform hover:scale-[1.02] shadow-lg hover:shadow-xl"
-          data-testid="button-generate-quote"
+
+        <motion.div
+          whileHover={shouldReduce ? undefined : { scale: 1.02 }}
+          whileTap={shouldReduce ? undefined : { scale: 0.97 }}
+          transition={{ type: "spring", stiffness: 350, damping: 24 }}
         >
-          {isSubmitting ? (
-            <>
-              <Loader2 className="w-6 h-6 mr-3 animate-spin" />
-              견적서 생성 중...
-            </>
-          ) : (
-            <>
-              📄 견적서 받기
-            </>
-          )}
-        </Button>
+          <Button
+            type="submit"
+            disabled={isSubmitting}
+            className="cta-shimmer min-h-[64px] w-full rounded-full px-10 py-5 text-xl font-black text-white shadow-[var(--shadow-btn)] disabled:opacity-60"
+            data-testid="button-generate-quote"
+          >
+            {isSubmitting ? (
+              <>
+                <Loader2 className="mr-3 h-6 w-6 animate-spin" />
+                견적서 생성 중...
+              </>
+            ) : (
+              <>✨ 견적서 받기</>
+            )}
+          </Button>
+        </motion.div>
       </div>
-      
-      {/* 추가 행동 버튼들 */}
-      <div className="bg-card/30 rounded-lg p-6 border">
-        <p className="text-center text-sm text-muted-foreground mb-4">
+
+      <div className="cute-card bg-white/60 p-6">
+        <p className="mb-4 text-center text-sm font-black text-[#7b3f3f]">
           기타 문의 및 정보
         </p>
-        
+
         <div className="flex flex-col gap-3">
-          <a
+          <motion.a
             href="https://pf.kakao.com/_QdCaK"
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center justify-center gap-2 w-full py-3 px-6 bg-yellow-400 hover:bg-yellow-500 text-yellow-900 font-medium rounded-lg transition-colors"
+            whileTap={shouldReduce ? undefined : { scale: 0.97 }}
+            className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-full bg-yellow-300 px-6 py-3 font-black text-yellow-950 transition-colors hover:bg-yellow-400"
             data-testid="button-kakao-consultation"
           >
             💬 카카오톡 상담하기
-          </a>
-          
-          <a
+          </motion.a>
+
+          <motion.a
             href="https://nothingmatters.kr"
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center justify-center gap-2 w-full py-3 px-6 bg-secondary hover:bg-secondary/90 text-secondary-foreground font-medium rounded-lg transition-colors"
+            whileTap={shouldReduce ? undefined : { scale: 0.97 }}
+            className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-full border border-rose-100 bg-white px-6 py-3 font-black text-rose-500 transition-colors hover:bg-rose-50"
             data-testid="button-home"
           >
             🏠 nothingmatters
-          </a>
+          </motion.a>
         </div>
       </div>
     </div>

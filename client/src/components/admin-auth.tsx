@@ -34,13 +34,13 @@ export function AdminAuth({ onAuthenticated }: AdminAuthProps) {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/5 to-secondary/5">
-      <Card className="w-full max-w-md mx-4">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-rose-50 to-orange-50 px-4">
+      <Card className="cute-card w-full max-w-md border-rose-100">
         <CardHeader className="text-center">
-          <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
-            <Lock className="w-8 h-8 text-primary" />
+          <div className="w-16 h-16 bg-rose-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <Lock className="w-8 h-8 text-rose-500" />
           </div>
-          <CardTitle className="text-2xl font-bold">관리자 로그인</CardTitle>
+          <CardTitle className="text-2xl font-black text-[#7b3f3f]">관리자 로그인</CardTitle>
           <p className="text-muted-foreground">대시보드에 접근하려면 관리자 비밀번호를 입력하세요</p>
         </CardHeader>
         <CardContent>
@@ -51,7 +51,7 @@ export function AdminAuth({ onAuthenticated }: AdminAuthProps) {
                 placeholder="관리자 비밀번호"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="pr-10"
+                className="cute-input h-12 pr-10"
                 required
                 data-testid="input-admin-password"
               />
@@ -66,14 +66,14 @@ export function AdminAuth({ onAuthenticated }: AdminAuthProps) {
             </div>
 
             {error && (
-              <div className="text-red-600 text-sm text-center bg-red-50 p-2 rounded-md">
+              <div className="rounded-2xl border border-amber-200 bg-amber-50 p-3 text-center text-sm font-bold text-amber-700">
                 {error}
               </div>
             )}
 
             <Button
               type="submit"
-              className="w-full"
+              className="cta-shimmer min-h-12 w-full rounded-full font-black text-white active:scale-95"
               disabled={isLoading}
               data-testid="button-admin-login"
             >

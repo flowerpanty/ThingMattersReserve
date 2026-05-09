@@ -1,0 +1,84 @@
+import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { getMinimumDeliveryDate, isUnavailableDeliveryDate } from "@shared/schema";
+
+interface DeliveryDateProps {
+  deliveryDate: string;
+  onUpdate: (value: string) => void;
+}
+
+export function DeliveryDate({ deliveryDate, onUpdate }: DeliveryDateProps) {
+  const minDate = getMinimumDeliveryDate();
+
+  // Handle date change with validation
+  const handleDateChange = (value: string) => {
+    if (isUnavailableDeliveryDate(value)) {
+      alert('선택하신 날짜는 수령이 불가능합니다. 다른 날짜를 선택해주세요.');
+      return;
+    }
+    onUpdate(value);
+  };
+
+  return (
+    <Card className="card-shadow">
+      <CardContent className="p-6">
+        <h2 className="text-lg font-semibold mb-5 flex items-center gap-2">
+          📅 수령 희망일
+        </h2>
+
+        <div className="max-w-md mx-auto">
+          <div className="text-center mb-6">
+            {!deliveryDate ? (
+              <Label htmlFor="deliveryDate" className="block text-lg font-semibold text-foreground mb-3">
+                📅 수령 날짜 선택
+              </Label>
+            ) : (
+              <Label htmlFor="deliveryDate" className="block text-lg font-semibold text-foreground mb-3">
+                📅 선택된 수령일
+              </Label>
+            )}
+            {!deliveryDate && (
+              <p className="text-sm text-muted-foreground mb-4">
+                언제 받으실 건가요?
+              </p>
+            )}
+          </div>
+
+          <div className="space-y-4">
+            <Input
+              id="deliveryDate"
+              type="date"
+              required
+              value={deliveryDate}
+              min={minDate}
+              onChange={(e) => handleDateChange(e.target.value)}
+              className="w-full px-4 py-3 text-base rounded-lg border border-input bg-background focus:ring-2 focus:ring-ring focus:border-ring transition-colors date-input"
+              data-testid="input-delivery-date"
+            />
+
+            {deliveryDate && (
+              <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                <p className="text-blue-800 font-medium text-center text-sm">
+                  ✅ {new Date(deliveryDate + 'T00:00:00').toLocaleDateString('ko-KR', {
+                    month: 'long',
+                    day: 'numeric',
+                    weekday: 'short'
+                  })} 선택완료
+                </p>
+              </div>
+            )}
+
+            <div className="space-y-2">
+              <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                <p className="text-yellow-800 text-xs text-center">
+                  ⚠️ 최소 1일 전 주문 필요
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}

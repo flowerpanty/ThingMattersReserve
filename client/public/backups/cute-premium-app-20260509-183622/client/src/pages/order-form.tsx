@@ -13,7 +13,6 @@ import { Link } from "wouter";
 import { BarChart3, Check } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { minimumOrderQuantities } from "@shared/schema";
-import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 
 const STEPS = [
   { number: 1, label: "제품 선택", icon: "🍪" },
@@ -22,8 +21,6 @@ const STEPS = [
 ];
 
 function StepIndicator({ currentStep }: { currentStep: number }) {
-  const shouldReduce = useReducedMotion();
-
   return (
     <div className="step-indicator-container">
       <div className="flex items-center justify-between w-full max-w-md mx-auto">
@@ -35,27 +32,25 @@ function StepIndicator({ currentStep }: { currentStep: number }) {
           return (
             <div key={step.number} className="flex items-center flex-1">
               <div className="flex flex-col items-center">
-                <motion.div
+                <div
                   className={`step-circle ${isCompleted
                     ? "step-completed"
                     : isCurrent
                       ? "step-current"
                       : "step-upcoming"
                     }`}
-                  animate={shouldReduce ? undefined : { scale: isCurrent ? 1.12 : 1 }}
-                  transition={{ type: "spring", stiffness: 350, damping: 24 }}
                 >
                   {isCompleted ? (
                     <Check className="w-4 h-4" />
                   ) : (
                     <span className="text-sm">{step.icon}</span>
                   )}
-                </motion.div>
+                </div>
                 <span
                   className={`text-xs mt-1.5 font-medium ${isCurrent
-                    ? "text-rose-500"
+                    ? "text-primary"
                     : isCompleted
-                      ? "text-emerald-600"
+                      ? "text-green-600"
                       : "text-muted-foreground"
                     }`}
                 >
@@ -90,7 +85,6 @@ export default function OrderForm() {
   const [currentStep, setCurrentStep] = useState(1);
   const [isAdminSession, setIsAdminSession] = useState(false);
   const { toast } = useToast();
-  const shouldReduce = useReducedMotion();
 
   useEffect(() => {
     let isMounted = true;
@@ -253,21 +247,21 @@ export default function OrderForm() {
   return (
     <div className="min-h-screen pb-24">
       {/* Header */}
-      <header className="sticky top-0 z-50 border-b border-rose-100/60 bg-white/70 backdrop-blur-xl dark:border-rose-300/20 dark:bg-[#1e1419]/80">
+      <header className="bg-card/80 backdrop-blur-sm border-b border-border sticky top-0 z-50">
         <div className="max-w-4xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="text-center flex-1">
-              <h1 className="bg-gradient-to-r from-rose-400 to-orange-300 bg-clip-text text-2xl font-black tracking-normal text-transparent" style={{ fontFamily: "var(--font-display)" }}>
+              <h1 className="text-2xl futura-bold text-blue-600">
                 NOTHINGMATTERS
               </h1>
-              <p className="text-xs font-bold text-rose-300 mt-0.5">
-                ✨ 수제 쿠키 주문
+              <p className="text-xs text-muted-foreground mt-0.5">
+                수제 쿠키 주문
               </p>
             </div>
             {isAdminSession && (
               <Link href="/dashboard">
                 <div
-                  className="flex min-h-11 cursor-pointer items-center gap-2 rounded-full bg-rose-100 px-4 py-2 text-rose-500 transition-transform hover:scale-[1.02] hover:bg-rose-200 active:scale-95"
+                  className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors cursor-pointer"
                   data-testid="link-dashboard"
                 >
                   <BarChart3 className="w-4 h-4" />
@@ -284,142 +278,107 @@ export default function OrderForm() {
 
       <main className="max-w-4xl mx-auto px-4 py-6">
         <form onSubmit={handleSubmit} className="space-y-6" data-testid="order-form">
-          <AnimatePresence mode="popLayout" initial={false}>
-            <motion.div
-              key={currentStep}
-              className="step-content"
-              initial={shouldReduce ? false : { opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={shouldReduce ? undefined : { opacity: 0, y: -10 }}
-              transition={{ type: "spring", stiffness: 340, damping: 24 }}
-            >
-              {currentStep === 1 && (
-                <>
-                  <motion.div
-                    initial={shouldReduce ? false : { opacity: 0, y: 12 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ type: "spring", stiffness: 320, damping: 24 }}
-                    className="cute-card mb-5 p-4 text-center"
-                    style={{ background: "linear-gradient(135deg, hsl(38,100%,99%) 0%, hsl(345,100%,98%) 100%)" }}
-                  >
-                    <p className="text-sm font-black text-rose-400">🎀 어떤 달콤한 것을 원하세요?</p>
-                    <p className="mt-1 text-xs font-medium text-gray-400">선택할수록 실시간으로 금액이 계산돼요</p>
-                  </motion.div>
+          {/* Step 1: Product Selection */}
+          {currentStep === 1 && (
+            <div className="step-content">
+              <div className="text-center mb-6">
+                <h2 className="text-xl font-bold text-foreground">
+                  🍪 제품 선택
+                </h2>
+                <p className="text-sm text-muted-foreground mt-1">
+                  먼저 원하시는 제품을 골라주세요
+                </p>
+              </div>
 
-                  <div className="text-center mb-6">
-                    <h2 className="text-xl font-black text-[#7b3f3f]">
-                      🍪 제품 선택
-                    </h2>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      먼저 원하시는 제품을 골라주세요
+              <ProductSelection
+                regularCookies={formData.regularCookies}
+                packaging={formData.packaging}
+                brownieCookieSets={formData.brownieCookieSets}
+                twoPackSets={formData.twoPackSets}
+                singleWithDrinkSets={formData.singleWithDrinkSets}
+                sconeSets={formData.sconeSets}
+                fortuneCookie={formData.fortuneCookie}
+                airplaneSandwich={formData.airplaneSandwich}
+                onUpdate={updateFormData}
+              />
+            </div>
+          )}
+
+          {/* Step 2: Basic Info */}
+          {currentStep === 2 && (
+            <div className="step-content">
+              <div className="text-center mb-6">
+                <h2 className="text-xl font-bold text-foreground">
+                  📋 기본 정보 입력
+                </h2>
+                <p className="text-sm text-muted-foreground mt-1">
+                  주문자 정보와 수령 일정을 알려주세요
+                </p>
+              </div>
+
+              <div className="space-y-6">
+                <CustomerInfo
+                  customerName={formData.customerName}
+                  customerContact={formData.customerContact}
+                  customerPhone={formData.customerPhone}
+                  onUpdate={(field, value) => updateFormData(field, value)}
+                />
+
+                <DeliveryDate
+                  deliveryDate={formData.deliveryDate}
+                  onUpdate={(value) => updateFormData("deliveryDate", value)}
+                />
+
+                <DeliveryMethod
+                  deliveryMethod={formData.deliveryMethod}
+                  deliveryAddress={formData.deliveryAddress || ""}
+                  pickupTime={formData.pickupTime}
+                  onUpdate={(field, value) => updateFormData(field, value)}
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Step 3: Review & Submit */}
+          {currentStep === 3 && (
+            <div className="step-content">
+              <div className="text-center mb-6">
+                <h2 className="text-xl font-bold text-foreground">
+                  📄 견적 확인
+                </h2>
+                <p className="text-sm text-muted-foreground mt-1">
+                  주문 내역을 확인하고 견적서를 받으세요
+                </p>
+              </div>
+
+              <div className="bg-card rounded-xl border border-border p-5 mb-6 card-shadow">
+                <div className="flex flex-col gap-3 mb-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <h3 className="font-semibold text-base flex items-center gap-2">
+                      ✏️ 빠른 수정
+                    </h3>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      틀린 내용이 있으면 바로 원하는 단계로 돌아가 수정할 수 있어요.
                     </p>
                   </div>
-
-                  <ProductSelection
-                    regularCookies={formData.regularCookies}
-                    packaging={formData.packaging}
-                    brownieCookieSets={formData.brownieCookieSets}
-                    twoPackSets={formData.twoPackSets}
-                    singleWithDrinkSets={formData.singleWithDrinkSets}
-                    sconeSets={formData.sconeSets}
-                    fortuneCookie={formData.fortuneCookie}
-                    airplaneSandwich={formData.airplaneSandwich}
-                    onUpdate={updateFormData}
-                  />
-                </>
-              )}
-
-              {currentStep === 2 && (
-                <>
-                  <motion.div
-                    initial={shouldReduce ? false : { opacity: 0, y: 12 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ type: "spring", stiffness: 320, damping: 24 }}
-                    className="cute-card p-5 mb-6 text-center"
-                    style={{ background: "linear-gradient(135deg, hsl(38,100%,99%) 0%, hsl(345,100%,98%) 100%)" }}
-                  >
-                    <div className="text-3xl mb-2">🍪</div>
-                    <h2 className="font-black text-lg text-rose-400">거의 다 왔어요!</h2>
-                    <p className="text-sm text-gray-500 mt-1">이름과 수령 일정만 알려주시면 견적서가 완성돼요</p>
-                    <div className="flex flex-wrap justify-center gap-3 mt-3 text-xs text-gray-400">
-                      <span>✅ 3단계만에 완료</span>
-                      <span>📧 이메일로 견적서 발송</span>
-                    </div>
-                  </motion.div>
-
-                  <div className="text-center mb-6">
-                    <h2 className="text-xl font-black text-[#7b3f3f]">
-                      📋 기본 정보 입력
-                    </h2>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      주문자 정보와 수령 일정을 알려주세요
-                    </p>
+                  <div className="flex flex-wrap gap-2">
+                    <Button type="button" variant="outline" size="sm" onClick={() => goToStep(1)}>
+                      제품 수정
+                    </Button>
+                    <Button type="button" variant="outline" size="sm" onClick={() => goToStep(2)}>
+                      기본 정보 수정
+                    </Button>
                   </div>
+                </div>
+              </div>
 
-                  <div className="space-y-6">
-                    <CustomerInfo
-                      customerName={formData.customerName}
-                      customerContact={formData.customerContact}
-                      customerPhone={formData.customerPhone}
-                      onUpdate={(field, value) => updateFormData(field, value)}
-                    />
+              <QuotePreview formData={formData} pricing={pricing} />
 
-                    <DeliveryDate
-                      deliveryDate={formData.deliveryDate}
-                      onUpdate={(value) => updateFormData("deliveryDate", value)}
-                    />
-
-                    <DeliveryMethod
-                      deliveryMethod={formData.deliveryMethod}
-                      deliveryAddress={formData.deliveryAddress || ""}
-                      pickupTime={formData.pickupTime}
-                      onUpdate={(field, value) => updateFormData(field, value)}
-                    />
-                  </div>
-                </>
-              )}
-
-              {currentStep === 3 && (
-                <>
-                  <div className="text-center mb-6">
-                    <h2 className="text-xl font-black text-[#7b3f3f]">
-                      📄 견적 확인
-                    </h2>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      주문 내역을 확인하고 견적서를 받으세요
-                    </p>
-                  </div>
-
-                  <div className="cute-card p-5 mb-6">
-                    <div className="flex flex-col gap-3 mb-4 sm:flex-row sm:items-center sm:justify-between">
-                      <div>
-                        <h3 className="font-black text-base flex items-center gap-2 text-[#7b3f3f]">
-                          ✏️ 빠른 수정
-                        </h3>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          틀린 내용이 있으면 바로 원하는 단계로 돌아가 수정할 수 있어요.
-                        </p>
-                      </div>
-                      <div className="flex flex-wrap gap-2">
-                        <Button type="button" variant="outline" size="sm" onClick={() => goToStep(1)} className="min-h-11 rounded-full active:scale-95">
-                          제품 수정
-                        </Button>
-                        <Button type="button" variant="outline" size="sm" onClick={() => goToStep(2)} className="min-h-11 rounded-full active:scale-95">
-                          기본 정보 수정
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-
-                  <QuotePreview formData={formData} pricing={pricing} />
-
-                  <div className="mt-6">
-                    <OrderActions isSubmitting={isSubmitting} />
-                  </div>
-                </>
-              )}
-            </motion.div>
-          </AnimatePresence>
+              <div className="mt-6">
+                <OrderActions isSubmitting={isSubmitting} />
+              </div>
+            </div>
+          )}
 
           {/* Floating Summary Bar */}
           <FloatingSummary
