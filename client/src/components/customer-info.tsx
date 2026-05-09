@@ -27,13 +27,13 @@ function CuteField({ id, label, type, value, placeholder, testId, required, help
 
   return (
     <div className="space-y-2">
-      <Label htmlFor={id} className="block text-sm font-black text-[#7b3f3f]">
+      <Label htmlFor={id} className="block text-base font-black text-[#1a1a1a]">
         {label}{required ? " *" : ""}
       </Label>
       <motion.div
-        animate={isFilled && !shouldReduce ? { borderColor: "#86efac" } : undefined}
+        animate={isFilled && !shouldReduce ? { scale: [1, 1.015, 1] } : undefined}
         transition={{ type: "spring", stiffness: 360, damping: 24 }}
-        className="cute-input relative"
+        className={`crayon-input relative ${isFilled ? "crayon-input-filled" : ""}`}
       >
         <Input
           id={id}
@@ -42,7 +42,7 @@ function CuteField({ id, label, type, value, placeholder, testId, required, help
           value={value}
           onChange={(e) => onChange(e.target.value)}
           placeholder={placeholder}
-          className="h-12 w-full border-0 bg-transparent px-4 pr-11 text-base shadow-none outline-none focus-visible:ring-0 focus-visible:ring-offset-0"
+          className="h-14 w-full border-0 bg-transparent px-0 pr-11 text-base font-black shadow-none outline-none placeholder:text-gray-400 focus-visible:ring-0 focus-visible:ring-offset-0"
           data-testid={testId}
         />
         <AnimatePresence>
@@ -52,27 +52,25 @@ function CuteField({ id, label, type, value, placeholder, testId, required, help
               animate={{ scale: 1, opacity: 1 }}
               exit={shouldReduce ? undefined : { scale: 0, opacity: 0 }}
               transition={{ type: "spring", stiffness: 420, damping: 22 }}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-lg font-black text-emerald-400"
+              className="bounce-in absolute right-3 top-1/2 -translate-y-1/2 text-xl font-black"
               aria-hidden="true"
             >
-              ✓
+              ✅
             </motion.span>
           )}
         </AnimatePresence>
       </motion.div>
-      {helper && <p className="text-xs font-medium text-rose-300">{helper}</p>}
+      {helper && <p className="text-sm font-black text-[var(--crayon-blue)]">{helper}</p>}
     </div>
   );
 }
 
 export function CustomerInfo({ customerName, customerContact, customerPhone, onUpdate }: CustomerInfoProps) {
   return (
-    <section className="cute-card p-6">
-      <div className="mb-5 flex items-center justify-between gap-3">
-        <h2 className="flex items-center gap-2 text-lg font-black text-[#7b3f3f]">
-          🌸 주문자 정보
-        </h2>
-        <span className="rounded-full bg-rose-100 px-3 py-1 text-xs font-black text-rose-500">
+    <section className="crayon-card">
+      <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+        <div className="section-badge">👤 주문자 정보</div>
+        <span className="count-badge bg-[var(--crayon-blue)]">
           견적서 받을 곳
         </span>
       </div>

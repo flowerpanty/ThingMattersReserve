@@ -32,10 +32,8 @@ export function PriceSummary({ pricing }: PriceSummaryProps) {
   const formatPrice = (price: number) => `${(price || 0).toLocaleString('ko-KR')}원`;
 
   return (
-    <section className="cute-card price-highlight p-6">
-      <h2 className="mb-5 flex items-center gap-2 text-lg font-black text-[#7b3f3f]">
-        ✨ 지금까지 이만큼이에요
-      </h2>
+    <section className="crayon-card">
+      <div className="section-badge">🧮 금액 계산</div>
 
       <div className="mb-6 space-y-3">
         {priceRows.map(([key, label, testId], index) => {
@@ -48,10 +46,13 @@ export function PriceSummary({ pricing }: PriceSummaryProps) {
               initial={shouldReduce ? false : { opacity: 0, x: -8 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ type: "spring", stiffness: 360, damping: 24, delay: shouldReduce ? 0 : index * 0.05 }}
-              className="flex items-center justify-between rounded-2xl border border-white/70 bg-white/65 px-4 py-3"
+              className="flex items-center justify-between rounded-2xl border-[3px] border-black bg-white px-4 py-3 shadow-[3px_3px_0_#1a1a1a]"
             >
-              <span className="font-bold text-[#7b3f3f]">{label}</span>
-              <span className="font-black text-rose-500 tabular-nums" data-testid={testId}>
+              <span className="flex items-center gap-2 text-base font-black text-[#1a1a1a]">
+                <span className="h-3 w-3 rounded-full bg-[var(--crayon-pink)]" />
+                {label}
+              </span>
+              <span className="text-base font-black text-[#1a1a1a] tabular-nums" data-testid={testId}>
                 {formatPrice(amount)}
               </span>
             </motion.div>
@@ -59,22 +60,14 @@ export function PriceSummary({ pricing }: PriceSummaryProps) {
         })}
       </div>
 
-      <div className="rounded-3xl border border-rose-100 bg-gradient-to-r from-rose-50 to-orange-50 px-4 py-5 shadow-sm">
-        <div className="flex items-end justify-between gap-4">
-          <div>
-            <p className="text-sm font-black text-rose-500">예상 총 금액</p>
-            <p className="mt-1 text-xs font-medium text-muted-foreground">옵션 포함 예상 합계입니다</p>
-          </div>
-          <span className="text-2xl font-black tracking-normal text-[#7b3f3f] tabular-nums md:text-3xl" data-testid="price-total">
+      <div className="crayon-card mt-4 text-center" style={{ background: "var(--crayon-yellow)" }}>
+          <p className="text-sm font-black text-[#1a1a1a]">예상 총 금액</p>
+          <span className="text-3xl font-black tracking-normal text-[#1a1a1a] tabular-nums" data-testid="price-total">
             {formatPrice(pricing.total)}
           </span>
-        </div>
-      </div>
-
-      <div className="mt-4 text-center">
-        <span className="inline-flex rounded-full bg-white/70 px-3 py-1.5 text-xs font-black text-rose-400">
+          <p className="mt-1 text-center text-sm font-bold text-[#1a1a1a]">
           💬 카카오 상담 후 최종 확정
-        </span>
+          </p>
       </div>
     </section>
   );

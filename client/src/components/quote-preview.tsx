@@ -249,13 +249,11 @@ export function QuotePreview({ formData, pricing }: QuotePreviewProps) {
   const displayTotal = pricing.total > 0 ? pricing.total : totalAmount;
 
   return (
-    <section className="cute-card p-6">
+    <section className="crayon-card">
         <div className="flex flex-col gap-6">
           <div>
-            <h3 className="text-lg font-black flex items-center gap-2 text-[#7b3f3f]">
-              📦 주문 내역
-            </h3>
-            <p className="text-sm text-muted-foreground mt-1">
+            <div className="section-badge">📦 주문 내역</div>
+            <p className="text-base font-bold text-gray-600">
               선택한 제품과 옵션을 한 번 더 확인해주세요.
             </p>
           </div>
@@ -268,18 +266,18 @@ export function QuotePreview({ formData, pricing }: QuotePreviewProps) {
                   initial={shouldReduce ? false : { opacity: 0, x: -8 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ type: "spring", stiffness: 360, damping: 24, delay: shouldReduce ? 0 : index * 0.05 }}
-                  className="rounded-2xl border border-rose-100 bg-white/70 px-4 py-4"
+                  className="rounded-2xl border-[3px] border-black bg-white px-4 py-4 shadow-[3px_3px_0_#1a1a1a]"
                 >
                   <div className="flex items-start justify-between gap-4">
                     <div className="min-w-0 flex-1">
-                      <p className="font-black text-[#7b3f3f]">{row.title}</p>
-                      <p className="text-sm text-muted-foreground mt-1 leading-relaxed break-words">
+                      <p className="text-lg font-black text-[#1a1a1a]">{row.title}</p>
+                      <p className="mt-1 break-words text-sm font-bold leading-relaxed text-gray-600">
                         {row.summary}
                       </p>
-                      <p className="text-xs font-black text-rose-400 mt-2 tabular-nums">{row.quantityLabel}</p>
+                      <p className="count-badge mt-2 inline-flex tabular-nums">{row.quantityLabel}</p>
                     </div>
                     <div className="shrink-0 text-right">
-                      <p className="text-sm font-black text-rose-500 tabular-nums">
+                      <p className="text-base font-black text-[#1a1a1a] tabular-nums">
                         {row.amount > 0 ? formatPrice(row.amount) : "무료"}
                       </p>
                     </div>
@@ -287,50 +285,50 @@ export function QuotePreview({ formData, pricing }: QuotePreviewProps) {
                 </motion.div>
               ))
             ) : (
-              <div className="rounded-2xl border border-dashed border-rose-200 bg-rose-50/50 px-4 py-8 text-center text-sm font-medium text-muted-foreground">
+              <div className="rounded-2xl border-[3px] border-dashed border-black bg-yellow-100 px-4 py-8 text-center text-base font-black text-[#1a1a1a]">
                 선택한 제품이 아직 없습니다. 이전 단계에서 제품을 추가하면 여기에서 바로 확인할 수 있어요.
               </div>
             )}
           </div>
 
-          <div className="rounded-3xl border border-rose-100 bg-white/70 px-5 py-5">
+          <div className="rounded-3xl border-[3px] border-black bg-white px-5 py-5 shadow-[3px_3px_0_#1a1a1a]">
             <div className="flex flex-col gap-1 mb-4">
-              <h4 className="font-black text-[#7b3f3f]">고객 및 수령 정보</h4>
-              <p className="text-sm text-muted-foreground">
+              <h4 className="text-lg font-black text-[#1a1a1a]">고객 및 수령 정보</h4>
+              <p className="text-sm font-bold text-gray-600">
                 이메일로 같은 내용의 견적서가 전송됩니다.
               </p>
             </div>
 
             <div className="grid gap-3 text-sm">
               <div className="flex items-center justify-between gap-4 border-b border-border/60 pb-3">
-                <span className="text-muted-foreground">주문자</span>
+                <span className="font-bold text-gray-600">주문자</span>
                 <span className="font-bold text-right">{displayValue(formData.customerName)}</span>
               </div>
               <div className="flex items-center justify-between gap-4 border-b border-border/60 pb-3">
-                <span className="text-muted-foreground">이메일</span>
+                <span className="font-bold text-gray-600">이메일</span>
                 <span className="font-bold text-right">{displayValue(formData.customerContact)}</span>
               </div>
               <div className="flex items-center justify-between gap-4 border-b border-border/60 pb-3">
-                <span className="text-muted-foreground">핸드폰</span>
+                <span className="font-bold text-gray-600">핸드폰</span>
                 <span className="font-bold text-right">{displayValue(formData.customerPhone, "미입력")}</span>
               </div>
               <div className="flex items-center justify-between gap-4 border-b border-border/60 pb-3">
-                <span className="text-muted-foreground">수령일</span>
+                <span className="font-bold text-gray-600">수령일</span>
                 <span className="font-bold text-right">{formatDeliveryDate(formData.deliveryDate)}</span>
               </div>
               <div className="flex items-center justify-between gap-4 border-b border-border/60 pb-3">
-                <span className="text-muted-foreground">시간</span>
+                <span className="font-bold text-gray-600">시간</span>
                 <span className="font-bold text-right tabular-nums">{displayValue(formData.pickupTime, "미선택")}</span>
               </div>
               <div className="flex items-center justify-between gap-4 border-b border-border/60 pb-3">
-                <span className="text-muted-foreground">수령방법</span>
+                <span className="font-bold text-gray-600">수령방법</span>
                 <span className="font-bold text-right">
                   {formData.deliveryMethod === "pickup" ? "매장 픽업" : "퀵 배송"}
                 </span>
               </div>
               {formData.deliveryMethod === "quick" && (
                 <div className="flex items-start justify-between gap-4">
-                  <span className="text-muted-foreground">배송 주소</span>
+                  <span className="font-bold text-gray-600">배송 주소</span>
                   <span className="font-bold text-right break-words max-w-[70%]">
                     {displayValue(formData.deliveryAddress, "미입력")}
                   </span>
@@ -339,17 +337,17 @@ export function QuotePreview({ formData, pricing }: QuotePreviewProps) {
             </div>
           </div>
 
-          <div className="rounded-3xl border border-rose-100 bg-gradient-to-r from-rose-50 to-orange-50 px-5 py-5 shadow-sm">
+          <div className="crayon-card text-center" style={{ background: "var(--crayon-yellow)" }}>
             <div className="flex items-end justify-between gap-4">
               <div>
-                <p className="text-sm font-black text-rose-500">예상 총 금액</p>
-                <p className="text-xs text-muted-foreground mt-1">
+                <p className="text-base font-black text-[#1a1a1a]">예상 총 금액</p>
+                <p className="mt-1 text-sm font-bold text-[#1a1a1a]">
                   {formData.deliveryMethod === "quick"
                     ? "퀵 배송비는 상담 후 별도로 안내됩니다."
                     : "옵션 포함 예상 합계입니다."}
                 </p>
               </div>
-              <span className="text-[#7b3f3f] text-2xl md:text-3xl font-black tracking-normal tabular-nums">
+              <span className="text-3xl font-black tracking-normal text-[#1a1a1a] tabular-nums">
                 {formatPrice(displayTotal)}
               </span>
             </div>

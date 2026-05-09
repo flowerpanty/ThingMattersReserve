@@ -52,11 +52,11 @@ function StepIndicator({ currentStep }: { currentStep: number }) {
                   )}
                 </motion.div>
                 <span
-                  className={`text-xs mt-1.5 font-medium ${isCurrent
-                    ? "text-rose-500"
+                  className={`text-xs mt-1.5 font-black ${isCurrent
+                    ? "text-[#1a1a1a]"
                     : isCompleted
-                      ? "text-emerald-600"
-                      : "text-muted-foreground"
+                      ? "text-green-700"
+                      : "text-gray-500"
                     }`}
                 >
                   {step.label}
@@ -251,23 +251,29 @@ export default function OrderForm() {
   }, [resetForm, setShowKakaoModal]);
 
   return (
-    <div className="min-h-screen pb-24">
+    <div className="crayon-texture min-h-screen pb-24">
+      <svg className="pointer-events-none absolute h-0 w-0" aria-hidden="true" focusable="false">
+        <filter id="crayon-wobble">
+          <feTurbulence type="fractalNoise" baseFrequency="0.018" numOctaves="2" seed="8" result="noise" />
+          <feDisplacementMap in="SourceGraphic" in2="noise" scale="0.25" xChannelSelector="R" yChannelSelector="G" />
+        </filter>
+      </svg>
       {/* Header */}
-      <header className="sticky top-0 z-50 border-b border-rose-100/60 bg-white/70 backdrop-blur-xl dark:border-rose-300/20 dark:bg-[#1e1419]/80">
-        <div className="max-w-4xl mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="text-center flex-1">
-              <h1 className="bg-gradient-to-r from-rose-400 to-orange-300 bg-clip-text text-2xl font-black tracking-normal text-transparent" style={{ fontFamily: "var(--font-display)" }}>
-                NOTHINGMATTERS
+      <header className="sticky top-0 z-50 border-b-[3px] border-black bg-[var(--crayon-yellow)] shadow-[0_4px_0_#1a1a1a]">
+        <div className="max-w-4xl mx-auto px-4 py-3">
+          <div className="flex items-center justify-between gap-3">
+            <div className="min-w-0">
+              <h1 className="truncate text-2xl font-black tracking-normal text-[#1a1a1a]" style={{ fontFamily: "var(--font-crayon)" }}>
+                🍪 낫띵매터스
               </h1>
-              <p className="text-xs font-bold text-rose-300 mt-0.5">
-                ✨ 수제 쿠키 주문
+              <p className="text-sm font-black text-[#1a1a1a]">
+                수제 쿠키 주문
               </p>
             </div>
             {isAdminSession && (
               <Link href="/dashboard">
                 <div
-                  className="flex min-h-11 cursor-pointer items-center gap-2 rounded-full bg-rose-100 px-4 py-2 text-rose-500 transition-transform hover:scale-[1.02] hover:bg-rose-200 active:scale-95"
+                  className="crayon-btn crayon-btn-blue min-h-14 cursor-pointer px-4 text-sm"
                   data-testid="link-dashboard"
                 >
                   <BarChart3 className="w-4 h-4" />
@@ -299,20 +305,13 @@ export default function OrderForm() {
                     initial={shouldReduce ? false : { opacity: 0, y: 12 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ type: "spring", stiffness: 320, damping: 24 }}
-                    className="cute-card mb-5 p-4 text-center"
-                    style={{ background: "linear-gradient(135deg, hsl(38,100%,99%) 0%, hsl(345,100%,98%) 100%)" }}
+                    className="speech-bubble mb-6"
                   >
-                    <p className="text-sm font-black text-rose-400">🎀 어떤 달콤한 것을 원하세요?</p>
-                    <p className="mt-1 text-xs font-medium text-gray-400">선택할수록 실시간으로 금액이 계산돼요</p>
+                    👆 아래에서 원하는 쿠키를 골라보세요! 클릭하면 바로 담겨요 🎉
                   </motion.div>
 
-                  <div className="text-center mb-6">
-                    <h2 className="text-xl font-black text-[#7b3f3f]">
-                      🍪 제품 선택
-                    </h2>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      먼저 원하시는 제품을 골라주세요
-                    </p>
+                  <div className="mb-6">
+                    <div className="section-badge">🍪 쿠키 고르기</div>
                   </div>
 
                   <ProductSelection
@@ -335,25 +334,20 @@ export default function OrderForm() {
                     initial={shouldReduce ? false : { opacity: 0, y: 12 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ type: "spring", stiffness: 320, damping: 24 }}
-                    className="cute-card p-5 mb-6 text-center"
-                    style={{ background: "linear-gradient(135deg, hsl(38,100%,99%) 0%, hsl(345,100%,98%) 100%)" }}
+                    className="crayon-card mb-6 text-center"
+                    style={{ background: "hsl(195, 80%, 92%)" }}
                   >
-                    <div className="text-3xl mb-2">🍪</div>
-                    <h2 className="font-black text-lg text-rose-400">거의 다 왔어요!</h2>
-                    <p className="text-sm text-gray-500 mt-1">이름과 수령 일정만 알려주시면 견적서가 완성돼요</p>
-                    <div className="flex flex-wrap justify-center gap-3 mt-3 text-xs text-gray-400">
+                    <div className="text-4xl mb-2">🖍️</div>
+                    <h2 className="font-black text-xl text-[#1a1a1a]">거의 다 왔어요!</h2>
+                    <p className="text-base font-bold text-gray-700 mt-1">이름과 수령 일정만 알려주시면 견적서가 완성돼요</p>
+                    <div className="flex flex-wrap justify-center gap-3 mt-3 text-sm font-black text-gray-700">
                       <span>✅ 3단계만에 완료</span>
                       <span>📧 이메일로 견적서 발송</span>
                     </div>
                   </motion.div>
 
-                  <div className="text-center mb-6">
-                    <h2 className="text-xl font-black text-[#7b3f3f]">
-                      📋 기본 정보 입력
-                    </h2>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      주문자 정보와 수령 일정을 알려주세요
-                    </p>
+                  <div className="mb-6">
+                    <div className="section-badge">📝 정보 입력</div>
                   </div>
 
                   <div className="space-y-6">
@@ -381,30 +375,25 @@ export default function OrderForm() {
 
               {currentStep === 3 && (
                 <>
-                  <div className="text-center mb-6">
-                    <h2 className="text-xl font-black text-[#7b3f3f]">
-                      📄 견적 확인
-                    </h2>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      주문 내역을 확인하고 견적서를 받으세요
-                    </p>
+                  <div className="mb-6">
+                    <div className="section-badge">✅ 최종 확인</div>
                   </div>
 
-                  <div className="cute-card p-5 mb-6">
+                  <div className="crayon-card mb-6">
                     <div className="flex flex-col gap-3 mb-4 sm:flex-row sm:items-center sm:justify-between">
                       <div>
-                        <h3 className="font-black text-base flex items-center gap-2 text-[#7b3f3f]">
+                        <h3 className="font-black text-xl flex items-center gap-2 text-[#1a1a1a]">
                           ✏️ 빠른 수정
                         </h3>
-                        <p className="text-xs text-muted-foreground mt-1">
+                        <p className="text-base font-bold text-gray-600 mt-1">
                           틀린 내용이 있으면 바로 원하는 단계로 돌아가 수정할 수 있어요.
                         </p>
                       </div>
                       <div className="flex flex-wrap gap-2">
-                        <Button type="button" variant="outline" size="sm" onClick={() => goToStep(1)} className="min-h-11 rounded-full active:scale-95">
+                        <Button type="button" variant="outline" size="sm" onClick={() => goToStep(1)} className="crayon-btn crayon-btn-blue min-h-14 px-4 text-sm">
                           제품 수정
                         </Button>
-                        <Button type="button" variant="outline" size="sm" onClick={() => goToStep(2)} className="min-h-11 rounded-full active:scale-95">
+                        <Button type="button" variant="outline" size="sm" onClick={() => goToStep(2)} className="crayon-btn crayon-btn-green min-h-14 px-4 text-sm">
                           기본 정보 수정
                         </Button>
                       </div>
@@ -436,15 +425,15 @@ export default function OrderForm() {
 
       {/* Footer - only show on step 3 */}
       {currentStep === 3 && (
-        <footer className="bg-card/50 mt-8 py-6 border-t border-border">
+        <footer className="mt-8 border-t-[3px] border-black bg-white/70 py-6">
           <div className="max-w-4xl mx-auto px-4 text-center">
-            <div className="text-lg futura-bold text-primary mb-2">
+            <div className="text-lg font-black text-[#1a1a1a] mb-2">
               nothingmatters
             </div>
-            <p className="text-sm text-muted-foreground">
+            <p className="text-sm font-bold text-gray-700">
               수제 쿠키로 특별한 순간을 더욱 달콤하게
             </p>
-            <div className="mt-2 flex justify-center gap-4 text-xs text-muted-foreground">
+            <div className="mt-2 flex justify-center gap-4 text-xs font-bold text-gray-600">
               <span>예약 문의: 카카오톡 채널</span>
               <span>최소 1일 전 주문</span>
             </div>

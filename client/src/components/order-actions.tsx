@@ -11,13 +11,11 @@ export function OrderActions({ isSubmitting }: OrderActionsProps) {
 
   return (
     <div className="space-y-6">
-      <div className="cute-card border-rose-100 bg-gradient-to-r from-rose-50 to-orange-50 p-8">
+      <div className="crayon-card" style={{ background: "hsl(195, 80%, 92%)" }}>
         <div className="mb-6 text-center">
-          <div className="mb-3 inline-flex items-center rounded-full bg-white/70 px-3 py-1 text-xs font-black text-rose-500">
-            🎀 마지막 단계
-          </div>
-          <h3 className="mb-2 text-xl font-black text-[#7b3f3f]">견적서 요청</h3>
-          <p className="text-sm font-medium text-muted-foreground">
+          <div className="section-badge">🎀 마지막 단계</div>
+          <h3 className="mb-2 text-2xl font-black text-[#1a1a1a]">견적서 요청</h3>
+          <p className="text-base font-bold text-gray-700">
             버튼을 누르면 견적서가 생성되고, 이후 카카오톡으로 최종 상담을 이어갑니다.
           </p>
         </div>
@@ -30,7 +28,7 @@ export function OrderActions({ isSubmitting }: OrderActionsProps) {
           <Button
             type="submit"
             disabled={isSubmitting}
-            className="cta-shimmer min-h-[64px] w-full rounded-full px-10 py-5 text-xl font-black text-white shadow-[var(--shadow-btn)] disabled:opacity-60"
+            className="crayon-btn crayon-btn-pink w-full px-10 py-5 text-xl disabled:opacity-60"
             data-testid="button-generate-quote"
           >
             {isSubmitting ? (
@@ -45,8 +43,8 @@ export function OrderActions({ isSubmitting }: OrderActionsProps) {
         </motion.div>
       </div>
 
-      <div className="cute-card bg-white/60 p-6">
-        <p className="mb-4 text-center text-sm font-black text-[#7b3f3f]">
+      <div className="crayon-card bg-white">
+        <p className="mb-4 text-center text-base font-black text-[#1a1a1a]">
           기타 문의 및 정보
         </p>
 
@@ -56,7 +54,7 @@ export function OrderActions({ isSubmitting }: OrderActionsProps) {
             target="_blank"
             rel="noopener noreferrer"
             whileTap={shouldReduce ? undefined : { scale: 0.97 }}
-            className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-full bg-yellow-300 px-6 py-3 font-black text-yellow-950 transition-colors hover:bg-yellow-400"
+            className="crayon-btn crayon-btn-yellow w-full"
             data-testid="button-kakao-consultation"
           >
             💬 카카오톡 상담하기
@@ -67,7 +65,7 @@ export function OrderActions({ isSubmitting }: OrderActionsProps) {
             target="_blank"
             rel="noopener noreferrer"
             whileTap={shouldReduce ? undefined : { scale: 0.97 }}
-            className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-full border border-rose-100 bg-white px-6 py-3 font-black text-rose-500 transition-colors hover:bg-rose-50"
+            className="crayon-btn w-full bg-white text-[#1a1a1a]"
             data-testid="button-home"
           >
             🏠 nothingmatters

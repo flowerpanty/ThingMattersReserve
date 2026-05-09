@@ -59,16 +59,16 @@ function MinimumQuantityHint({
 
   if (totalQuantity === 0) {
     return (
-      <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-700">
+      <div className="rounded-2xl border-[3px] border-black bg-yellow-100 px-3 py-2 text-sm font-black text-[#1a1a1a] shadow-[3px_3px_0_#1a1a1a]">
         {label}은 최소 {minimumQuantity}개부터 주문 가능해요.
       </div>
     );
   }
 
   return (
-    <div className={`rounded-lg border px-3 py-2 text-xs font-semibold ${remaining > 0
-      ? "border-amber-200 bg-amber-50 text-amber-700"
-      : "border-emerald-200 bg-emerald-50 text-emerald-700"
+    <div className={`rounded-2xl border-[3px] border-black px-3 py-2 text-sm font-black shadow-[3px_3px_0_#1a1a1a] ${remaining > 0
+      ? "bg-yellow-100 text-[#1a1a1a]"
+      : "bg-green-100 text-green-800"
       }`}>
       {remaining > 0
         ? `${minimumQuantity}개까지 ${remaining}개 남았어요.`
@@ -344,11 +344,9 @@ export function ProductSelection({
   ];
 
   return (
-    <section className="cute-card p-6">
+    <section className="crayon-card">
         <div className="mb-6">
-          <h3 className="text-sm font-black text-[#7b3f3f] mb-3 flex items-center gap-2">
-            ✨ 목적별로 빠르게 고르기
-          </h3>
+          <div className="section-badge">✨ 목적별로 빠르게 고르기</div>
           <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
             {purposeShortcuts.map((shortcut) => (
               <motion.button
@@ -357,11 +355,14 @@ export function ProductSelection({
                 onClick={shortcut.action}
                 whileTap={shouldReduce ? undefined : { scale: 0.94 }}
                 transition={{ type: "spring", stiffness: 360, damping: 24 }}
-                className={`shortcut-card text-left ${shortcut.description.includes('선택됨') ? 'active' : ''}`}
+                className={`preset-card wiggle-hover ${shortcut.description.includes('선택됨') ? 'active' : ''}`}
               >
-                <div className="text-xl">{shortcut.icon}</div>
-                <div className="mt-2 text-sm font-semibold">{shortcut.title}</div>
-                <div className="mt-1 text-xs text-muted-foreground">{shortcut.description}</div>
+                <div className="text-5xl">{shortcut.icon}</div>
+                <div className="mt-2 text-lg font-black text-[#1a1a1a]">{shortcut.title}</div>
+                <div className="mt-1 text-sm font-bold text-gray-600">{shortcut.description}</div>
+                {shortcut.description.includes('선택됨') && (
+                  <span className="count-badge mt-3 inline-flex">담김</span>
+                )}
               </motion.button>
             ))}
           </div>
@@ -376,17 +377,17 @@ export function ProductSelection({
             <div id="product-section-regular" className={`product-category-card ${hasRegularCookies || packaging ? "has-items" : ""}`}>
               <CollapsibleTrigger className="product-category-header w-full">
                 <div className="flex items-center gap-3">
-                  {openSections.regular && <span className="h-9 w-1 rounded-full bg-gradient-to-b from-rose-300 to-orange-200" />}
-                  <span className="text-2xl">🍪</span>
+                  {openSections.regular && <span className="h-10 w-2 rounded-full bg-[var(--crayon-orange)]" />}
+                  <span className="text-4xl">🍪</span>
                   <div className="text-left">
-                    <div className="font-black text-[#7b3f3f]">일반 쿠키</div>
-                    <div className="text-sm text-muted-foreground">개당 4,500원</div>
-                    <div className="text-xs text-muted-foreground mt-1 max-w-[15rem] truncate sm:max-w-[26rem]" title={regularSummary}>
+                    <div className="text-lg font-black text-[#1a1a1a]">일반 쿠키</div>
+                    <div className="text-sm font-bold text-gray-600">개당 4,500원</div>
+                    <div className="mt-1 max-w-[15rem] truncate text-xs font-bold text-gray-500 sm:max-w-[26rem]" title={regularSummary}>
                       현재 선택: {regularSummary}
                     </div>
                   </div>
                   {regularCookieTotal > 0 && (
-                    <div className="bg-rose-100 text-rose-500 text-xs font-black px-2 py-1 rounded-full ml-2">
+                    <div className="count-badge ml-2">
                       <AnimatedCount value={regularCookieTotal} suffix="개" />
                     </div>
                   )}
@@ -396,41 +397,44 @@ export function ProductSelection({
 
               <CollapsibleContent className="px-4 pb-4">
                 {/* Step 1: 포장 방법 선택 (먼저 선택해야 함) */}
-                <div className="rounded-3xl border border-rose-100 bg-rose-50/60 p-4 mb-4">
-                  <h4 className="font-black mb-3 text-sm text-center text-[#7b3f3f]">🎁 포장 방법을 먼저 선택해주세요</h4>
+                <div className="mb-4 rounded-3xl border-[3px] border-black bg-yellow-100 p-4 shadow-[3px_3px_0_#1a1a1a]">
+                  <h4 className="mb-3 text-center text-base font-black text-[#1a1a1a]">🎁 포장 방법을 먼저 선택해주세요</h4>
                   <RadioGroup value={packaging} onValueChange={(value) => onUpdate('packaging', value)}>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                      <Label htmlFor="single_box" className={`selection-card block ${packaging === 'single_box' ? 'selected' : ''}`}>
+                      <Label htmlFor="single_box" className={`crayon-select-card ${packaging === 'single_box' ? 'selected selected-yellow' : ''}`}>
                         <RadioGroupItem value="single_box" id="single_box" data-testid="radio-packaging-single-box" className="sr-only" />
-                        <div className="text-2xl mb-2">🎁</div>
+                        <div className="text-5xl">🎁</div>
                         <div className="text-sm">
-                          <div className="font-black text-[#7b3f3f]">1구박스</div>
-                          <div className="text-xs text-muted-foreground">각 쿠키마다 +600원</div>
+                          <div className="text-lg font-black text-[#1a1a1a]">1구박스</div>
+                          <div className="text-sm font-bold text-gray-600">각 쿠키마다 +600원</div>
                         </div>
+                        {packaging === 'single_box' && <span className="count-badge">✓ 선택됨</span>}
                       </Label>
 
-                      <Label htmlFor="plastic_wrap" className={`selection-card block ${packaging === 'plastic_wrap' ? 'selected' : ''}`}>
+                      <Label htmlFor="plastic_wrap" className={`crayon-select-card ${packaging === 'plastic_wrap' ? 'selected selected-green' : ''}`}>
                         <RadioGroupItem value="plastic_wrap" id="plastic_wrap" data-testid="radio-packaging-plastic-wrap" className="sr-only" />
-                        <div className="text-2xl mb-2">🌿</div>
+                        <div className="text-5xl">🌿</div>
                         <div className="text-sm">
-                          <div className="font-black text-[#7b3f3f]">비닐탭포장</div>
-                          <div className="text-xs text-muted-foreground">각 쿠키마다 +500원</div>
+                          <div className="text-lg font-black text-[#1a1a1a]">비닐탭</div>
+                          <div className="text-sm font-bold text-gray-600">각 쿠키마다 +500원</div>
                         </div>
+                        {packaging === 'plastic_wrap' && <span className="count-badge">✓ 선택됨</span>}
                       </Label>
 
-                      <Label htmlFor="oil_paper" className={`selection-card block ${packaging === 'oil_paper' ? 'selected' : ''}`}>
+                      <Label htmlFor="oil_paper" className={`crayon-select-card ${packaging === 'oil_paper' ? 'selected selected-blue' : ''}`}>
                         <RadioGroupItem value="oil_paper" id="oil_paper" data-testid="radio-packaging-oil-paper" className="sr-only" />
-                        <div className="text-2xl mb-2">📄</div>
+                        <div className="text-5xl">📄</div>
                         <div className="text-sm">
-                          <div className="font-black text-[#7b3f3f]">유산지</div>
-                          <div className="text-xs text-muted-foreground">무료</div>
+                          <div className="text-lg font-black text-[#1a1a1a]">유산지</div>
+                          <div className="text-sm font-bold text-gray-600">무료</div>
                         </div>
+                        {packaging === 'oil_paper' && <span className="count-badge">✓ 선택됨</span>}
                       </Label>
                     </div>
                   </RadioGroup>
                   {!packaging && (
-                    <p className="text-xs text-amber-600 mt-2 text-center font-medium">
-                      ⚠️ 포장방법을 선택해야 쿠키를 고를 수 있습니다
+                    <p className="mt-3 text-center text-sm font-black text-[#1a1a1a]">
+                      🟠 포장방법을 선택해야 쿠키를 고를 수 있습니다
                     </p>
                   )}
                 </div>
@@ -438,10 +442,10 @@ export function ProductSelection({
                 {/* Step 2: 쿠키 선택 (포장방법 선택 후에만 활성화) */}
                 {packaging ? (
                   <div className="space-y-3">
-                    <h4 className="font-black text-sm text-center text-emerald-600">✓ 포장방법 선택완료! 이제 쿠키를 골라주세요</h4>
+                    <h4 className="text-center text-base font-black text-green-700">✅ 포장방법 선택완료! 이제 쿠키를 골라주세요</h4>
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
                       {cookieTypes.map((type) => (
-                        <div key={type} className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
+                        <div key={type} className="flex items-center justify-between rounded-2xl border-[3px] border-black bg-white p-3 shadow-[3px_3px_0_#1a1a1a]">
                           <div className="flex items-center gap-2">
                             <Checkbox
                               id={`cookie-${type}`}
@@ -451,14 +455,14 @@ export function ProductSelection({
                               }}
                               data-testid={`checkbox-cookie-${type}`}
                             />
-                            <Label htmlFor={`cookie-${type}`} className="text-sm font-medium">{type}</Label>
+                            <Label htmlFor={`cookie-${type}`} className="text-base font-black text-[#1a1a1a]">{type}</Label>
                           </div>
                           <div className="flex items-center gap-2">
                             <Button
                               type="button"
                               variant="outline"
                               size="sm"
-                              className="qty-pill-btn !h-10 !w-10 p-0 text-sm"
+                              className="qty-crayon-btn p-0"
                               onClick={() => updateRegularCookie(type, (regularCookies[type] || 0) - 1)}
                               data-testid={`button-decrease-${type}`}
                             >
@@ -469,14 +473,14 @@ export function ProductSelection({
                               min={0}
                               value={regularCookies[type] || 0}
                               onChange={(e) => updateRegularCookie(type, Math.max(0, parseInt(e.target.value) || 0))}
-                              className="h-10 w-16 rounded-full border-rose-100 text-center text-sm font-bold tabular-nums"
+                              className="h-12 w-20 rounded-full border-[3px] border-black text-center text-xl font-black tabular-nums"
                               data-testid={`input-quantity-${type}`}
                             />
                             <Button
                               type="button"
                               variant="outline"
                               size="sm"
-                              className="qty-pill-btn !h-10 !w-10 p-0 text-sm"
+                              className="qty-crayon-btn p-0"
                               onClick={() => updateRegularCookie(type, (regularCookies[type] || 0) + 1)}
                               data-testid={`button-increase-${type}`}
                             >
@@ -507,14 +511,14 @@ export function ProductSelection({
                   {openSections.twopack && <span className="h-9 w-1 rounded-full bg-gradient-to-b from-rose-300 to-orange-200" />}
                   <span className="text-2xl">📦</span>
                   <div className="text-left">
-                    <div className="font-black text-[#7b3f3f]">2구 패키지</div>
-                    <div className="text-sm text-muted-foreground">세트당 10,500원</div>
-                    <div className="text-xs text-muted-foreground mt-1 max-w-[15rem] truncate sm:max-w-[26rem]" title={twoPackSummary}>
+                    <div className="font-black text-[#1a1a1a]">2구 패키지</div>
+                    <div className="text-sm font-bold text-gray-600">세트당 10,500원</div>
+                    <div className="text-xs font-bold text-gray-600 mt-1 max-w-[15rem] truncate sm:max-w-[26rem]" title={twoPackSummary}>
                       현재 선택: {twoPackSummary}
                     </div>
                   </div>
                   {twoPackSets.length > 0 && (
-                    <div className="bg-rose-100 text-rose-500 text-xs font-black px-2 py-1 rounded-full ml-2">
+                    <div className="count-badge ml-2">
                       <AnimatedCount value={twoPackSets.length} suffix="세트" />
                     </div>
                   )}
@@ -525,7 +529,7 @@ export function ProductSelection({
               <CollapsibleContent className="px-4 pb-4">
                 <div className="space-y-4">
                   {twoPackSets.map((set, index) => (
-                    <div key={index} className="bg-accent/20 rounded-lg p-3">
+                    <div key={index} className="rounded-2xl border-[3px] border-black bg-white p-3 shadow-[3px_3px_0_#1a1a1a]">
                       <div className="flex items-center justify-between mb-3">
                         <h4 className="font-medium text-sm">세트 {index + 1} - 쿠키 2개 선택</h4>
                         <div className="flex items-center gap-2">
@@ -534,7 +538,7 @@ export function ProductSelection({
                               type="button"
                               variant="outline"
                               size="sm"
-                              className="qty-pill-btn !h-10 !w-10 p-0 text-sm"
+                              className="qty-crayon-btn p-0"
                               onClick={() => updateTwoPackSet(index, 'quantity', Math.max(1, (set.quantity || 1) - 1))}
                               data-testid={`button-decrease-twopack-${index}`}
                             >
@@ -545,14 +549,14 @@ export function ProductSelection({
                               min={1}
                               value={set.quantity || 1}
                               onChange={(e) => updateTwoPackSet(index, 'quantity', Math.max(1, parseInt(e.target.value) || 1))}
-                              className="h-10 w-16 rounded-full border-rose-100 text-center text-sm font-bold tabular-nums"
+                              className="h-12 w-20 rounded-full border-[3px] border-black text-center text-xl font-black tabular-nums"
                               data-testid={`input-quantity-twopack-${index}`}
                             />
                             <Button
                               type="button"
                               variant="outline"
                               size="sm"
-                              className="qty-pill-btn !h-10 !w-10 p-0 text-sm"
+                              className="qty-crayon-btn p-0"
                               onClick={() => updateTwoPackSet(index, 'quantity', (set.quantity || 1) + 1)}
                               data-testid={`button-increase-twopack-${index}`}
                             >
@@ -600,10 +604,10 @@ export function ProductSelection({
                         })}
                       </div>
 
-                      <div className="flex justify-between text-xs text-muted-foreground">
+                      <div className="flex justify-between text-xs font-bold text-gray-600">
                         <span>선택됨: {set.selectedCookies.length}/2개</span>
                         {set.selectedCookies.length > 0 && (
-                          <span className="text-primary font-medium">
+                          <span className="text-blue-700 font-black">
                             {set.selectedCookies.join(', ')}
                           </span>
                         )}
@@ -615,7 +619,7 @@ export function ProductSelection({
                     type="button"
                     variant="outline"
                     onClick={addTwoPackSet}
-                    className="w-full min-h-11 rounded-full active:scale-95"
+                    className="crayon-btn crayon-btn-yellow w-full"
                     data-testid="button-add-twopack-set"
                   >
                     + 2구 패키지 세트 추가
@@ -636,14 +640,14 @@ export function ProductSelection({
                   {openSections.singledrink && <span className="h-9 w-1 rounded-full bg-gradient-to-b from-rose-300 to-orange-200" />}
                   <span className="text-2xl">🍪☕</span>
                   <div className="text-left">
-                    <div className="font-black text-[#7b3f3f]">1구+음료 (최소수량 {minimumOrderQuantities.singleWithDrink}개)</div>
-                    <div className="text-sm text-muted-foreground">세트당 {formatWon(productCatalog.singleWithDrink.price)}</div>
-                    <div className="text-xs text-muted-foreground mt-1 max-w-[15rem] truncate sm:max-w-[26rem]" title={singleWithDrinkSummary}>
+                    <div className="font-black text-[#1a1a1a]">1구+음료 (최소수량 {minimumOrderQuantities.singleWithDrink}개)</div>
+                    <div className="text-sm font-bold text-gray-600">세트당 {formatWon(productCatalog.singleWithDrink.price)}</div>
+                    <div className="text-xs font-bold text-gray-600 mt-1 max-w-[15rem] truncate sm:max-w-[26rem]" title={singleWithDrinkSummary}>
                       현재 선택: {singleWithDrinkSummary}
                     </div>
                   </div>
                   {singleWithDrinkSets.length > 0 && (
-                    <div className="bg-rose-100 text-rose-500 text-xs font-black px-2 py-1 rounded-full ml-2">
+                    <div className="count-badge ml-2">
                       <AnimatedCount value={singleWithDrinkSets.length} suffix="세트" />
                     </div>
                   )}
@@ -659,7 +663,7 @@ export function ProductSelection({
                     minimumQuantity={minimumOrderQuantities.singleWithDrink}
                   />
                   {singleWithDrinkSets.map((set, index) => (
-                    <div key={index} className="bg-accent/20 rounded-lg p-3">
+                    <div key={index} className="rounded-2xl border-[3px] border-black bg-white p-3 shadow-[3px_3px_0_#1a1a1a]">
                       <div className="flex items-center justify-between mb-3">
                         <h4 className="font-medium text-sm">세트 {index + 1} - 쿠키 + 음료</h4>
                         <div className="flex items-center gap-2">
@@ -668,7 +672,7 @@ export function ProductSelection({
                               type="button"
                               variant="outline"
                               size="sm"
-                              className="qty-pill-btn !h-10 !w-10 p-0 text-sm"
+                              className="qty-crayon-btn p-0"
                               onClick={() => updateSingleWithDrinkSet(index, 'quantity', Math.max(1, (set.quantity || 1) - 1))}
                               data-testid={`button-decrease-single-drink-${index}`}
                             >
@@ -679,14 +683,14 @@ export function ProductSelection({
                               min={1}
                               value={set.quantity || 1}
                               onChange={(e) => updateSingleWithDrinkSet(index, 'quantity', Math.max(1, parseInt(e.target.value) || 1))}
-                              className="h-10 w-16 rounded-full border-rose-100 text-center text-sm font-bold tabular-nums"
+                              className="h-12 w-20 rounded-full border-[3px] border-black text-center text-xl font-black tabular-nums"
                               data-testid={`input-quantity-single-drink-${index}`}
                             />
                             <Button
                               type="button"
                               variant="outline"
                               size="sm"
-                              className="qty-pill-btn !h-10 !w-10 p-0 text-sm"
+                              className="qty-crayon-btn p-0"
                               onClick={() => updateSingleWithDrinkSet(index, 'quantity', (set.quantity || 1) + 1)}
                               data-testid={`button-increase-single-drink-${index}`}
                             >
@@ -741,7 +745,7 @@ export function ProductSelection({
                         </div>
 
                         {(set.selectedCookie || set.selectedDrink) && (
-                          <div className="text-xs text-primary font-medium">
+                          <div className="text-xs text-blue-700 font-black">
                             선택됨: {set.selectedCookie || '미선택'} + {set.selectedDrink || '미선택'}
                           </div>
                         )}
@@ -753,7 +757,7 @@ export function ProductSelection({
                     type="button"
                     variant="outline"
                     onClick={addSingleWithDrinkSet}
-                    className="w-full min-h-11 rounded-full active:scale-95"
+                    className="crayon-btn crayon-btn-yellow w-full"
                     data-testid="button-add-single-drink-set"
                   >
                     + 1구 + 음료 세트 추가
@@ -774,14 +778,14 @@ export function ProductSelection({
                   {openSections.brownie && <span className="h-9 w-1 rounded-full bg-gradient-to-b from-rose-300 to-orange-200" />}
                   <span className="text-2xl">🧸</span>
                   <div className="text-left">
-                    <div className="font-black text-[#7b3f3f]">브라우니쿠키 (최소수량 {minimumOrderQuantities.brownie}개)</div>
-                    <div className="text-sm text-muted-foreground">개당 {formatWon(productCatalog.brownie.price)}</div>
-                    <div className="text-xs text-muted-foreground mt-1 max-w-[15rem] truncate sm:max-w-[26rem]" title={brownieSummary}>
+                    <div className="font-black text-[#1a1a1a]">브라우니쿠키 (최소수량 {minimumOrderQuantities.brownie}개)</div>
+                    <div className="text-sm font-bold text-gray-600">개당 {formatWon(productCatalog.brownie.price)}</div>
+                    <div className="text-xs font-bold text-gray-600 mt-1 max-w-[15rem] truncate sm:max-w-[26rem]" title={brownieSummary}>
                       현재 선택: {brownieSummary}
                     </div>
                   </div>
                   {brownieCookieSets && brownieCookieSets.length > 0 && (
-                    <div className="bg-rose-100 text-rose-500 text-xs font-black px-2 py-1 rounded-full ml-2">
+                    <div className="count-badge ml-2">
                       <AnimatedCount value={brownieCookieSets.reduce((sum, set) => sum + set.quantity, 0)} suffix="개" />
                     </div>
                   )}
@@ -797,7 +801,7 @@ export function ProductSelection({
                     minimumQuantity={minimumOrderQuantities.brownie}
                   />
                   {brownieCookieSets && brownieCookieSets.map((set, index) => (
-                    <div key={index} className="border border-muted rounded-lg p-3">
+                    <div key={index} className="rounded-2xl border-[3px] border-black bg-white p-3 shadow-[3px_3px_0_#1a1a1a]">
                       <div className="flex items-center justify-between mb-3">
                         <h5 className="font-medium text-sm">브라우니 세트 {index + 1}</h5>
                         <div className="flex items-center gap-2">
@@ -805,7 +809,7 @@ export function ProductSelection({
                             type="button"
                             variant="outline"
                             size="sm"
-                            className="qty-pill-btn !h-10 !w-10 p-0 text-sm"
+                            className="qty-crayon-btn p-0"
                             onClick={() => updateBrownieCookieSet(index, 'quantity', Math.max(1, set.quantity - 1))}
                             data-testid={`button-decrease-brownie-${index}`}
                           >
@@ -816,14 +820,14 @@ export function ProductSelection({
                             min={1}
                             value={set.quantity}
                             onChange={(e) => updateBrownieCookieSet(index, 'quantity', Math.max(1, parseInt(e.target.value) || 1))}
-                            className="h-10 w-16 rounded-full border-rose-100 text-center text-sm font-bold tabular-nums"
+                            className="h-12 w-20 rounded-full border-[3px] border-black text-center text-xl font-black tabular-nums"
                             data-testid={`input-quantity-brownie-${index}`}
                           />
                           <Button
                             type="button"
                             variant="outline"
                             size="sm"
-                            className="qty-pill-btn !h-10 !w-10 p-0 text-sm"
+                            className="qty-crayon-btn p-0"
                             onClick={() => updateBrownieCookieSet(index, 'quantity', set.quantity + 1)}
                             data-testid={`button-increase-brownie-${index}`}
                           >
@@ -842,7 +846,7 @@ export function ProductSelection({
                       </div>
 
                       {/* Shape Selection */}
-                      <div className="bg-accent/20 rounded-lg p-3 mb-3">
+                      <div className="rounded-2xl border-[3px] border-black bg-white p-3 shadow-[3px_3px_0_#1a1a1a] mb-3">
                         <h6 className="font-medium mb-2 text-xs">쿠키 모양</h6>
                         <RadioGroup
                           value={set.shape}
@@ -882,7 +886,7 @@ export function ProductSelection({
                       </div>
 
                       {/* Custom Options */}
-                      <div className="bg-accent/20 rounded-lg p-3">
+                      <div className="rounded-2xl border-[3px] border-black bg-white p-3 shadow-[3px_3px_0_#1a1a1a]">
                         <h6 className="font-medium mb-2 text-xs">커스텀 옵션</h6>
                         <div className="space-y-2">
                           <div className="flex items-start gap-2 p-2 bg-card rounded hover:bg-accent/30 transition-colors">
@@ -894,7 +898,7 @@ export function ProductSelection({
                             />
                             <Label htmlFor={`customSticker-${index}`} className="cursor-pointer text-xs">
                               <div className="font-medium">하단 스티커 제작</div>
-                              <div className="text-xs text-muted-foreground">+20,000원</div>
+                              <div className="text-xs font-bold text-gray-600">+20,000원</div>
                             </Label>
                           </div>
 
@@ -922,7 +926,7 @@ export function ProductSelection({
                                   disabled={!set.heartMessage && set.heartMessage !== ''}
                                   data-testid={`input-heart-message-${index}`}
                                 />
-                                <div className="text-xs text-muted-foreground mt-1">예: 사랑, LOVE</div>
+                                <div className="text-xs font-bold text-gray-600 mt-1">예: 사랑, LOVE</div>
                               </div>
                             </div>
                           </div>
@@ -936,7 +940,7 @@ export function ProductSelection({
                             />
                             <Label htmlFor={`customTopper-${index}`} className="cursor-pointer text-xs">
                               <div className="font-medium">토퍼 제작</div>
-                              <div className="text-xs text-muted-foreground">문의 필요</div>
+                              <div className="text-xs font-bold text-gray-600">문의 필요</div>
                             </Label>
                           </div>
                         </div>
@@ -948,7 +952,7 @@ export function ProductSelection({
                     type="button"
                     variant="outline"
                     onClick={addBrownieCookieSet}
-                    className="w-full min-h-11 rounded-full active:scale-95"
+                    className="crayon-btn crayon-btn-yellow w-full"
                     data-testid="button-add-brownie-set"
                   >
                     + 브라우니쿠키 세트 추가
@@ -969,14 +973,14 @@ export function ProductSelection({
                   {openSections.fortune && <span className="h-9 w-1 rounded-full bg-gradient-to-b from-rose-300 to-orange-200" />}
                   <span className="text-2xl">🥠</span>
                   <div className="text-left">
-                    <div className="font-black text-[#7b3f3f]">행운쿠키</div>
-                    <div className="text-sm text-muted-foreground">박스당 {formatWon(productCatalog.fortune.price)}</div>
-                    <div className="text-xs text-muted-foreground mt-1 max-w-[15rem] truncate sm:max-w-[26rem]" title={fortuneSummary}>
+                    <div className="font-black text-[#1a1a1a]">행운쿠키</div>
+                    <div className="text-sm font-bold text-gray-600">박스당 {formatWon(productCatalog.fortune.price)}</div>
+                    <div className="text-xs font-bold text-gray-600 mt-1 max-w-[15rem] truncate sm:max-w-[26rem]" title={fortuneSummary}>
                       현재 선택: {fortuneSummary}
                     </div>
                   </div>
                   {fortuneCookie > 0 && (
-                    <div className="bg-rose-100 text-rose-500 text-xs font-black px-2 py-1 rounded-full ml-2">
+                    <div className="count-badge ml-2">
                       <AnimatedCount value={fortuneCookie} suffix="박스" />
                     </div>
                   )}
@@ -985,7 +989,7 @@ export function ProductSelection({
               </CollapsibleTrigger>
 
               <CollapsibleContent className="px-4 pb-4">
-                <div className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
+                <div className="flex items-center justify-between rounded-2xl border-[3px] border-black bg-white p-3 shadow-[3px_3px_0_#1a1a1a]">
                   <div className="flex items-center gap-2">
                     <Checkbox
                       id="fortune-cookie"
@@ -995,14 +999,14 @@ export function ProductSelection({
                       }}
                       data-testid="checkbox-fortune-cookie"
                     />
-                    <Label htmlFor="fortune-cookie" className="text-sm font-medium">행운쿠키 (박스)</Label>
+                    <Label htmlFor="fortune-cookie" className="text-base font-black">행운쿠키 (박스)</Label>
                   </div>
                   <div className="flex items-center gap-2">
                     <Button
                       type="button"
                       variant="outline"
                       size="sm"
-                      className="qty-pill-btn !h-10 !w-10 p-0 text-sm"
+                      className="qty-crayon-btn p-0"
                       onClick={() => onUpdate('fortuneCookie', Math.max(0, fortuneCookie - 1))}
                       data-testid="button-decrease-fortune"
                     >
@@ -1013,14 +1017,14 @@ export function ProductSelection({
                       min={0}
                       value={fortuneCookie}
                       onChange={(e) => onUpdate('fortuneCookie', Math.max(0, parseInt(e.target.value) || 0))}
-                      className="h-10 w-16 rounded-full border-rose-100 text-center text-sm font-bold tabular-nums"
+                      className="h-12 w-20 rounded-full border-[3px] border-black text-center text-xl font-black tabular-nums"
                       data-testid="input-quantity-fortune"
                     />
                     <Button
                       type="button"
                       variant="outline"
                       size="sm"
-                      className="qty-pill-btn !h-10 !w-10 p-0 text-sm"
+                      className="qty-crayon-btn p-0"
                       onClick={() => onUpdate('fortuneCookie', fortuneCookie + 1)}
                       data-testid="button-increase-fortune"
                     >
@@ -1043,14 +1047,14 @@ export function ProductSelection({
                   {openSections.airplane && <span className="h-9 w-1 rounded-full bg-gradient-to-b from-rose-300 to-orange-200" />}
                   <span className="text-2xl">✈️</span>
                   <div className="text-left">
-                    <div className="font-black text-[#7b3f3f]">비행기샌드쿠키</div>
-                    <div className="text-sm text-muted-foreground">박스당 {formatWon(productCatalog.airplane.price)}</div>
-                    <div className="text-xs text-muted-foreground mt-1 max-w-[15rem] truncate sm:max-w-[26rem]" title={airplaneSummary}>
+                    <div className="font-black text-[#1a1a1a]">비행기샌드쿠키</div>
+                    <div className="text-sm font-bold text-gray-600">박스당 {formatWon(productCatalog.airplane.price)}</div>
+                    <div className="text-xs font-bold text-gray-600 mt-1 max-w-[15rem] truncate sm:max-w-[26rem]" title={airplaneSummary}>
                       현재 선택: {airplaneSummary}
                     </div>
                   </div>
                   {airplaneSandwich > 0 && (
-                    <div className="bg-rose-100 text-rose-500 text-xs font-black px-2 py-1 rounded-full ml-2">
+                    <div className="count-badge ml-2">
                       <AnimatedCount value={airplaneSandwich} suffix="박스" />
                     </div>
                   )}
@@ -1059,7 +1063,7 @@ export function ProductSelection({
               </CollapsibleTrigger>
 
               <CollapsibleContent className="px-4 pb-4">
-                <div className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
+                <div className="flex items-center justify-between rounded-2xl border-[3px] border-black bg-white p-3 shadow-[3px_3px_0_#1a1a1a]">
                   <div className="flex items-center gap-2">
                     <Checkbox
                       id="airplane-sandwich"
@@ -1069,14 +1073,14 @@ export function ProductSelection({
                       }}
                       data-testid="checkbox-airplane-sandwich"
                     />
-                    <Label htmlFor="airplane-sandwich" className="text-sm font-medium">비행기샌드쿠키 (박스)</Label>
+                    <Label htmlFor="airplane-sandwich" className="text-base font-black">비행기샌드쿠키 (박스)</Label>
                   </div>
                   <div className="flex items-center gap-2">
                     <Button
                       type="button"
                       variant="outline"
                       size="sm"
-                      className="qty-pill-btn !h-10 !w-10 p-0 text-sm"
+                      className="qty-crayon-btn p-0"
                       onClick={() => onUpdate('airplaneSandwich', Math.max(0, airplaneSandwich - 1))}
                       data-testid="button-decrease-airplane"
                     >
@@ -1087,14 +1091,14 @@ export function ProductSelection({
                       min={0}
                       value={airplaneSandwich}
                       onChange={(e) => onUpdate('airplaneSandwich', Math.max(0, parseInt(e.target.value) || 0))}
-                      className="h-10 w-16 rounded-full border-rose-100 text-center text-sm font-bold tabular-nums"
+                      className="h-12 w-20 rounded-full border-[3px] border-black text-center text-xl font-black tabular-nums"
                       data-testid="input-quantity-airplane"
                     />
                     <Button
                       type="button"
                       variant="outline"
                       size="sm"
-                      className="qty-pill-btn !h-10 !w-10 p-0 text-sm"
+                      className="qty-crayon-btn p-0"
                       onClick={() => onUpdate('airplaneSandwich', airplaneSandwich + 1)}
                       data-testid="button-increase-airplane"
                     >
@@ -1117,14 +1121,14 @@ export function ProductSelection({
                   {openSections.scone && <span className="h-9 w-1 rounded-full bg-gradient-to-b from-rose-300 to-orange-200" />}
                   <span className="text-2xl">🥐</span>
                   <div className="text-left">
-                    <div className="font-black text-[#7b3f3f]">스콘 (최소수량 {minimumOrderQuantities.scone}개)</div>
-                    <div className="text-sm text-muted-foreground">개당 {formatWon(productCatalog.scone.price)} (딸기잼 +{formatWon(500)})</div>
-                    <div className="text-xs text-muted-foreground mt-1 max-w-[15rem] truncate sm:max-w-[26rem]" title={sconeSummary}>
+                    <div className="font-black text-[#1a1a1a]">스콘 (최소수량 {minimumOrderQuantities.scone}개)</div>
+                    <div className="text-sm font-bold text-gray-600">개당 {formatWon(productCatalog.scone.price)} (딸기잼 +{formatWon(500)})</div>
+                    <div className="text-xs font-bold text-gray-600 mt-1 max-w-[15rem] truncate sm:max-w-[26rem]" title={sconeSummary}>
                       현재 선택: {sconeSummary}
                     </div>
                   </div>
                   {sconeSets && sconeSets.length > 0 && (
-                    <div className="bg-rose-100 text-rose-500 text-xs font-black px-2 py-1 rounded-full ml-2">
+                    <div className="count-badge ml-2">
                       <AnimatedCount value={sconeSets.reduce((sum, set) => sum + set.quantity, 0)} suffix="개" />
                     </div>
                   )}
@@ -1140,9 +1144,9 @@ export function ProductSelection({
                     minimumQuantity={minimumOrderQuantities.scone}
                   />
                   {sconeSets && sconeSets.map((set, index) => (
-                    <div key={index} className="p-3 bg-muted/30 rounded-lg space-y-3">
+                    <div key={index} className="rounded-2xl border-[3px] border-black bg-white p-3 shadow-[3px_3px_0_#1a1a1a] space-y-3">
                       <div className="flex items-center justify-between">
-                        <h4 className="text-sm font-medium">스콘 세트 {index + 1}</h4>
+                        <h4 className="text-base font-black">스콘 세트 {index + 1}</h4>
                         <Button
                           type="button"
                           variant="ghost"
@@ -1179,7 +1183,7 @@ export function ProductSelection({
                             type="button"
                             variant="outline"
                             size="sm"
-                            className="qty-pill-btn !h-10 !w-10 p-0 text-sm"
+                            className="qty-crayon-btn p-0"
                             onClick={() => updateSconeSet(index, 'quantity', Math.max(1, set.quantity - 1))}
                             data-testid={`button-decrease-scone-${index}`}
                           >
@@ -1190,14 +1194,14 @@ export function ProductSelection({
                             min={1}
                             value={set.quantity}
                             onChange={(e) => updateSconeSet(index, 'quantity', Math.max(1, parseInt(e.target.value) || 1))}
-                            className="h-10 w-16 rounded-full border-rose-100 text-center text-sm font-bold tabular-nums"
+                            className="h-12 w-20 rounded-full border-[3px] border-black text-center text-xl font-black tabular-nums"
                             data-testid={`input-quantity-scone-${index}`}
                           />
                           <Button
                             type="button"
                             variant="outline"
                             size="sm"
-                            className="qty-pill-btn !h-10 !w-10 p-0 text-sm"
+                            className="qty-crayon-btn p-0"
                             onClick={() => updateSconeSet(index, 'quantity', set.quantity + 1)}
                             data-testid={`button-increase-scone-${index}`}
                           >
@@ -1222,7 +1226,7 @@ export function ProductSelection({
                     type="button"
                     variant="outline"
                     onClick={addSconeSet}
-                    className="w-full min-h-11 rounded-full active:scale-95"
+                    className="crayon-btn crayon-btn-yellow w-full"
                     data-testid="button-add-scone-set"
                   >
                     + 스콘 세트 추가

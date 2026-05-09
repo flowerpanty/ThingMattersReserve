@@ -30,30 +30,28 @@ export function DeliveryDate({ deliveryDate, onUpdate }: DeliveryDateProps) {
     : "";
 
   return (
-    <section className="cute-card p-6">
+    <section className="crayon-card">
       <div className="mb-5 flex items-center justify-between gap-3">
-        <h2 className="flex items-center gap-2 text-lg font-black text-[#7b3f3f]">
-          📅 수령 희망일
-        </h2>
-        <span className="rounded-full bg-amber-100 px-3 py-1 text-xs font-black text-amber-600">
+        <div className="section-badge">📅 수령 희망일</div>
+        <span className="count-badge bg-[var(--crayon-orange)]">
           최소 1일 전
         </span>
       </div>
 
       <div className="mx-auto max-w-md">
         <div className="mb-5 text-center">
-          <Label htmlFor="deliveryDate" className="block text-lg font-black text-[#7b3f3f] mb-2">
+          <Label htmlFor="deliveryDate" className="block text-xl font-black text-[#1a1a1a] mb-2">
             {deliveryDate ? "🎀 선택된 수령일" : "📅 수령 날짜 선택"}
           </Label>
           {!deliveryDate && (
-            <p className="text-sm font-medium text-muted-foreground">
+            <p className="text-base font-bold text-gray-600">
               가장 설레는 날짜를 골라주세요
             </p>
           )}
         </div>
 
         <div className="space-y-4">
-          <div className="cute-input">
+          <div className={`crayon-input ${deliveryDate ? "crayon-input-filled" : ""}`}>
             <Input
               id="deliveryDate"
               type="date"
@@ -61,7 +59,7 @@ export function DeliveryDate({ deliveryDate, onUpdate }: DeliveryDateProps) {
               value={deliveryDate}
               min={minDate}
               onChange={(e) => handleDateChange(e.target.value)}
-              className="date-input h-12 w-full border-0 bg-transparent px-4 text-center text-base font-bold shadow-none focus-visible:ring-0 focus-visible:ring-offset-0"
+              className="date-input h-14 w-full border-0 bg-transparent px-4 text-center text-base font-black shadow-none focus-visible:ring-0 focus-visible:ring-offset-0"
               data-testid="input-delivery-date"
             />
           </div>
@@ -73,17 +71,17 @@ export function DeliveryDate({ deliveryDate, onUpdate }: DeliveryDateProps) {
                 animate={{ opacity: 1, scale: 1 }}
                 exit={shouldReduce ? undefined : { opacity: 0, scale: 0.94 }}
                 transition={{ type: "spring", stiffness: 360, damping: 24 }}
-                className="rounded-2xl border border-emerald-200 bg-emerald-50 p-3"
+                className="rounded-2xl border-[3px] border-black bg-green-100 p-3 shadow-[3px_3px_0_#1a1a1a]"
               >
-                <p className="text-center text-sm font-black text-emerald-700">
+                <p className="text-center text-base font-black text-green-800">
                   ✅ {selectedLabel} 선택완료
                 </p>
               </motion.div>
             )}
           </AnimatePresence>
 
-          <div className="rounded-2xl border border-amber-200 bg-amber-50 p-3">
-            <p className="text-center text-xs font-bold text-amber-700">
+          <div className="rounded-2xl border-[3px] border-black bg-yellow-100 p-3 shadow-[3px_3px_0_#1a1a1a]">
+            <p className="text-center text-sm font-black text-[#1a1a1a]">
               🧈 제작 시간을 위해 최소 1일 전 주문이 필요해요
             </p>
           </div>

@@ -34,14 +34,14 @@ export function AdminAuth({ onAuthenticated }: AdminAuthProps) {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-rose-50 to-orange-50 px-4">
-      <Card className="cute-card w-full max-w-md border-rose-100">
+    <div className="min-h-screen flex items-center justify-center px-4">
+      <Card className="crayon-card w-full max-w-md">
         <CardHeader className="text-center">
-          <div className="w-16 h-16 bg-rose-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <Lock className="w-8 h-8 text-rose-500" />
+          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full border-[3px] border-black bg-[var(--crayon-yellow)] shadow-[3px_3px_0_#1a1a1a]">
+            <Lock className="w-8 h-8 text-[#1a1a1a]" />
           </div>
-          <CardTitle className="text-2xl font-black text-[#7b3f3f]">관리자 로그인</CardTitle>
-          <p className="text-muted-foreground">대시보드에 접근하려면 관리자 비밀번호를 입력하세요</p>
+          <CardTitle className="text-2xl font-black text-[#1a1a1a]">관리자 로그인</CardTitle>
+          <p className="font-bold text-gray-600">대시보드에 접근하려면 관리자 비밀번호를 입력하세요</p>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -51,7 +51,7 @@ export function AdminAuth({ onAuthenticated }: AdminAuthProps) {
                 placeholder="관리자 비밀번호"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="cute-input h-12 pr-10"
+                className="crayon-input h-14 pr-10 font-black"
                 required
                 data-testid="input-admin-password"
               />
@@ -66,14 +66,14 @@ export function AdminAuth({ onAuthenticated }: AdminAuthProps) {
             </div>
 
             {error && (
-              <div className="rounded-2xl border border-amber-200 bg-amber-50 p-3 text-center text-sm font-bold text-amber-700">
+              <div className="rounded-2xl border-[3px] border-black bg-yellow-100 p-3 text-center text-sm font-black text-[#1a1a1a] shadow-[3px_3px_0_#1a1a1a]">
                 {error}
               </div>
             )}
 
             <Button
               type="submit"
-              className="cta-shimmer min-h-12 w-full rounded-full font-black text-white active:scale-95"
+              className="crayon-btn crayon-btn-blue w-full"
               disabled={isLoading}
               data-testid="button-admin-login"
             >
@@ -81,7 +81,7 @@ export function AdminAuth({ onAuthenticated }: AdminAuthProps) {
             </Button>
           </form>
 
-          <p className="mt-6 text-center text-xs text-muted-foreground">
+          <p className="mt-6 text-center text-sm font-bold text-gray-600">
             서버 관리자 세션으로 보호됩니다.
           </p>
         </CardContent>
