@@ -1,0 +1,421 @@
+import { useEffect, useState, useCallback } from "react";
+import { CustomerInfo } from "@/components/customer-info";
+import { DeliveryDate } from "@/components/delivery-date";
+import { DeliveryMethod } from "@/components/delivery-method";
+import { ProductSelection } from "@/components/product-selection";
+import { OrderActions } from "@/components/order-actions";
+import { FinalKakaoModal } from "@/components/final-kakao-modal";
+import { FloatingSummary } from "@/components/floating-summary";
+import { QuotePreview } from "@/components/quote-preview";
+import { useOrderForm } from "@/hooks/use-order-form";
+import { Button } from "@/components/ui/button";
+import { Link } from "wouter";
+import { BarChart3, Check } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { minimumOrderQuantities } from "@shared/schema";
+
+const STEPS = [
+  { number: 1, label: "제품 선택", icon: "🍪" },
+  { number: 2, label: "기본 정보", icon: "📋" },
+  { number: 3, label: "견적 확인", icon: "📄" },
+];
+
+function StepIndicator({ currentStep }: { currentStep: number }) {
+  return (
+    <div className="step-indicator-container">
+      <div className="flex items-center justify-between w-full max-w-md mx-auto">
+        {STEPS.map((step, index) => {
+          const isCompleted = currentStep > step.number;
+          const isCurrent = currentStep === step.number;
+          const isLast = index === STEPS.length - 1;
+
+          return (
+            <div key={step.number} className="flex items-center flex-1">
+              <div className="flex flex-col items-center">
+                <div
+                  className={`step-circle ${isCompleted
+                    ? "step-completed"
+                    : isCurrent
+                      ? "step-current"
+                      : "step-upcoming"
+                    }`}
+                >
+                  {isCompleted ? (
+                    <Check className="w-4 h-4" />
+                  ) : (
+                    <span className="text-sm">{step.icon}</span>
+                  )}
+                </div>
+                <span
+                  className={`text-xs mt-1.5 font-medium ${isCurrent
+                    ? "text-primary"
+                    : isCompleted
+                      ? "text-green-600"
+                      : "text-muted-foreground"
+                    }`}
+                >
+                  {step.label}
+                </span>
+              </div>
+              {!isLast && (
+                <div
+                  className={`step-line ${isCompleted ? "step-line-completed" : ""
+                    }`}
+                />
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+export default function OrderForm() {
+  const {
+    formData,
+    updateFormData,
+    pricing,
+    handleSubmit,
+    isSubmitting,
+    showKakaoModal,
+    setShowKakaoModal,
+    resetForm,
+  } = useOrderForm();
+  const [currentStep, setCurrentStep] = useState(1);
+  const [isAdminSession, setIsAdminSession] = useState(false);
+  const { toast } = useToast();
+
+  useEffect(() => {
+    let isMounted = true;
+
+    fetch('/api/admin/me', { credentials: 'include' })
+      .then((response) => response.ok ? response.json() : { authenticated: false })
+      .then((data) => {
+        if (isMounted) {
+          setIsAdminSession(data.authenticated === true);
+        }
+      })
+      .catch(() => {
+        if (isMounted) {
+          setIsAdminSession(false);
+        }
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  // Calculate total items for floating summary
+  const totalItems = (() => {
+    let count = 0;
+    count += Object.values(formData.regularCookies).reduce(
+      (sum, qty) => sum + qty,
+      0
+    );
+    count += (formData.brownieCookieSets || []).reduce(
+      (sum, set) => sum + set.quantity,
+      0
+    );
+    count += (formData.twoPackSets || []).reduce(
+      (sum, set) => sum + (set.quantity || 1),
+      0
+    );
+    count += (formData.singleWithDrinkSets || []).reduce(
+      (sum, set) => sum + (set.quantity || 1),
+      0
+    );
+    count += (formData.sconeSets || []).reduce(
+      (sum, set) => sum + set.quantity,
+      0
+    );
+    count += formData.fortuneCookie || 0;
+    count += formData.airplaneSandwich || 0;
+    return count;
+  })();
+
+  const minimumQuantityIssue = (() => {
+    const singleWithDrinkQty = (formData.singleWithDrinkSets || []).reduce(
+      (sum, set) => sum + (set.quantity || 0),
+      0
+    );
+    if (singleWithDrinkQty > 0 && singleWithDrinkQty < minimumOrderQuantities.singleWithDrink) {
+      return `1구+음료는 최소 ${minimumOrderQuantities.singleWithDrink}개 이상 주문해주세요.`;
+    }
+
+    const brownieQty = (formData.brownieCookieSets || []).reduce(
+      (sum, set) => sum + (set.quantity || 0),
+      0
+    );
+    if (brownieQty > 0 && brownieQty < minimumOrderQuantities.brownie) {
+      return `브라우니쿠키는 최소 ${minimumOrderQuantities.brownie}개 이상 주문해주세요.`;
+    }
+
+    const sconeQty = (formData.sconeSets || []).reduce(
+      (sum, set) => sum + (set.quantity || 0),
+      0
+    );
+    if (sconeQty > 0 && sconeQty < minimumOrderQuantities.scone) {
+      return `스콘은 최소 ${minimumOrderQuantities.scone}개 이상 주문해주세요.`;
+    }
+
+    return "";
+  })();
+
+  const validateProductSelection = useCallback(() => {
+    if (totalItems === 0) {
+      toast({
+        title: "제품을 1개 이상 선택해주세요",
+        description: "견적을 만들려면 최소 한 가지 이상 선택이 필요합니다.",
+        variant: "destructive",
+      });
+      return false;
+    }
+
+    if (minimumQuantityIssue) {
+      toast({
+        title: "최소 수량을 확인해주세요",
+        description: minimumQuantityIssue,
+        variant: "destructive",
+      });
+      return false;
+    }
+
+    return true;
+  }, [minimumQuantityIssue, toast, totalItems]);
+
+  const validateCustomerInfo = useCallback(() => {
+    if (!formData.customerName.trim()) {
+      toast({
+        title: "이름을 입력해주세요",
+        variant: "destructive",
+      });
+      return false;
+    }
+    if (!formData.customerContact.trim()) {
+      toast({
+        title: "이메일을 입력해주세요",
+        variant: "destructive",
+      });
+      return false;
+    }
+    if (!formData.deliveryDate) {
+      toast({
+        title: "수령 날짜를 선택해주세요",
+        variant: "destructive",
+      });
+      return false;
+    }
+
+    return true;
+  }, [formData.customerContact, formData.customerName, formData.deliveryDate, toast]);
+
+  const goToStep = useCallback(
+    (step: number) => {
+      const isMovingForward = step > currentStep;
+
+      if (isMovingForward && currentStep === 1 && !validateProductSelection()) {
+        return;
+      }
+
+      if (isMovingForward && currentStep === 2 && !validateCustomerInfo()) {
+        return;
+      }
+
+      setCurrentStep(step);
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    },
+    [currentStep, validateCustomerInfo, validateProductSelection]
+  );
+
+  const handleNext = useCallback(() => {
+    if (currentStep < 3) goToStep(currentStep + 1);
+  }, [currentStep, goToStep]);
+
+  const handlePrev = useCallback(() => {
+    if (currentStep > 1) goToStep(currentStep - 1);
+  }, [currentStep, goToStep]);
+
+  const handleCloseKakaoModal = useCallback(() => {
+    setShowKakaoModal(false);
+    resetForm();
+    setCurrentStep(1);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }, [resetForm, setShowKakaoModal]);
+
+  return (
+    <div className="min-h-screen pb-24">
+      {/* Header */}
+      <header className="bg-card/80 backdrop-blur-sm border-b border-border sticky top-0 z-50">
+        <div className="max-w-4xl mx-auto px-4 py-4">
+          <div className="flex items-center justify-between">
+            <div className="text-center flex-1">
+              <h1 className="text-2xl futura-bold text-blue-600">
+                NOTHINGMATTERS
+              </h1>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                수제 쿠키 주문
+              </p>
+            </div>
+            {isAdminSession && (
+              <Link href="/dashboard">
+                <div
+                  className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors cursor-pointer"
+                  data-testid="link-dashboard"
+                >
+                  <BarChart3 className="w-4 h-4" />
+                  <span className="text-sm font-medium">대시보드</span>
+                </div>
+              </Link>
+            )}
+          </div>
+        </div>
+
+        {/* Step Indicator */}
+        <StepIndicator currentStep={currentStep} />
+      </header>
+
+      <main className="max-w-4xl mx-auto px-4 py-6">
+        <form onSubmit={handleSubmit} className="space-y-6" data-testid="order-form">
+          {/* Step 1: Product Selection */}
+          {currentStep === 1 && (
+            <div className="step-content">
+              <div className="text-center mb-6">
+                <h2 className="text-xl font-bold text-foreground">
+                  🍪 제품 선택
+                </h2>
+                <p className="text-sm text-muted-foreground mt-1">
+                  먼저 원하시는 제품을 골라주세요
+                </p>
+              </div>
+
+              <ProductSelection
+                regularCookies={formData.regularCookies}
+                packaging={formData.packaging}
+                brownieCookieSets={formData.brownieCookieSets}
+                twoPackSets={formData.twoPackSets}
+                singleWithDrinkSets={formData.singleWithDrinkSets}
+                sconeSets={formData.sconeSets}
+                fortuneCookie={formData.fortuneCookie}
+                airplaneSandwich={formData.airplaneSandwich}
+                onUpdate={updateFormData}
+              />
+            </div>
+          )}
+
+          {/* Step 2: Basic Info */}
+          {currentStep === 2 && (
+            <div className="step-content">
+              <div className="text-center mb-6">
+                <h2 className="text-xl font-bold text-foreground">
+                  📋 기본 정보 입력
+                </h2>
+                <p className="text-sm text-muted-foreground mt-1">
+                  주문자 정보와 수령 일정을 알려주세요
+                </p>
+              </div>
+
+              <div className="space-y-6">
+                <CustomerInfo
+                  customerName={formData.customerName}
+                  customerContact={formData.customerContact}
+                  customerPhone={formData.customerPhone}
+                  onUpdate={(field, value) => updateFormData(field, value)}
+                />
+
+                <DeliveryDate
+                  deliveryDate={formData.deliveryDate}
+                  onUpdate={(value) => updateFormData("deliveryDate", value)}
+                />
+
+                <DeliveryMethod
+                  deliveryMethod={formData.deliveryMethod}
+                  deliveryAddress={formData.deliveryAddress || ""}
+                  pickupTime={formData.pickupTime}
+                  onUpdate={(field, value) => updateFormData(field, value)}
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Step 3: Review & Submit */}
+          {currentStep === 3 && (
+            <div className="step-content">
+              <div className="text-center mb-6">
+                <h2 className="text-xl font-bold text-foreground">
+                  📄 견적 확인
+                </h2>
+                <p className="text-sm text-muted-foreground mt-1">
+                  주문 내역을 확인하고 견적서를 받으세요
+                </p>
+              </div>
+
+              <div className="bg-card rounded-xl border border-border p-5 mb-6 card-shadow">
+                <div className="flex flex-col gap-3 mb-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <h3 className="font-semibold text-base flex items-center gap-2">
+                      ✏️ 빠른 수정
+                    </h3>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      틀린 내용이 있으면 바로 원하는 단계로 돌아가 수정할 수 있어요.
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    <Button type="button" variant="outline" size="sm" onClick={() => goToStep(1)}>
+                      제품 수정
+                    </Button>
+                    <Button type="button" variant="outline" size="sm" onClick={() => goToStep(2)}>
+                      기본 정보 수정
+                    </Button>
+                  </div>
+                </div>
+              </div>
+
+              <QuotePreview formData={formData} pricing={pricing} />
+
+              <div className="mt-6">
+                <OrderActions isSubmitting={isSubmitting} />
+              </div>
+            </div>
+          )}
+
+          {/* Floating Summary Bar */}
+          <FloatingSummary
+            totalItems={totalItems}
+            totalPrice={pricing.total}
+            currentStep={currentStep}
+            onNext={handleNext}
+            onPrev={handlePrev}
+            isSubmitting={isSubmitting}
+            disableNext={currentStep === 1 && totalItems === 0}
+          />
+        </form>
+      </main>
+
+      {/* Footer - only show on step 3 */}
+      {currentStep === 3 && (
+        <footer className="bg-card/50 mt-8 py-6 border-t border-border">
+          <div className="max-w-4xl mx-auto px-4 text-center">
+            <div className="text-lg futura-bold text-primary mb-2">
+              nothingmatters
+            </div>
+            <p className="text-sm text-muted-foreground">
+              수제 쿠키로 특별한 순간을 더욱 달콤하게
+            </p>
+            <div className="mt-2 flex justify-center gap-4 text-xs text-muted-foreground">
+              <span>예약 문의: 카카오톡 채널</span>
+              <span>최소 1일 전 주문</span>
+            </div>
+          </div>
+        </footer>
+      )}
+
+      {/* Kakao Consultation Modal */}
+      <FinalKakaoModal
+        isOpen={showKakaoModal}
+        onClose={handleCloseKakaoModal}
+      />
+    </div>
+  );
+}

@@ -905,39 +905,15 @@
       right: 0;
       bottom: 0;
       z-index: 80;
-      overflow: hidden;
-      background: rgba(255, 248, 245, 0.92);
-      -webkit-backdrop-filter: blur(20px) saturate(1.5);
-      backdrop-filter: blur(20px) saturate(1.5);
-      color: #8a3b46;
-      border-top: 1px solid rgba(255, 182, 200, 0.4);
-      box-shadow: 0 -8px 32px rgba(255, 150, 180, 0.15), 0 -2px 8px rgba(255, 150, 180, 0.08);
+      background: linear-gradient(135deg, var(--blue), var(--blue2));
+      color: #fff;
+      box-shadow: 0 -6px 24px rgba(0,0,0,.16);
       padding: 10px 0 calc(10px + env(safe-area-inset-bottom, 0px));
-      animation: slideUpBar 0.52s cubic-bezier(0.34, 1.56, 0.64, 1);
-    }
-
-    .floatingProgressTrack {
-      position: absolute;
-      top: 0;
-      right: 0;
-      left: 0;
-      height: 3px;
-      overflow: hidden;
-      background: #fff0f4;
-    }
-
-    .floatingProgress {
-      height: 3px;
-      width: 20%;
-      border-radius: 0;
-      background: linear-gradient(90deg, #FFB5C8, #FFCBA4);
-      box-shadow: 0 0 12px rgba(255, 181, 200, 0.45);
-      transition: width 0.5s ease-out;
     }
 
     .floatingInner {
       display: grid;
-      grid-template-columns: 58px minmax(0,.55fr) minmax(0,1fr) 132px;
+      grid-template-columns: 58px minmax(0,.6fr) minmax(0,1fr) 72px;
       gap: 8px;
       align-items: center;
       width: min(980px, 100%);
@@ -947,53 +923,13 @@
     }
 
     .floatingBack, .floatingNext {
-      position: relative;
-      overflow: hidden;
       min-height: 52px;
       border: 0;
       border-radius: 999px;
-      font-weight: 900;
-      cursor: pointer;
-      transition: transform .18s ease, box-shadow .18s ease, filter .18s ease, background .18s ease, color .18s ease;
-      white-space: nowrap;
+      font-weight: 700;
     }
-    .floatingBack {
-      background: rgba(255,255,255,.54);
-      color: #9a5f69;
-    }
-    .floatingNext {
-      background: linear-gradient(135deg, #FFB5C8 0%, #FFCBA4 100%);
-      color: #5f2d36;
-      box-shadow: 0 10px 22px rgba(255, 157, 184, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.65);
-    }
-    .floatingNext::after {
-      content: "";
-      position: absolute;
-      inset: -40% auto -40% -60%;
-      width: 45%;
-      transform: rotate(18deg);
-      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.72), transparent);
-      animation: ctaShimmer 2s ease-in-out infinite;
-      pointer-events: none;
-    }
-    .floatingNext.hasItems {
-      animation: ctaSoftPulse 1.9s ease-in-out infinite;
-    }
-    .floatingNext:hover {
-      transform: scale(1.05);
-      filter: saturate(1.06);
-      box-shadow: 0 14px 28px rgba(255, 157, 184, 0.38), inset 0 1px 0 rgba(255, 255, 255, 0.75);
-    }
-    .floatingBack:hover {
-      background: rgba(255,255,255,.72);
-      color: #7f3f55;
-    }
-    .floatingBack:active {
-      transform: scale(.95);
-    }
-    .floatingNext:active {
-      transform: scale(.97);
-    }
+    .floatingBack { background: rgba(255,255,255,.14); color: #fff; }
+    .floatingNext { background: #fff; color: var(--blue); }
 
     .floatingMeta, .floatingCart {
       min-width: 0;
@@ -1001,9 +937,8 @@
       gap: 2px;
     }
     .floatingMeta small {
-      color: #ad7480;
+      color: rgba(255,255,255,.68);
       font-size: 11px;
-      font-weight: 800;
     }
     .floatingMeta strong, .floatingCart strong {
       overflow: hidden;
@@ -1012,40 +947,15 @@
       font-weight: 700;
       line-height: 1.08;
     }
-    .floatingMeta strong { color: #6f3d48; font-size: 12px; font-weight: 900; }
-    .floatingCart {
-      border: 1px solid rgba(255, 181, 200, 0.45);
-      border-radius: 999px;
-      background: rgba(255, 255, 255, 0.68);
-      box-shadow: 0 10px 24px rgba(255, 181, 200, 0.16), inset 0 1px 0 rgba(255, 255, 255, 0.78);
-      padding: 8px 12px;
-    }
-    .floatingCart.pricePop { animation: pricePop .34s ease-out; }
-    .floatingCart.floatingEmptyNudge { animation: emptyNudgeWiggle 2.8s ease-in-out infinite; }
-    .floatingCart strong { color: #8a3b46; font-size: 14px; font-weight: 1000; }
+    .floatingMeta strong { font-size: 12px; }
+    .floatingCart strong { font-size: 14px; }
     .floatingCart span {
       overflow: hidden;
-      color: #9a5f69;
+      color: rgba(255,255,255,.78);
       font-size: 10px;
-      font-weight: 800;
       line-height: 1.12;
       text-overflow: ellipsis;
       white-space: nowrap;
-    }
-
-    @media (prefers-color-scheme: dark) {
-      .floatingSummary {
-        background: rgba(30, 20, 25, 0.88);
-        border-top-color: rgba(255, 182, 200, 0.3);
-        box-shadow: 0 -8px 32px rgba(255, 150, 180, 0.12), 0 -2px 10px rgba(0,0,0,.28);
-      }
-      .floatingProgressTrack { background: rgba(255,255,255,.1); }
-      .floatingMeta strong, .floatingCart strong { color: #ffd1dc; }
-      .floatingMeta small, .floatingCart span, .floatingBack { color: #ffd6df; }
-      .floatingCart, .floatingBack {
-        background: rgba(255,255,255,.08);
-        border-color: rgba(255,181,200,.28);
-      }
     }
 
     .toast {
@@ -1082,26 +992,12 @@
       .flavorCard p { font-size: 12px; }
     }
 
-    @media (max-width: 760px) {
-      .floatingInner {
-        grid-template-columns: 54px minmax(0, 1fr) 112px;
-        min-height: 54px;
-        gap: 8px;
-      }
-      .floatingMeta { display: none; }
-      .floatingBack { min-height: 44px; padding-inline: 0; font-size: 12px; }
-      .floatingNext { min-height: 44px; padding-inline: 0; font-size: 13px; }
-      .floatingCart { gap: 2px; padding: 7px 10px; }
-      .floatingCart strong { font-size: 13px; }
-      .floatingCart span { font-size: 9.5px; }
-    }
-
     @media (max-width: 380px) {
       .packageCard { flex-basis: 88%; }
       .packageImage { height: 238px; }
       .flavorCard { grid-template-columns: 72px minmax(0, 1fr) 100px; min-height: 124px; }
       .flavorThumb { height: 72px; }
-      .floatingInner { grid-template-columns: 48px minmax(0, 1fr) 104px; }
+      .floatingInner { grid-template-columns: 52px minmax(0,.5fr) minmax(0,1.08fr) 64px; }
     }
 
     @media (prefers-reduced-motion: reduce) {
@@ -1111,35 +1007,6 @@
     @keyframes fadeIn {
       from { opacity: 0; transform: translateY(10px); }
       to { opacity: 1; transform: translateY(0); }
-    }
-
-    @keyframes slideUpBar {
-      0% { opacity: 0; transform: translateY(100%); }
-      72% { opacity: 1; transform: translateY(-5px); }
-      100% { opacity: 1; transform: translateY(0); }
-    }
-
-    @keyframes ctaShimmer {
-      0% { left: -60%; }
-      58%, 100% { left: 120%; }
-    }
-
-    @keyframes ctaSoftPulse {
-      0%, 100% { transform: translateY(0) scale(1); }
-      50% { transform: translateY(-1px) scale(1.025); }
-    }
-
-    @keyframes pricePop {
-      0% { transform: scale(1); }
-      50% { transform: scale(1.15); }
-      100% { transform: scale(1); }
-    }
-
-    @keyframes emptyNudgeWiggle {
-      0%, 84%, 100% { transform: translateX(0); }
-      88% { transform: translateX(-2px) rotate(-0.7deg); }
-      92% { transform: translateX(2px) rotate(0.7deg); }
-      96% { transform: translateX(-1px) rotate(-0.35deg); }
     }
 
     @keyframes pop {
@@ -1346,16 +1213,13 @@
   </main>
 
   <div class="floatingSummary" aria-label="선택 요약">
-    <div class="floatingProgressTrack" aria-hidden="true">
-      <div class="floatingProgress" id="floatingProgress"></div>
-    </div>
     <div class="floatingInner">
-      <button class="floatingBack" id="prevButton" type="button">← 뒤로</button>
+      <button class="floatingBack" id="prevButton" type="button">이전</button>
       <div class="floatingMeta">
         <small id="stepLabel">패키지</small>
         <strong id="stepTitle">패키지 선택</strong>
       </div>
-      <div class="floatingCart" id="floatingCart" aria-live="polite">
+      <div class="floatingCart" aria-live="polite">
         <strong id="cartTitle">🛒 현재 상품 · 0개 · 0원</strong>
         <span id="cartDetail">패키지와 맛을 선택해 주세요</span>
       </div>
@@ -1727,14 +1591,7 @@
         ? state.items.map((item) => `${(packages.find(p => p.id === item.packageId) || packages[0]).name}: ${flavorNames(item.flavorQty).join(",")}`).join(" / ")
         : floatingActionHint();
       $("prevButton").style.visibility = state.step === 1 ? "hidden" : "visible";
-      $("prevButton").textContent = "← 뒤로";
-      $("nextButton").textContent = state.step === 5 ? "✨ 견적서 받기" : "다음";
-      $("floatingProgress").style.width = `${Math.round((state.step / 5) * 100)}%`;
-      $("nextButton").classList.toggle("hasItems", subtotal() > 0);
-      $("floatingCart").classList.toggle("floatingEmptyNudge", state.step === 1 && subtotal() === 0);
-      $("floatingCart").classList.remove("pricePop");
-      void $("floatingCart").offsetWidth;
-      $("floatingCart").classList.add("pricePop");
+      $("nextButton").textContent = state.step === 5 ? "견적서" : "다음";
       document.querySelectorAll("[data-step-link]").forEach((link) => {
         const step = Number(link.dataset.stepLink);
         const dot = link.querySelector(".topStepDot");
