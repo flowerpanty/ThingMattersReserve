@@ -15,8 +15,8 @@ import { useToast } from "@/hooks/use-toast";
 import { minimumOrderQuantities } from "@shared/schema";
 
 const STEPS = [
-  { number: 1, label: "기본 정보", icon: "📋" },
-  { number: 2, label: "제품 선택", icon: "🍪" },
+  { number: 1, label: "제품 선택", icon: "🍪" },
+  { number: 2, label: "기본 정보", icon: "📋" },
   { number: 3, label: "견적 확인", icon: "📄" },
 ];
 
@@ -163,60 +163,75 @@ export default function OrderForm() {
     return "";
   })();
 
-  const goToStep = useCallback(
-    (step: number) => {
-      // Validate step 1 before moving to step 2
-      if (step > 1 && currentStep === 1) {
-        if (!formData.customerName.trim()) {
-          toast({
-            title: "이름을 입력해주세요",
-            variant: "destructive",
-          });
-          return;
-        }
-        if (!formData.customerContact.trim()) {
-          toast({
-            title: "이메일을 입력해주세요",
-            variant: "destructive",
-          });
-          return;
-        }
-        if (!formData.deliveryDate) {
-          toast({
-            title: "수령 날짜를 선택해주세요",
-            variant: "destructive",
-          });
-          return;
-        }
-      }
-
-      setCurrentStep(step);
-      window.scrollTo({ top: 0, behavior: "smooth" });
-    },
-    [currentStep, formData, toast]
-  );
-
-  const handleNext = useCallback(() => {
-    if (currentStep === 2 && totalItems === 0) {
+  const validateProductSelection = useCallback(() => {
+    if (totalItems === 0) {
       toast({
         title: "제품을 1개 이상 선택해주세요",
         description: "견적을 만들려면 최소 한 가지 이상 선택이 필요합니다.",
         variant: "destructive",
       });
-      return;
+      return false;
     }
 
-    if (currentStep === 2 && minimumQuantityIssue) {
+    if (minimumQuantityIssue) {
       toast({
         title: "최소 수량을 확인해주세요",
         description: minimumQuantityIssue,
         variant: "destructive",
       });
-      return;
+      return false;
     }
 
+    return true;
+  }, [minimumQuantityIssue, toast, totalItems]);
+
+  const validateCustomerInfo = useCallback(() => {
+    if (!formData.customerName.trim()) {
+      toast({
+        title: "이름을 입력해주세요",
+        variant: "destructive",
+      });
+      return false;
+    }
+    if (!formData.customerContact.trim()) {
+      toast({
+        title: "이메일을 입력해주세요",
+        variant: "destructive",
+      });
+      return false;
+    }
+    if (!formData.deliveryDate) {
+      toast({
+        title: "수령 날짜를 선택해주세요",
+        variant: "destructive",
+      });
+      return false;
+    }
+
+    return true;
+  }, [formData.customerContact, formData.customerName, formData.deliveryDate, toast]);
+
+  const goToStep = useCallback(
+    (step: number) => {
+      const isMovingForward = step > currentStep;
+
+      if (isMovingForward && currentStep === 1 && !validateProductSelection()) {
+        return;
+      }
+
+      if (isMovingForward && currentStep === 2 && !validateCustomerInfo()) {
+        return;
+      }
+
+      setCurrentStep(step);
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    },
+    [currentStep, validateCustomerInfo, validateProductSelection]
+  );
+
+  const handleNext = useCallback(() => {
     if (currentStep < 3) goToStep(currentStep + 1);
-  }, [currentStep, goToStep, minimumQuantityIssue, toast, totalItems]);
+  }, [currentStep, goToStep]);
 
   const handlePrev = useCallback(() => {
     if (currentStep > 1) goToStep(currentStep - 1);
@@ -263,8 +278,34 @@ export default function OrderForm() {
 
       <main className="max-w-4xl mx-auto px-4 py-6">
         <form onSubmit={handleSubmit} className="space-y-6" data-testid="order-form">
-          {/* Step 1: Basic Info */}
+          {/* Step 1: Product Selection */}
           {currentStep === 1 && (
+            <div className="step-content">
+              <div className="text-center mb-6">
+                <h2 className="text-xl font-bold text-foreground">
+                  🍪 제품 선택
+                </h2>
+                <p className="text-sm text-muted-foreground mt-1">
+                  먼저 원하시는 제품을 골라주세요
+                </p>
+              </div>
+
+              <ProductSelection
+                regularCookies={formData.regularCookies}
+                packaging={formData.packaging}
+                brownieCookieSets={formData.brownieCookieSets}
+                twoPackSets={formData.twoPackSets}
+                singleWithDrinkSets={formData.singleWithDrinkSets}
+                sconeSets={formData.sconeSets}
+                fortuneCookie={formData.fortuneCookie}
+                airplaneSandwich={formData.airplaneSandwich}
+                onUpdate={updateFormData}
+              />
+            </div>
+          )}
+
+          {/* Step 2: Basic Info */}
+          {currentStep === 2 && (
             <div className="step-content">
               <div className="text-center mb-6">
                 <h2 className="text-xl font-bold text-foreground">
@@ -298,32 +339,6 @@ export default function OrderForm() {
             </div>
           )}
 
-          {/* Step 2: Product Selection */}
-          {currentStep === 2 && (
-            <div className="step-content">
-              <div className="text-center mb-6">
-                <h2 className="text-xl font-bold text-foreground">
-                  🍪 제품 선택
-                </h2>
-                <p className="text-sm text-muted-foreground mt-1">
-                  원하시는 제품을 선택해주세요
-                </p>
-              </div>
-
-              <ProductSelection
-                regularCookies={formData.regularCookies}
-                packaging={formData.packaging}
-                brownieCookieSets={formData.brownieCookieSets}
-                twoPackSets={formData.twoPackSets}
-                singleWithDrinkSets={formData.singleWithDrinkSets}
-                sconeSets={formData.sconeSets}
-                fortuneCookie={formData.fortuneCookie}
-                airplaneSandwich={formData.airplaneSandwich}
-                onUpdate={updateFormData}
-              />
-            </div>
-          )}
-
           {/* Step 3: Review & Submit */}
           {currentStep === 3 && (
             <div className="step-content">
@@ -348,10 +363,10 @@ export default function OrderForm() {
                   </div>
                   <div className="flex flex-wrap gap-2">
                     <Button type="button" variant="outline" size="sm" onClick={() => goToStep(1)}>
-                      기본 정보 수정
+                      제품 수정
                     </Button>
                     <Button type="button" variant="outline" size="sm" onClick={() => goToStep(2)}>
-                      제품 수정
+                      기본 정보 수정
                     </Button>
                   </div>
                 </div>
@@ -373,7 +388,7 @@ export default function OrderForm() {
             onNext={handleNext}
             onPrev={handlePrev}
             isSubmitting={isSubmitting}
-            disableNext={currentStep === 2 && totalItems === 0}
+            disableNext={currentStep === 1 && totalItems === 0}
           />
         </form>
       </main>

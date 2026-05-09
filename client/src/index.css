@@ -596,28 +596,6 @@
     background-color: hsl(var(--muted) / 0.5);
   }
 
-  /* Quick Preset Cards */
-  .preset-card {
-    padding: 0.75rem 1rem;
-    border-radius: 10px;
-    border: 1.5px solid hsl(var(--border));
-    background: hsl(var(--card));
-    cursor: pointer;
-    transition: all 0.2s ease;
-    text-align: center;
-  }
-
-  .preset-card:hover {
-    border-color: hsl(225, 73%, 57%);
-    background: hsl(225, 73%, 57%, 0.05);
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-  }
-
-  .preset-card:active {
-    transform: translateY(0);
-  }
-
   /* Quantity Button Enhancement */
   .qty-btn {
     min-width: 36px;

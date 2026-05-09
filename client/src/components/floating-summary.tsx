@@ -26,9 +26,9 @@ export function FloatingSummary({
     const isLastStep = currentStep === 3;
     const isFirstStep = currentStep === 1;
     const emptyStateMessage = currentStep === 1
-        ? "✏️ 이름이랑 날짜 먼저 알려주세요~"
+        ? "🍪 쿠키를 골라보세요! 달콤한 거 있어요"
         : currentStep === 2
-            ? "🍪 쿠키를 골라보세요! 달콤한 거 있어요"
+            ? "✏️ 이름이랑 날짜 먼저 알려주세요~"
             : "🎀 주문 내역 확인해보세요";
     const progressPercent = currentStep === 1 ? 33 : currentStep === 2 ? 66 : 100;
     const hasItems = totalItems > 0;
