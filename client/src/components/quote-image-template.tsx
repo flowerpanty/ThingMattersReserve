@@ -464,10 +464,99 @@ function renderQuantity(value: number | string) {
   return String(value);
 }
 
+function buildSavedItemName(item: OrderItem) {
+  const options = item.options || {};
+
+  if (options.landingSource === 'brookie') {
+    const details = [
+      options.characterName,
+      options.paperName ? `종이 ${options.paperName}` : '',
+      options.heartMessage ? `하트 ${options.heartMessage}` : '',
+      [options.customPaperLine1, options.customPaperLine2].filter(Boolean).join(' / '),
+    ].filter(Boolean);
+
+    return details.length ? `${item.name} (${details.join(' · ')})` : item.name;
+  }
+
+  return item.name || item.type;
+}
+
+function buildQuoteRowsFromSavedItems(order: Order) {
+  const rows: QuoteRow[] = [];
+  let totalAmount = 0;
+  let regularCookieQuantity = 0;
+
+  const savedItems = (Array.isArray(order.orderItems) ? order.orderItems : []).filter(
+    (item) => item && item.type !== 'meta',
+  );
+
+  for (const item of savedItems) {
+    const quantity = Number(item.quantity || 0);
+    const price = Number(item.price || 0);
+    const amount = price * quantity;
+
+    if (!Number.isFinite(quantity) || !Number.isFinite(price)) {
+      continue;
+    }
+
+    if (item.type === 'regular') {
+      regularCookieQuantity += quantity;
+    }
+
+    rows.push({
+      name: buildSavedItemName(item),
+      quantity,
+      price,
+      amount,
+    });
+    totalAmount += amount;
+  }
+
+  const orderTotal = Number(order.totalPrice);
+  const hasOrderTotal = Number.isFinite(orderTotal);
+  const diff = hasOrderTotal ? orderTotal - totalAmount : 0;
+
+  if (rows.length > 0 && diff !== 0) {
+    rows.push({
+      name: diff > 0 ? '추가 금액' : '할인/조정',
+      quantity: '',
+      price: '',
+      amount: diff,
+    });
+    totalAmount = orderTotal;
+  }
+
+  return { rows, totalAmount, regularCookieQuantity };
+}
+
+function buildSavedDetailLines(order: Order) {
+  return (Array.isArray(order.orderItems) ? order.orderItems : [])
+    .filter((item) => item && item.type !== 'meta' && item.options?.landingSource === 'brookie')
+    .map((item) => {
+      const options = item.options || {};
+      const details = [
+        options.characterName ? `캐릭터 ${options.characterName}` : '',
+        options.paperName ? `종이 ${options.paperName}` : '',
+        options.heartMessage ? `하트 문구 ${options.heartMessage}` : '',
+        [options.customPaperLine1, options.customPaperLine2].filter(Boolean).join(' / '),
+        options.topperKind ? `토퍼 ${options.topperKind}` : '',
+      ].filter(Boolean);
+
+      return details.length ? `• ${item.name}: ${details.join(', ')}` : `• ${item.name}`;
+    });
+}
+
 export const QuoteImageTemplate = React.forwardRef<HTMLDivElement, QuoteImageTemplateProps>(({ order }, ref) => {
   const orderData = buildOrderDataFromOrder(order);
-  const { rows, totalAmount, regularCookieQuantity } = buildQuoteRows(orderData);
-  const detailLines = buildDetailLines(orderData, regularCookieQuantity);
+  const savedQuoteRows = buildQuoteRowsFromSavedItems(order);
+  const fallbackQuoteRows = buildQuoteRows(orderData);
+  const rows = savedQuoteRows.rows.length ? savedQuoteRows.rows : fallbackQuoteRows.rows;
+  const totalAmount = savedQuoteRows.rows.length ? savedQuoteRows.totalAmount : fallbackQuoteRows.totalAmount;
+  const regularCookieQuantity = savedQuoteRows.rows.length
+    ? savedQuoteRows.regularCookieQuantity
+    : fallbackQuoteRows.regularCookieQuantity;
+  const savedDetailLines = buildSavedDetailLines(order);
+  const detailLines = savedDetailLines.length ? savedDetailLines : buildDetailLines(orderData, regularCookieQuantity);
 
   const deliveryMethodText = orderData.deliveryMethod === 'pickup' ? '매장 픽업' : '퀵 배송';
   let deliveryText = `수령 방법: ${deliveryMethodText} | 수령 희망일: ${orderData.deliveryDate}`;
@@ -571,12 +660,27 @@ export const QuoteImageTemplate = React.forwardRef<HTMLDivElement, QuoteImageTem
               <td
                 style={{
                   border: '1px solid #000000',
-                  padding: '10px 8px',
+                  padding: '12px 8px',
                   textAlign: row.name.startsWith('└') ? 'left' : 'center',
                   paddingLeft: row.name.startsWith('└') ? '20px' : '8px',
+                  lineHeight: 1.35,
+                  minHeight: '44px',
+                  overflowWrap: 'anywhere',
+                  whiteSpace: 'normal',
+                  wordBreak: 'keep-all',
                 }}
               >
-                {row.name}
+                <span
+                  style={{
+                    display: 'block',
+                    lineHeight: 1.35,
+                    overflowWrap: 'anywhere',
+                    whiteSpace: 'normal',
+                    wordBreak: 'keep-all',
+                  }}
+                >
+                  {row.name}
+                </span>
               </td>
               <td
                 style={{
