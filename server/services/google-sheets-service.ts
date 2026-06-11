@@ -138,84 +138,38 @@ export class GoogleSheetsService {
         return typeof value === 'number' ? `${value.toLocaleString('ko-KR')}원` : '';
     }
 
-    private formatOrderItemOptionLines(item: any): string[] {
-        const options = item?.options;
-        if (!options || typeof options !== 'object') {
-            return [];
+    private buildSavedItemName(item: any): string {
+        const options = item?.options || {};
+
+        if (options.landingSource === 'brookie') {
+            const details = [
+                options.characterName,
+                options.paperName ? `종이 ${options.paperName}` : '',
+                options.heartMessage ? `하트 ${options.heartMessage}` : '',
+                [options.customPaperLine1, options.customPaperLine2].filter(Boolean).join(' / '),
+            ].filter(Boolean);
+
+            return details.length ? `${item.name} (${details.join(' · ')})` : item.name;
         }
 
-        const lines: string[] = [];
-        const shapeMap: Record<string, string> = {
-            bear: '곰돌이',
-            rabbit: '토끼',
-            tiger: '호랑이',
-            birthdayBear: '생일곰',
-        };
+        return item.name || item.type;
+    }
 
-        if (Array.isArray(options.selectedCookies) && options.selectedCookies.length > 0) {
-            lines.push(`선택: ${options.selectedCookies.join(', ')}`);
-        }
-        if (options.packaging) {
-            lines.push(`포장옵션: ${options.packaging}`);
-        }
-        if (options.selectedCookie) {
-            lines.push(`쿠키: ${options.selectedCookie}`);
-        }
-        if (options.selectedDrink) {
-            lines.push(`음료: ${options.selectedDrink}`);
-        }
-        if (options.shape) {
-            lines.push(`모양: ${shapeMap[options.shape] || options.shape}`);
-        }
-        if (options.customSticker) {
-            lines.push('커스텀 스티커 추가');
-        }
-        if (options.heartMessage) {
-            lines.push(`하트메시지: ${options.heartMessage}`);
-        }
-        if (options.customTopper) {
-            lines.push('커스텀 토퍼 추가');
-        }
-        if (options.characterName) {
-            lines.push(`캐릭터: ${options.characterName}`);
-        }
-        if (options.paperName) {
-            lines.push(`포장 종이: ${options.paperName}`);
-        }
+    private buildSavedDetailLines(order: Order): string[] {
+        return (Array.isArray(order.orderItems) ? (order.orderItems as any[]) : [])
+            .filter((item) => item && item.type !== 'meta' && item.options?.landingSource === 'brookie')
+            .map((item) => {
+                const options = item.options || {};
+                const details = [
+                    options.characterName ? `캐릭터 ${options.characterName}` : '',
+                    options.paperName ? `종이 ${options.paperName}` : '',
+                    options.heartMessage ? `하트 문구 ${options.heartMessage}` : '',
+                    [options.customPaperLine1, options.customPaperLine2].filter(Boolean).join(' / '),
+                    options.topperKind ? `토퍼 ${options.topperKind}` : '',
+                ].filter(Boolean);
 
-        const customPaperText = [options.customPaperLine1, options.customPaperLine2]
-            .filter(Boolean)
-            .join(' / ');
-        if (customPaperText) {
-            lines.push(`커스텀 종이: ${customPaperText}`);
-        }
-        if (options.packageName) {
-            lines.push(`패키지: ${options.packageName}`);
-        }
-        if (options.flavorText) {
-            lines.push(`맛 구성: ${options.flavorText}`);
-        }
-        if (options.drink) {
-            lines.push(`음료: ${options.drink}`);
-        }
-        if (options.ribbon) {
-            lines.push('리본 추가');
-        }
-        if (
-            options.landingSource === 'lucky' &&
-            Array.isArray(options.flavors) &&
-            options.flavors.length > 0
-        ) {
-            lines.push(`구성: ${options.flavors.join(', ')}`);
-        }
-        if (options.flavor) {
-            lines.push(`맛: ${options.flavor === 'chocolate' ? '초콜릿' : '고메버터'}`);
-        }
-        if (options.strawberryJam) {
-            lines.push('딸기잼 추가 (+500원)');
-        }
-
-        return lines;
+                return details.length ? `• ${item.name}: ${details.join(', ')}` : `• ${item.name}`;
+            });
     }
 
     private buildQuoteRowsFromStoredItems(order: Order) {
@@ -228,90 +182,57 @@ export class GoogleSheetsService {
         }
 
         const rows: QuoteSheetRow[] = [];
-        const detailLines: string[] = [];
+        let totalAmount = 0;
+        let regularCookieQuantity = 0;
 
         storedItems.forEach((item) => {
             const quantity = Number(item.quantity || 0);
             const price = Number(item.price || 0);
-            const optionLines = this.formatOrderItemOptionLines(item);
-            const productName = [
-                String(item.name || '제품'),
-                ...optionLines.map((line) => `└ ${line}`),
-            ].join('\n');
+            const amount = price * quantity;
+
+            if (!Number.isFinite(quantity) || !Number.isFinite(price)) {
+                return;
+            }
+
+            if (item.type === 'regular') {
+                regularCookieQuantity += quantity;
+            }
+
+            const name = this.buildSavedItemName(item);
 
             rows.push({
-                name: productName,
+                name,
                 quantity,
                 price,
-                amount: price * quantity,
-                height: Math.max(36, 28 + optionLines.length * 18),
+                amount,
+                height: name.length > 28 ? 60 : undefined,
             });
-
-            detailLines.push(`• ${item.name || '제품'} (${quantity}개)`);
-            detailLines.push(...optionLines.map((line) => `  └ ${line}`));
-
-            // 일반 주문의 옵션 가격은 본품 단가와 별도로 계산된다.
-            if (!item.options?.landingSource && item.type === 'brownie') {
-                if (item.options?.shape === 'birthdayBear') {
-                    const optionPrice = cookiePrices.brownieOptions.birthdayBear;
-                    rows.push({
-                        name: '└ 생일곰 추가',
-                        quantity,
-                        price: optionPrice,
-                        amount: quantity * optionPrice,
-                    });
-                }
-                if (item.options?.customSticker) {
-                    const optionPrice = cookiePrices.brownieOptions.customSticker;
-                    rows.push({
-                        name: '└ 하단 커스텀 스티커',
-                        quantity: 1,
-                        price: optionPrice,
-                        amount: optionPrice,
-                    });
-                }
-                if (item.options?.heartMessage) {
-                    const optionPrice = cookiePrices.brownieOptions.heartMessage;
-                    rows.push({
-                        name: '└ 하트안 문구 추가',
-                        quantity,
-                        price: optionPrice,
-                        amount: quantity * optionPrice,
-                    });
-                }
-                if (item.options?.customTopper) {
-                    rows.push({ name: '└ 커스텀 토퍼', quantity: '', price: '', amount: '' });
-                }
-            }
-
-            if (!item.options?.landingSource && item.type === 'scone' && item.options?.strawberryJam) {
-                const optionPrice = cookiePrices.sconeOptions.strawberryJam;
-                rows.push({
-                    name: '└ 딸기잼 추가',
-                    quantity,
-                    price: optionPrice,
-                    amount: quantity * optionPrice,
-                });
-            }
+            totalAmount += amount;
         });
 
-        if (order.deliveryMethod === 'quick') {
-            rows.push({ name: '배송비', quantity: '', price: '', amount: '' });
+        const orderTotal = Number(order.totalPrice);
+        const diff = Number.isFinite(orderTotal) ? orderTotal - totalAmount : 0;
+        if (rows.length > 0 && diff !== 0) {
+            rows.push({
+                name: diff > 0 ? '추가 금액' : '할인/조정',
+                quantity: '',
+                price: '',
+                amount: diff,
+            });
+            totalAmount = orderTotal;
         }
 
         return {
             rows,
-            totalAmount: Number(order.totalPrice || 0),
-            detailLines,
+            totalAmount,
+            regularCookieQuantity,
+            detailLines: this.buildSavedDetailLines(order),
         };
     }
 
     private buildQuoteRows(order: Order) {
         const orderData = buildOrderDataFromOrder(order);
         const storedItemQuote = this.buildQuoteRowsFromStoredItems(order);
-        if (storedItemQuote) {
-            return { orderData, ...storedItemQuote };
-        }
 
         const rows: QuoteSheetRow[] = [];
         let totalAmount = 0;
@@ -526,11 +447,22 @@ export class GoogleSheetsService {
 
         if (orderData.packaging) {
             const packagingLabel = orderData.packaging === 'single_box'
-                ? `1구박스 (+${cookiePrices.packaging.single_box.toLocaleString('ko-KR')}원)`
+                ? '1구박스 (+500원)'
                 : orderData.packaging === 'plastic_wrap'
-                    ? `비닐탭포장 (+${cookiePrices.packaging.plastic_wrap.toLocaleString('ko-KR')}원)`
+                    ? '비닐탭포장 (+500원)'
                     : '유산지 (무료)';
             detailLines.push(`• 포장 옵션: ${packagingLabel}`);
+        }
+
+        if (storedItemQuote?.rows.length) {
+            return {
+                orderData,
+                rows: storedItemQuote.rows,
+                totalAmount: storedItemQuote.totalAmount,
+                detailLines: storedItemQuote.detailLines.length
+                    ? storedItemQuote.detailLines
+                    : detailLines,
+            };
         }
 
         return { orderData, rows, totalAmount, detailLines };
@@ -655,7 +587,7 @@ export class GoogleSheetsService {
                             startIndex: 0,
                             endIndex: 1,
                         },
-                        properties: { pixelSize: 280 },
+                        properties: { pixelSize: 324 },
                         fields: 'pixelSize',
                     },
                 },
@@ -667,7 +599,7 @@ export class GoogleSheetsService {
                             startIndex: 1,
                             endIndex: 2,
                         },
-                        properties: { pixelSize: 120 },
+                        properties: { pixelSize: 108 },
                         fields: 'pixelSize',
                     },
                 },
@@ -679,7 +611,7 @@ export class GoogleSheetsService {
                             startIndex: 2,
                             endIndex: 4,
                         },
-                        properties: { pixelSize: 160 },
+                        properties: { pixelSize: 144 },
                         fields: 'pixelSize',
                     },
                 },
@@ -907,7 +839,7 @@ export class GoogleSheetsService {
                                 startIndex: itemStartRow - 1,
                                 endIndex: itemEndRow,
                             },
-                            properties: { pixelSize: 36 },
+                            properties: { pixelSize: 44 },
                             fields: 'pixelSize',
                         },
                     },
@@ -916,7 +848,7 @@ export class GoogleSheetsService {
                             range: { sheetId, startRowIndex: itemStartRow - 1, endRowIndex: itemEndRow, startColumnIndex: 0, endColumnIndex: 1 },
                             cell: {
                                 userEnteredFormat: {
-                                    horizontalAlignment: 'LEFT',
+                                    horizontalAlignment: 'CENTER',
                                     wrapStrategy: 'WRAP',
                                 },
                             },
@@ -944,22 +876,42 @@ export class GoogleSheetsService {
                 );
 
                 rows.forEach((row, index) => {
-                    if (!row.height || row.height <= 36) {
-                        return;
+                    const rowStartIndex = itemStartRow - 1 + index;
+
+                    if (row.name.startsWith('└')) {
+                        styleRequests.push({
+                            repeatCell: {
+                                range: {
+                                    sheetId,
+                                    startRowIndex: rowStartIndex,
+                                    endRowIndex: rowStartIndex + 1,
+                                    startColumnIndex: 0,
+                                    endColumnIndex: 1,
+                                },
+                                cell: {
+                                    userEnteredFormat: {
+                                        horizontalAlignment: 'LEFT',
+                                    },
+                                },
+                                fields: 'userEnteredFormat.horizontalAlignment',
+                            },
+                        });
                     }
 
-                    styleRequests.push({
-                        updateDimensionProperties: {
-                            range: {
-                                sheetId,
-                                dimension: 'ROWS',
-                                startIndex: itemStartRow - 1 + index,
-                                endIndex: itemStartRow + index,
+                    if (row.height && row.height > 44) {
+                        styleRequests.push({
+                            updateDimensionProperties: {
+                                range: {
+                                    sheetId,
+                                    dimension: 'ROWS',
+                                    startIndex: rowStartIndex,
+                                    endIndex: rowStartIndex + 1,
+                                },
+                                properties: { pixelSize: row.height },
+                                fields: 'pixelSize',
                             },
-                            properties: { pixelSize: row.height },
-                            fields: 'pixelSize',
-                        },
-                    });
+                        });
+                    }
                 });
             }
 
