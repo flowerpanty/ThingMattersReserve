@@ -14,6 +14,7 @@ interface QuoteSheetRow {
     quantity: number | string;
     price: number | '';
     amount: number | '';
+    height?: number;
 }
 
 interface QuoteSheetResult {
@@ -137,8 +138,181 @@ export class GoogleSheetsService {
         return typeof value === 'number' ? `${value.toLocaleString('ko-KR')}원` : '';
     }
 
+    private formatOrderItemOptionLines(item: any): string[] {
+        const options = item?.options;
+        if (!options || typeof options !== 'object') {
+            return [];
+        }
+
+        const lines: string[] = [];
+        const shapeMap: Record<string, string> = {
+            bear: '곰돌이',
+            rabbit: '토끼',
+            tiger: '호랑이',
+            birthdayBear: '생일곰',
+        };
+
+        if (Array.isArray(options.selectedCookies) && options.selectedCookies.length > 0) {
+            lines.push(`선택: ${options.selectedCookies.join(', ')}`);
+        }
+        if (options.packaging) {
+            lines.push(`포장옵션: ${options.packaging}`);
+        }
+        if (options.selectedCookie) {
+            lines.push(`쿠키: ${options.selectedCookie}`);
+        }
+        if (options.selectedDrink) {
+            lines.push(`음료: ${options.selectedDrink}`);
+        }
+        if (options.shape) {
+            lines.push(`모양: ${shapeMap[options.shape] || options.shape}`);
+        }
+        if (options.customSticker) {
+            lines.push('커스텀 스티커 추가');
+        }
+        if (options.heartMessage) {
+            lines.push(`하트메시지: ${options.heartMessage}`);
+        }
+        if (options.customTopper) {
+            lines.push('커스텀 토퍼 추가');
+        }
+        if (options.characterName) {
+            lines.push(`캐릭터: ${options.characterName}`);
+        }
+        if (options.paperName) {
+            lines.push(`포장 종이: ${options.paperName}`);
+        }
+
+        const customPaperText = [options.customPaperLine1, options.customPaperLine2]
+            .filter(Boolean)
+            .join(' / ');
+        if (customPaperText) {
+            lines.push(`커스텀 종이: ${customPaperText}`);
+        }
+        if (options.packageName) {
+            lines.push(`패키지: ${options.packageName}`);
+        }
+        if (options.flavorText) {
+            lines.push(`맛 구성: ${options.flavorText}`);
+        }
+        if (options.drink) {
+            lines.push(`음료: ${options.drink}`);
+        }
+        if (options.ribbon) {
+            lines.push('리본 추가');
+        }
+        if (
+            options.landingSource === 'lucky' &&
+            Array.isArray(options.flavors) &&
+            options.flavors.length > 0
+        ) {
+            lines.push(`구성: ${options.flavors.join(', ')}`);
+        }
+        if (options.flavor) {
+            lines.push(`맛: ${options.flavor === 'chocolate' ? '초콜릿' : '고메버터'}`);
+        }
+        if (options.strawberryJam) {
+            lines.push('딸기잼 추가 (+500원)');
+        }
+
+        return lines;
+    }
+
+    private buildQuoteRowsFromStoredItems(order: Order) {
+        const storedItems = Array.isArray(order.orderItems)
+            ? (order.orderItems as any[]).filter((item) => item && item.type !== 'meta')
+            : [];
+
+        if (storedItems.length === 0) {
+            return null;
+        }
+
+        const rows: QuoteSheetRow[] = [];
+        const detailLines: string[] = [];
+
+        storedItems.forEach((item) => {
+            const quantity = Number(item.quantity || 0);
+            const price = Number(item.price || 0);
+            const optionLines = this.formatOrderItemOptionLines(item);
+            const productName = [
+                String(item.name || '제품'),
+                ...optionLines.map((line) => `└ ${line}`),
+            ].join('\n');
+
+            rows.push({
+                name: productName,
+                quantity,
+                price,
+                amount: price * quantity,
+                height: Math.max(36, 28 + optionLines.length * 18),
+            });
+
+            detailLines.push(`• ${item.name || '제품'} (${quantity}개)`);
+            detailLines.push(...optionLines.map((line) => `  └ ${line}`));
+
+            // 일반 주문의 옵션 가격은 본품 단가와 별도로 계산된다.
+            if (!item.options?.landingSource && item.type === 'brownie') {
+                if (item.options?.shape === 'birthdayBear') {
+                    const optionPrice = cookiePrices.brownieOptions.birthdayBear;
+                    rows.push({
+                        name: '└ 생일곰 추가',
+                        quantity,
+                        price: optionPrice,
+                        amount: quantity * optionPrice,
+                    });
+                }
+                if (item.options?.customSticker) {
+                    const optionPrice = cookiePrices.brownieOptions.customSticker;
+                    rows.push({
+                        name: '└ 하단 커스텀 스티커',
+                        quantity: 1,
+                        price: optionPrice,
+                        amount: optionPrice,
+                    });
+                }
+                if (item.options?.heartMessage) {
+                    const optionPrice = cookiePrices.brownieOptions.heartMessage;
+                    rows.push({
+                        name: '└ 하트안 문구 추가',
+                        quantity,
+                        price: optionPrice,
+                        amount: quantity * optionPrice,
+                    });
+                }
+                if (item.options?.customTopper) {
+                    rows.push({ name: '└ 커스텀 토퍼', quantity: '', price: '', amount: '' });
+                }
+            }
+
+            if (!item.options?.landingSource && item.type === 'scone' && item.options?.strawberryJam) {
+                const optionPrice = cookiePrices.sconeOptions.strawberryJam;
+                rows.push({
+                    name: '└ 딸기잼 추가',
+                    quantity,
+                    price: optionPrice,
+                    amount: quantity * optionPrice,
+                });
+            }
+        });
+
+        if (order.deliveryMethod === 'quick') {
+            rows.push({ name: '배송비', quantity: '', price: '', amount: '' });
+        }
+
+        return {
+            rows,
+            totalAmount: Number(order.totalPrice || 0),
+            detailLines,
+        };
+    }
+
     private buildQuoteRows(order: Order) {
         const orderData = buildOrderDataFromOrder(order);
+        const storedItemQuote = this.buildQuoteRowsFromStoredItems(order);
+        if (storedItemQuote) {
+            return { orderData, ...storedItemQuote };
+        }
+
         const rows: QuoteSheetRow[] = [];
         let totalAmount = 0;
 
@@ -371,6 +545,7 @@ export class GoogleSheetsService {
         try {
             const { orderData, rows, totalAmount, detailLines } = this.buildQuoteRows(order);
             const sheetTitle = this.sanitizeSheetTitle(`견적서 ${order.customerName} ${order.id.slice(0, 8)}`);
+            const requiredRowCount = Math.max(60, rows.length + detailLines.length + 20);
 
             const spreadsheet = await this.sheets.spreadsheets.get({
                 spreadsheetId: this.config.spreadsheetId,
@@ -393,7 +568,7 @@ export class GoogleSheetsService {
                     properties: {
                         title: sheetTitle,
                         gridProperties: {
-                            rowCount: 60,
+                            rowCount: requiredRowCount,
                             columnCount: 4,
                         },
                     },
@@ -738,14 +913,23 @@ export class GoogleSheetsService {
                     },
                     {
                         repeatCell: {
-                            range: { sheetId, startRowIndex: itemStartRow - 1, endRowIndex: itemEndRow, startColumnIndex: 0, endColumnIndex: 2 },
+                            range: { sheetId, startRowIndex: itemStartRow - 1, endRowIndex: itemEndRow, startColumnIndex: 0, endColumnIndex: 1 },
                             cell: {
                                 userEnteredFormat: {
-                                    horizontalAlignment: 'CENTER',
+                                    horizontalAlignment: 'LEFT',
                                     wrapStrategy: 'WRAP',
                                 },
                             },
                             fields: 'userEnteredFormat(horizontalAlignment,wrapStrategy)',
+                        },
+                    },
+                    {
+                        repeatCell: {
+                            range: { sheetId, startRowIndex: itemStartRow - 1, endRowIndex: itemEndRow, startColumnIndex: 1, endColumnIndex: 2 },
+                            cell: {
+                                userEnteredFormat: { horizontalAlignment: 'CENTER' },
+                            },
+                            fields: 'userEnteredFormat(horizontalAlignment)',
                         },
                     },
                     {
@@ -758,6 +942,25 @@ export class GoogleSheetsService {
                         },
                     },
                 );
+
+                rows.forEach((row, index) => {
+                    if (!row.height || row.height <= 36) {
+                        return;
+                    }
+
+                    styleRequests.push({
+                        updateDimensionProperties: {
+                            range: {
+                                sheetId,
+                                dimension: 'ROWS',
+                                startIndex: itemStartRow - 1 + index,
+                                endIndex: itemStartRow + index,
+                            },
+                            properties: { pixelSize: row.height },
+                            fields: 'pixelSize',
+                        },
+                    });
+                });
             }
 
             for (let rowIndex = detailStartRow; rowIndex <= detailEndRow; rowIndex++) {
