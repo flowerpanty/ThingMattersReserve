@@ -13,9 +13,9 @@ interface FloatingSummaryProps {
 }
 
 const emptyMessages = {
-    1: "🍪 쿠키를 골라보세요!",
-    2: "📝 이름이랑 날짜를 적어주세요!",
-    3: "✅ 주문 내역을 확인해요!",
+    1: "0개 선택됨",
+    2: "정보 입력 중",
+    3: "견적 확인 중",
 };
 
 export function FloatingSummary({
@@ -66,26 +66,24 @@ export function FloatingSummary({
                     />
                 </div>
 
-                <div className="max-w-4xl mx-auto px-4 flex items-center justify-between gap-3">
-                    <div className="w-[76px] flex-shrink-0">
-                        <AnimatePresence initial={false}>
-                            {!isFirstStep && (
-                                <motion.button
-                                    type="button"
-                                    onClick={onPrev}
-                                    initial={shouldReduce ? false : { opacity: 0, x: -8 }}
-                                    animate={{ opacity: 1, x: 0 }}
-                                    exit={shouldReduce ? undefined : { opacity: 0, x: -8 }}
-                                    whileTap={shouldReduce ? undefined : { scale: 0.96 }}
-                                    className="crayon-btn crayon-btn-blue min-h-14 px-3 text-sm"
-                                >
-                                    ← 뒤로
-                                </motion.button>
-                            )}
-                        </AnimatePresence>
-                    </div>
+                <div className="floating-summary-shell max-w-4xl mx-auto px-4">
+                    <AnimatePresence initial={false}>
+                        {!isFirstStep && (
+                            <motion.button
+                                type="button"
+                                onClick={onPrev}
+                                initial={shouldReduce ? false : { opacity: 0, x: -8 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                exit={shouldReduce ? undefined : { opacity: 0, x: -8 }}
+                                whileTap={shouldReduce ? undefined : { scale: 0.96 }}
+                                className="crayon-btn crayon-btn-blue floating-back-btn text-sm"
+                            >
+                                뒤로
+                            </motion.button>
+                        )}
+                    </AnimatePresence>
 
-                    <div className="flex min-w-0 flex-1 items-center justify-center">
+                    <div className="flex min-w-0 flex-1 items-center">
                         <AnimatePresence mode="wait" initial={false}>
                             {hasItems ? (
                                 <motion.div
@@ -94,10 +92,10 @@ export function FloatingSummary({
                                     animate={{ opacity: 1, scale: 1 }}
                                     exit={shouldReduce ? undefined : { opacity: 0, scale: 0.88 }}
                                     transition={{ type: "spring", stiffness: 350, damping: 25 }}
-                                    className="flex min-h-14 min-w-0 items-center gap-2 rounded-full border-[3px] border-black bg-white px-3 py-2 shadow-[3px_3px_0_#1a1a1a] sm:px-4"
+                                    className="floating-summary-state"
                                     aria-live="polite"
                                 >
-                                    <span className="count-badge flex items-center gap-1.5 bg-[var(--crayon-blue)]">
+                                    <span className="count-badge flex items-center gap-1.5">
                                         <ShoppingCart className="h-3.5 w-3.5" />
                                         <span className="tabular-nums">{totalItems}개</span>
                                     </span>
@@ -116,9 +114,15 @@ export function FloatingSummary({
                                     animate={shouldReduce ? { opacity: 1 } : { opacity: 1, y: 0 }}
                                     exit={shouldReduce ? undefined : { opacity: 0, y: -4 }}
                                     transition={{ type: "spring", stiffness: 350, damping: 24 }}
-                                    className="max-w-[220px] rounded-full border-[3px] border-black bg-white px-3 py-2 text-center text-base font-black leading-tight text-[#1a1a1a] shadow-[3px_3px_0_#1a1a1a] sm:max-w-none"
+                                    className="floating-summary-state"
                                 >
-                                    {emptyMessages[currentStep as 1 | 2 | 3]}
+                                    <span className="count-badge flex items-center gap-1.5">
+                                        <ShoppingCart className="h-3.5 w-3.5" />
+                                        {emptyMessages[currentStep as 1 | 2 | 3]}
+                                    </span>
+                                    <span className="truncate text-base font-black text-[#1a1a1a] tabular-nums sm:text-lg">
+                                        0원
+                                    </span>
                                 </motion.div>
                             )}
                         </AnimatePresence>
@@ -139,7 +143,7 @@ export function FloatingSummary({
                                     : {}
                             }
                             transition={{ repeat: hasItems && !shouldReduce ? Infinity : 0, duration: 2.2 }}
-                            className="crayon-btn crayon-btn-pink min-h-14 px-4 text-sm disabled:pointer-events-none sm:px-5 sm:text-base"
+                            className="crayon-btn crayon-btn-pink floating-next-btn text-sm disabled:pointer-events-none sm:text-base"
                         >
                             {isSubmitting ? (
                                 <>
@@ -148,6 +152,8 @@ export function FloatingSummary({
                                 </>
                             ) : isLastStep ? (
                                 <>견적서 받기 ✨</>
+                            ) : disableNext && currentStep === 1 ? (
+                                <>쿠키를 골라보세요</>
                             ) : (
                                 <>
                                     다음

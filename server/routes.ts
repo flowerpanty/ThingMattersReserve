@@ -9,6 +9,7 @@ import { pushNotificationService } from "./services/push-notification-service";
 import { kakaoAlimtalkService } from "./services/kakao-alimtalk-service";
 import { googleSheetsService } from "./services/google-sheets-service";
 import { buildOrderDataFromOrder } from "./services/order-data-utils";
+import { z } from "zod";
 
 declare module "express-session" {
   interface SessionData {
@@ -44,6 +45,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
     cookie7: '수제꾸덕쿠키',
     lucky: '행운쿠키',
   };
+
+  const priceCalculationSchema = z.object({
+    regularCookies: z.record(z.number().min(0)).default({}),
+    packaging: z.enum(['single_box', 'plastic_wrap', 'oil_paper']).optional(),
+    brownieCookieSets: z.array(z.object({
+      quantity: z.number().min(0).default(0),
+      shape: z.string().optional(),
+      customSticker: z.boolean().optional().default(false),
+      heartMessage: z.string().optional(),
+      customTopper: z.boolean().optional().default(false),
+    })).default([]),
+    twoPackSets: z.array(z.object({
+      selectedCookies: z.array(z.string()).optional().default([]),
+      quantity: z.number().min(0).default(1),
+    })).default([]),
+    singleWithDrinkSets: z.array(z.object({
+      selectedCookie: z.string().optional().default(''),
+      selectedDrink: z.string().optional().default(''),
+      quantity: z.number().min(0).default(1),
+    })).default([]),
+    sconeSets: z.array(z.object({
+      flavor: z.string().optional().default('chocolate'),
+      quantity: z.number().min(0).default(1),
+      strawberryJam: z.boolean().optional().default(false),
+    })).default([]),
+    fortuneCookie: z.number().min(0).default(0),
+    airplaneSandwich: z.number().min(0).default(0),
+  });
   const brookieMinimumQuantity = minimumOrderQuantities.brookieLanding;
 
   const toPositiveInt = (value: any, fallback = 0) => {
@@ -581,7 +610,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Calculate price endpoint
   app.post("/api/calculate-price", async (req, res) => {
     try {
-      const orderData = orderDataSchema.parse(req.body);
+      const orderData = priceCalculationSchema.parse(req.body);
       const result = calculatePrice(orderData);
       res.json(result);
     } catch (error) {

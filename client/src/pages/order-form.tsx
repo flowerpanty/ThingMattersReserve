@@ -259,14 +259,14 @@ export default function OrderForm() {
         </filter>
       </svg>
       {/* Header */}
-      <header className="sticky top-0 z-50 border-b-[3px] border-black bg-[var(--crayon-yellow)] shadow-[0_4px_0_#1a1a1a]">
-        <div className="max-w-4xl mx-auto px-4 py-3">
+      <header className="sticky top-0 z-50 border-b border-[#eadfce] bg-white/95 shadow-[0_8px_28px_rgba(76,51,24,0.08)] backdrop-blur">
+        <div className="max-w-4xl mx-auto px-4 py-2.5">
           <div className="flex items-center justify-between gap-3">
             <div className="min-w-0">
-              <h1 className="truncate text-2xl font-black tracking-normal text-[#1a1a1a]" style={{ fontFamily: "var(--font-crayon)" }}>
+              <h1 className="truncate text-xl font-black tracking-normal text-[#1a1a1a] sm:text-2xl" style={{ fontFamily: "var(--font-crayon)" }}>
                 🍪 낫띵매터스
               </h1>
-              <p className="text-sm font-black text-[#1a1a1a]">
+              <p className="text-xs font-bold text-gray-600 sm:text-sm">
                 수제 쿠키 주문
               </p>
             </div>
@@ -288,8 +288,8 @@ export default function OrderForm() {
         <StepIndicator currentStep={currentStep} />
       </header>
 
-      <main className="max-w-4xl mx-auto px-4 py-6">
-        <form onSubmit={handleSubmit} className="space-y-6" data-testid="order-form">
+      <main className="max-w-4xl mx-auto px-4 py-4 sm:py-6">
+        <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6" data-testid="order-form">
           <AnimatePresence mode="popLayout" initial={false}>
             <motion.div
               key={currentStep}
@@ -305,12 +305,12 @@ export default function OrderForm() {
                     initial={shouldReduce ? false : { opacity: 0, y: 12 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ type: "spring", stiffness: 320, damping: 24 }}
-                    className="speech-bubble mb-6"
+                    className="speech-bubble mb-4"
                   >
-                    👆 아래에서 원하는 쿠키를 골라보세요! 클릭하면 바로 담겨요 🎉
+                    👇 원하는 쿠키를 골라 담아주세요 🍪
                   </motion.div>
 
-                  <div className="mb-6">
+                  <div className="mb-3">
                     <div className="section-badge">🍪 쿠키 고르기</div>
                   </div>
 

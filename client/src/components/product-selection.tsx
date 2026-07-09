@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { ChevronDown, ChevronRight } from "lucide-react";
-import { useState, useCallback } from "react";
+import { useEffect, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import {
   cookieTypes,
@@ -45,6 +45,44 @@ interface ProductSelectionProps {
   airplaneSandwich: number;
   onUpdate: (field: keyof OrderData, value: any) => void;
 }
+
+const packagingOptions = [
+  {
+    value: "single_box",
+    title: "1구박스",
+    priceLabel: "+600원",
+    image: "/public/cookie-assets/gallery/one-box-01.webp",
+  },
+  {
+    value: "plastic_wrap",
+    title: "비닐탭",
+    priceLabel: "+500원",
+    image: "/public/cookie-assets/gallery/vinyl-tag-01.webp",
+  },
+] as const;
+
+const regularCookieImages: Record<string, string> = {
+  "호두초코": "/public/cookie-assets/flavors/flavor-02.webp",
+  "더블초코": "/public/cookie-assets/flavors/flavor-01.webp",
+  "블랙피넛": "/public/cookie-assets/flavors/flavor-05.webp",
+  "로투스": "/public/cookie-assets/flavors/flavor-06.webp",
+  "버터스카치": "/public/cookie-assets/flavors/flavor-04.webp",
+  "호레오": "/public/cookie-assets/flavors/flavor-03.webp",
+  "말차마카다미아": "/public/cookie-assets/flavors/flavor-07.webp",
+};
+
+const isSelectablePackaging = (value?: string) =>
+  Boolean(value && packagingOptions.some((option) => option.value === value));
+
+const regularCookieDescriptions: Record<string, string> = {
+  "호두초코": "고소한 호두와 초코",
+  "더블초코": "진한 초콜릿 풍미",
+  "블랙피넛": "묵직한 피넛 버터",
+  "로투스": "달콤한 시나몬 크런치",
+  "버터스카치": "버터향과 캐러멜",
+  "호레오": "쿠키앤크림 무드",
+  "말차마카다미아": "쌉싸름한 말차와 견과",
+};
 
 function MinimumQuantityHint({
   label,
@@ -108,6 +146,13 @@ export function ProductSelection({
   onUpdate
 }: ProductSelectionProps) {
   const shouldReduce = useReducedMotion();
+  const selectedPackaging = isSelectablePackaging(packaging) ? packaging : undefined;
+
+  useEffect(() => {
+    if (packaging && !isSelectablePackaging(packaging)) {
+      onUpdate('packaging', undefined);
+    }
+  }, [packaging, onUpdate]);
 
   const [openSections, setOpenSections] = useState({
     regular: true,
@@ -118,25 +163,6 @@ export function ProductSelection({
     fortune: false,
     airplane: false
   });
-
-  const openAndFocusSection = useCallback((section: keyof typeof openSections) => {
-    setOpenSections({
-      regular: section === 'regular',
-      twopack: section === 'twopack',
-      singledrink: section === 'singledrink',
-      brownie: section === 'brownie',
-      scone: section === 'scone',
-      fortune: section === 'fortune',
-      airplane: section === 'airplane',
-    });
-
-    window.setTimeout(() => {
-      document.getElementById(`product-section-${section}`)?.scrollIntoView({
-        behavior: 'smooth',
-        block: 'start',
-      });
-    }, 80);
-  }, []);
 
   const updateRegularCookie = (type: string, quantity: number) => {
     onUpdate('regularCookies', { ...regularCookies, [type]: Math.max(0, quantity) });
@@ -244,20 +270,19 @@ export function ProductSelection({
 
   const packagingLabels: Record<string, string> = {
     single_box: '1구박스',
-    plastic_wrap: '비닐탭포장',
-    oil_paper: '유산지',
+    plastic_wrap: '비닐탭',
   };
 
   const regularSummary = regularCookieTotal > 0
-    ? `${packaging ? `${packagingLabels[packaging] || packaging} · ` : ''}${summarizeItems(
+    ? `${selectedPackaging ? `${packagingLabels[selectedPackaging] || selectedPackaging} · ` : ''}${summarizeItems(
       Object.entries(regularCookies)
         .filter(([, qty]) => qty > 0)
         .map(([type, qty]) => `${type} ${qty}개`),
       '',
       2
     )}`
-    : packaging
-      ? `${packagingLabels[packaging] || packaging} 선택됨`
+    : selectedPackaging
+      ? `${packagingLabels[selectedPackaging] || selectedPackaging} 선택됨`
       : '아직 선택 없음';
 
   const twoPackTotalQuantity = twoPackSets.reduce((sum, set) => sum + (set.quantity || 1), 0);
@@ -310,77 +335,24 @@ export function ProductSelection({
 
   const fortuneSummary = fortuneCookie > 0 ? `${fortuneCookie}박스 선택됨` : '아직 선택 없음';
   const airplaneSummary = airplaneSandwich > 0 ? `${airplaneSandwich}박스 선택됨` : '아직 선택 없음';
-  const purposeShortcuts = [
-    {
-      key: 'gift',
-      icon: '🎁',
-      title: '답례품/단체',
-      description: regularCookieTotal > 0 ? `${regularCookieTotal}개 선택됨` : '일반 쿠키와 포장부터',
-      action: () => openAndFocusSection('regular'),
-    },
-    {
-      key: 'brookie',
-      icon: '🧸',
-      title: '브루키 커스텀',
-      description: brownieTotalQuantity > 0 ? `${brownieTotalQuantity}개 선택됨` : `최소 ${minimumOrderQuantities.brownie}개`,
-      action: () => openAndFocusSection('brownie'),
-    },
-    {
-      key: 'lucky',
-      icon: '🥠',
-      title: '행운쿠키',
-      description: fortuneCookie > 0 ? `${fortuneCookie}박스 선택됨` : `${formatWon(productCatalog.fortune.price)} / 박스`,
-      action: () => openAndFocusSection('fortune'),
-    },
-    {
-      key: 'etc',
-      icon: '☕',
-      title: '세트/기타',
-      description: singleWithDrinkTotalQuantity + sconeTotalQuantity + airplaneSandwich > 0
-        ? `${singleWithDrinkTotalQuantity + sconeTotalQuantity + airplaneSandwich}개 선택됨`
-        : '음료세트, 스콘, 샌드',
-      action: () => openAndFocusSection(singleWithDrinkTotalQuantity > 0 ? 'singledrink' : 'scone'),
-    },
-  ];
 
   return (
-    <section className="crayon-card">
-        <div className="mb-6">
-          <div className="section-badge">✨ 목적별로 빠르게 고르기</div>
-          <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-            {purposeShortcuts.map((shortcut) => (
-              <motion.button
-                key={shortcut.key}
-                type="button"
-                onClick={shortcut.action}
-                whileTap={shouldReduce ? undefined : { scale: 0.94 }}
-                transition={{ type: "spring", stiffness: 360, damping: 24 }}
-                className={`preset-card wiggle-hover ${shortcut.description.includes('선택됨') ? 'active' : ''}`}
-              >
-                <div className="text-5xl">{shortcut.icon}</div>
-                <div className="mt-2 text-lg font-black text-[#1a1a1a]">{shortcut.title}</div>
-                <div className="mt-1 text-sm font-bold text-gray-600">{shortcut.description}</div>
-                {shortcut.description.includes('선택됨') && (
-                  <span className="count-badge mt-3 inline-flex">담김</span>
-                )}
-              </motion.button>
-            ))}
-          </div>
-        </div>
-
+    <section className="crayon-card product-selection-panel">
         <div className="space-y-4">
           {/* Regular Cookies */}
           <Collapsible
             open={openSections.regular}
             onOpenChange={(open) => setOpenSections(prev => ({ ...prev, regular: open }))}
           >
-            <div id="product-section-regular" className={`product-category-card ${hasRegularCookies || packaging ? "has-items" : ""}`}>
+            <div id="product-section-regular" className={`product-category-card ${hasRegularCookies || selectedPackaging ? "has-items" : ""}`}>
               <CollapsibleTrigger className="product-category-header w-full">
                 <div className="flex items-center gap-3">
-                  {openSections.regular && <span className="h-10 w-2 rounded-full bg-[var(--crayon-orange)]" />}
-                  <span className="text-4xl">🍪</span>
+                  {openSections.regular && <span className="h-9 w-1 rounded-full bg-[var(--crayon-yellow)]" />}
+                  <span className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-[#fff7df]">
+                    <img src="/public/cookie-assets/flavors/flavor-01.webp" alt="" className="h-full w-full object-cover" loading="lazy" />
+                  </span>
                   <div className="text-left">
-                    <div className="text-lg font-black text-[#1a1a1a]">일반 쿠키</div>
+                    <div className="text-lg font-black leading-tight text-[#1a1a1a]">일반 쿠키</div>
                     <div className="text-sm font-bold text-gray-600">개당 4,500원</div>
                     <div className="mt-1 max-w-[15rem] truncate text-xs font-bold text-gray-500 sm:max-w-[26rem]" title={regularSummary}>
                       현재 선택: {regularSummary}
@@ -395,58 +367,49 @@ export function ProductSelection({
                 {openSections.regular ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
               </CollapsibleTrigger>
 
-              <CollapsibleContent className="px-4 pb-4">
+              <CollapsibleContent className="px-3 pb-3 sm:px-4 sm:pb-4">
                 {/* Step 1: 포장 방법 선택 (먼저 선택해야 함) */}
-                <div className="mb-4 rounded-3xl border-[3px] border-black bg-yellow-100 p-4 shadow-[3px_3px_0_#1a1a1a]">
-                  <h4 className="mb-3 text-center text-base font-black text-[#1a1a1a]">🎁 포장 방법을 먼저 선택해주세요</h4>
-                  <RadioGroup value={packaging} onValueChange={(value) => onUpdate('packaging', value)}>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                      <Label htmlFor="single_box" className={`crayon-select-card ${packaging === 'single_box' ? 'selected selected-yellow' : ''}`}>
-                        <RadioGroupItem value="single_box" id="single_box" data-testid="radio-packaging-single-box" className="sr-only" />
-                        <div className="text-5xl">🎁</div>
-                        <div className="text-sm">
-                          <div className="text-lg font-black text-[#1a1a1a]">1구박스</div>
-                          <div className="text-sm font-bold text-gray-600">각 쿠키마다 +600원</div>
-                        </div>
-                        {packaging === 'single_box' && <span className="count-badge">✓ 선택됨</span>}
-                      </Label>
-
-                      <Label htmlFor="plastic_wrap" className={`crayon-select-card ${packaging === 'plastic_wrap' ? 'selected selected-green' : ''}`}>
-                        <RadioGroupItem value="plastic_wrap" id="plastic_wrap" data-testid="radio-packaging-plastic-wrap" className="sr-only" />
-                        <div className="text-5xl">🌿</div>
-                        <div className="text-sm">
-                          <div className="text-lg font-black text-[#1a1a1a]">비닐탭</div>
-                          <div className="text-sm font-bold text-gray-600">각 쿠키마다 +500원</div>
-                        </div>
-                        {packaging === 'plastic_wrap' && <span className="count-badge">✓ 선택됨</span>}
-                      </Label>
-
-                      <Label htmlFor="oil_paper" className={`crayon-select-card ${packaging === 'oil_paper' ? 'selected selected-blue' : ''}`}>
-                        <RadioGroupItem value="oil_paper" id="oil_paper" data-testid="radio-packaging-oil-paper" className="sr-only" />
-                        <div className="text-5xl">📄</div>
-                        <div className="text-sm">
-                          <div className="text-lg font-black text-[#1a1a1a]">유산지</div>
-                          <div className="text-sm font-bold text-gray-600">무료</div>
-                        </div>
-                        {packaging === 'oil_paper' && <span className="count-badge">✓ 선택됨</span>}
-                      </Label>
+                <div className="regular-packaging-panel mb-4">
+                  <h4 className="mb-3 text-sm font-black text-[#1a1a1a] sm:text-base">🎁 포장 방법을 선택해주세요</h4>
+                  <RadioGroup value={selectedPackaging} onValueChange={(value) => onUpdate('packaging', value)}>
+                    <div className="packaging-choice-grid">
+                      {packagingOptions.map((option) => (
+                        <Label
+                          key={option.value}
+                          htmlFor={option.value}
+                          className={`crayon-select-card packaging-choice-card ${selectedPackaging === option.value ? 'selected selected-yellow' : ''}`}
+                        >
+                          <RadioGroupItem
+                            value={option.value}
+                            id={option.value}
+                            data-testid={`radio-packaging-${option.value.replaceAll('_', '-')}`}
+                            className="sr-only"
+                          />
+                          <span className="packaging-thumb" aria-hidden="true">
+                            <img src={option.image} alt="" loading="lazy" />
+                          </span>
+                          <span className="text-sm font-black leading-tight text-[#1a1a1a]">{option.title}</span>
+                          <span className="text-xs font-bold text-gray-600">{option.priceLabel}</span>
+                          {selectedPackaging === option.value && <span className="count-badge">선택됨</span>}
+                        </Label>
+                      ))}
                     </div>
                   </RadioGroup>
-                  {!packaging && (
-                    <p className="mt-3 text-center text-sm font-black text-[#1a1a1a]">
-                      🟠 포장방법을 선택해야 쿠키를 고를 수 있습니다
+                  {!selectedPackaging && (
+                    <p className="mt-3 text-sm font-bold text-gray-600">
+                      포장 선택 후 쿠키 수량을 담을 수 있어요.
                     </p>
                   )}
                 </div>
 
                 {/* Step 2: 쿠키 선택 (포장방법 선택 후에만 활성화) */}
-                {packaging ? (
+                {selectedPackaging ? (
                   <div className="space-y-3">
-                    <h4 className="text-center text-base font-black text-green-700">✅ 포장방법 선택완료! 이제 쿠키를 골라주세요</h4>
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+                    <h4 className="text-sm font-black text-[#1a1a1a]">쿠키를 선택해주세요 <span className="font-bold text-gray-500">(다중 선택 가능)</span></h4>
+                    <div className="grid grid-cols-1 gap-2 lg:grid-cols-2">
                       {cookieTypes.map((type) => (
-                        <div key={type} className="flex items-center justify-between rounded-2xl border-[3px] border-black bg-white p-3 shadow-[3px_3px_0_#1a1a1a]">
-                          <div className="flex items-center gap-2">
+                        <div key={type} className="regular-cookie-row">
+                          <div className="flex min-w-0 flex-1 items-center gap-3">
                             <Checkbox
                               id={`cookie-${type}`}
                               checked={(regularCookies[type] || 0) > 0}
@@ -455,9 +418,19 @@ export function ProductSelection({
                               }}
                               data-testid={`checkbox-cookie-${type}`}
                             />
-                            <Label htmlFor={`cookie-${type}`} className="text-base font-black text-[#1a1a1a]">{type}</Label>
+                            <img
+                              src={regularCookieImages[type]}
+                              alt=""
+                              className="h-12 w-12 shrink-0 rounded-lg object-cover sm:h-14 sm:w-14"
+                              loading="lazy"
+                            />
+                            <Label htmlFor={`cookie-${type}`} className="min-w-0 cursor-pointer">
+                              <span className="block text-[13px] font-black leading-tight text-[#1a1a1a] sm:text-base">{type}</span>
+                              <span className="block truncate text-xs font-bold text-gray-500">{regularCookieDescriptions[type]}</span>
+                              <span className="block text-sm font-black text-[#1a1a1a]">4,500원</span>
+                            </Label>
                           </div>
-                          <div className="flex items-center gap-2">
+                          <div className="flex shrink-0 items-center gap-1.5">
                             <Button
                               type="button"
                               variant="outline"
@@ -473,7 +446,7 @@ export function ProductSelection({
                               min={0}
                               value={regularCookies[type] || 0}
                               onChange={(e) => updateRegularCookie(type, Math.max(0, parseInt(e.target.value) || 0))}
-                              className="h-12 w-20 rounded-full border-[3px] border-black text-center text-xl font-black tabular-nums"
+                              className="quantity-input"
                               data-testid={`input-quantity-${type}`}
                             />
                             <Button
@@ -492,8 +465,8 @@ export function ProductSelection({
                     </div>
                   </div>
                 ) : (
-                  <div className="text-center py-8 text-muted-foreground">
-                    <p className="text-sm">👆 먼저 위에서 포장방법을 선택해주세요</p>
+                  <div className="rounded-lg border border-dashed border-[#ead8bd] bg-white/70 px-3 py-4 text-center text-muted-foreground">
+                    <p className="text-sm font-bold">먼저 포장 방법을 선택해주세요.</p>
                   </div>
                 )}
               </CollapsibleContent>
