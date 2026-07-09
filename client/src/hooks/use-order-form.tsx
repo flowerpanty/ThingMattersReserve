@@ -46,6 +46,10 @@ export function useOrderForm() {
     localStorage.removeItem('orderFormData');
   }, []);
 
+  useEffect(() => {
+    localStorage.removeItem('orderFormData');
+  }, []);
+
   // Calculate pricing whenever form data changes
   const { mutate: calculatePrice } = useMutation({
     mutationFn: async (data: OrderData) => {
@@ -92,31 +96,6 @@ export function useOrderForm() {
       });
     },
   });
-
-  // 초기 데이터 로드
-  useEffect(() => {
-    const savedData = localStorage.getItem('orderFormData');
-    if (savedData) {
-      try {
-        const parsed = JSON.parse(savedData);
-        // 날짜가 과거인 경우 무시
-        const minDate = getMinimumDeliveryDate();
-        if (parsed.deliveryDate && parsed.deliveryDate < minDate) {
-          // 과거 날짜는 제거
-          delete parsed.deliveryDate;
-        }
-        // 유효한 데이터만 로드
-        setFormData(prev => ({ ...prev, ...parsed }));
-      } catch (e) {
-        console.error('Failed to load saved form data', e);
-      }
-    }
-  }, []);
-
-  // 폼 데이터 변경 시 저장
-  useEffect(() => {
-    localStorage.setItem('orderFormData', JSON.stringify(formData));
-  }, [formData]);
 
   const updateFormData = useCallback((field: keyof OrderData, value: any) => {
     setFormData(prev => ({
