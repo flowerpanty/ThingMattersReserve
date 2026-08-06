@@ -1,7 +1,9 @@
 // EmailService.ts (Mailgun 사용)
 import formData from 'form-data';
 import Mailgun from 'mailgun.js';
-import { type OrderData, cookiePrices } from '@shared/schema';
+import { type Order, type OrderData, type OrderItem, cookiePrices } from '@shared/schema';
+
+const ADMIN_EMAIL_RECIPIENTS = ['flowerpanty@gmail.com', 'betterbetters@kakao.com'];
 
 export class EmailService {
   private mg: any = null;
@@ -18,6 +20,41 @@ export class EmailService {
     } else {
       console.log('⚠️ MAILGUN_API_KEY가 설정되지 않았습니다.');
     }
+  }
+
+  private escapeHTML(value: unknown): string {
+    return String(value ?? '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  private formatWon(value: number): string {
+    return `${Number(value || 0).toLocaleString('ko-KR')}원`;
+  }
+
+  private formatDeliveryMethod(value: string | null | undefined): string {
+    return value === 'quick' ? '퀵 배송' : '매장 픽업';
+  }
+
+  private formatLandingOptionDetails(item: OrderItem): string {
+    const options = item.options || {};
+    const details = [
+      options.packageName && `포장: ${options.packageName}`,
+      options.flavorText && `맛 구성: ${options.flavorText}`,
+      options.drink && `음료: ${options.drink}`,
+      options.ribbon && '리본 추가',
+      options.characterName && `캐릭터: ${options.characterName}`,
+      options.paperName && `포장 종이: ${options.paperName}`,
+      options.heartMessage && `하트 문구: ${options.heartMessage}`,
+      (options.customPaperLine1 || options.customPaperLine2) && `커스텀 종이: ${[options.customPaperLine1, options.customPaperLine2].filter(Boolean).join(' / ')}`,
+      options.topperKind && `토퍼 종류: ${options.topperKind}`,
+      Array.isArray(options.flavors) && options.flavors.length && `맛 구성: ${options.flavors.join(', ')}`,
+    ].filter(Boolean);
+
+    return details.map((detail) => this.escapeHTML(detail)).join('<br />');
   }
 
   // 금액 계산
@@ -373,6 +410,128 @@ export class EmailService {
     `;
   }
 
+  private generateLandingAdminEmailHTML(params: {
+    order: Order;
+    sourceLabel: string;
+    customerPhone?: string;
+    customerEmail?: string;
+    deliveryAddress?: string;
+    request?: string;
+  }): string {
+    const { order, sourceLabel, customerPhone, customerEmail, deliveryAddress, request } = params;
+    const orderItems = Array.isArray(order.orderItems) ? (order.orderItems as OrderItem[]) : [];
+    const visibleItems = orderItems.filter((item) => item && item.type !== 'meta' && Number(item.quantity || 0) > 0);
+    const itemRows = visibleItems.map((item) => {
+      const lineTotal = Number(item.quantity || 0) * Number(item.price || 0);
+      const optionDetails = this.formatLandingOptionDetails(item);
+
+      return `
+        <tr>
+          <td style="padding: 12px; border-bottom: 1px solid #eee; color: #222; font-size: 14px;">
+            <strong>${this.escapeHTML(item.name)}</strong>
+            ${optionDetails ? `<div style="margin-top: 6px; color: #666; font-size: 12px; line-height: 1.5;">${optionDetails}</div>` : ''}
+          </td>
+          <td style="padding: 12px; border-bottom: 1px solid #eee; color: #222; font-size: 14px; white-space: nowrap;">${Number(item.quantity || 0).toLocaleString('ko-KR')}개</td>
+          <td style="padding: 12px; border-bottom: 1px solid #eee; color: #222; font-size: 14px; white-space: nowrap;">${this.formatWon(lineTotal)}</td>
+        </tr>
+      `;
+    }).join('');
+
+    return `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin: 0; padding: 0; font-family: 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif; background-color: #f5f5f5;">
+  <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #f5f5f5; padding: 20px;">
+    <tr>
+      <td align="center">
+        <table width="640" cellpadding="0" cellspacing="0" border="0" style="max-width: 640px; background-color: white; border-radius: 10px; overflow: hidden;">
+          <tr>
+            <td style="padding: 34px 30px; text-align: center; background-color: #111827;">
+              <h1 style="margin: 0; color: white; font-size: 24px; font-weight: bold;">nothingmatters</h1>
+              <p style="margin: 10px 0 0 0; color: #f9fafb; font-size: 16px;">${this.escapeHTML(sourceLabel)} 랜딩 주문이 들어왔습니다.</p>
+            </td>
+          </tr>
+
+          <tr>
+            <td style="padding: 32px;">
+              <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom: 20px; background-color: #f9fafb; border-radius: 8px; padding: 20px;">
+                <tr>
+                  <td>
+                    <h2 style="margin: 0 0 15px 0; font-size: 18px; font-weight: bold; color: #222;">주문 정보</h2>
+                    <p style="margin: 8px 0; color: #333; font-size: 14px;"><strong>주문 경로:</strong> ${this.escapeHTML(sourceLabel)}</p>
+                    <p style="margin: 8px 0; color: #333; font-size: 14px;"><strong>주문번호:</strong> ${this.escapeHTML(order.id)}</p>
+                    <p style="margin: 8px 0; color: #333; font-size: 14px;"><strong>고객명:</strong> ${this.escapeHTML(order.customerName)}</p>
+                    <p style="margin: 8px 0; color: #333; font-size: 14px;"><strong>연락처:</strong> ${this.escapeHTML(customerPhone || order.customerContact)}</p>
+                    ${customerEmail ? `<p style="margin: 8px 0; color: #333; font-size: 14px;"><strong>이메일:</strong> ${this.escapeHTML(customerEmail)}</p>` : ''}
+                    <p style="margin: 8px 0; color: #333; font-size: 14px;"><strong>수령 희망일:</strong> ${this.escapeHTML(order.deliveryDate)}</p>
+                    <p style="margin: 8px 0; color: #333; font-size: 14px;"><strong>수령 방법:</strong> ${this.formatDeliveryMethod(order.deliveryMethod)}</p>
+                    ${order.pickupTime ? `<p style="margin: 8px 0; color: #333; font-size: 14px;"><strong>수령 시간:</strong> ${this.escapeHTML(order.pickupTime)}</p>` : ''}
+                    ${deliveryAddress ? `<p style="margin: 8px 0; color: #333; font-size: 14px;"><strong>배송 주소:</strong> ${this.escapeHTML(deliveryAddress)}</p>` : ''}
+                    ${request ? `<p style="margin: 8px 0; color: #333; font-size: 14px;"><strong>요청사항:</strong> ${this.escapeHTML(request)}</p>` : ''}
+                  </td>
+                </tr>
+              </table>
+
+              <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom: 20px; background-color: #fff; border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden;">
+                <tr style="background-color: #f3f4f6;">
+                  <th style="padding: 12px; text-align: left; color: #222; font-size: 13px;">상품</th>
+                  <th style="padding: 12px; text-align: left; color: #222; font-size: 13px;">수량</th>
+                  <th style="padding: 12px; text-align: left; color: #222; font-size: 13px;">금액</th>
+                </tr>
+                ${itemRows}
+                <tr style="background-color: #fff7ed;">
+                  <td colspan="2" style="padding: 14px 12px; font-weight: bold; font-size: 16px; color: #111;">총 금액</td>
+                  <td style="padding: 14px 12px; font-weight: bold; font-size: 16px; color: #111;">${this.formatWon(order.totalPrice)}</td>
+                </tr>
+              </table>
+
+              <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #fffbeb; border-left: 4px solid #f59e0b; border-radius: 8px; padding: 16px;">
+                <tr>
+                  <td>
+                    <p style="margin: 5px 0; color: #333; font-size: 14px;">관리자 대시보드에서 주문 내용을 확인하고 카카오톡 상담을 이어가주세요.</p>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+    `;
+  }
+
+  async sendLandingAdminNotification(params: {
+    order: Order;
+    sourceLabel: string;
+    customerPhone?: string;
+    customerEmail?: string;
+    deliveryAddress?: string;
+    request?: string;
+  }): Promise<void> {
+    if (!this.mg) {
+      throw new Error('Mailgun이 초기화되지 않았습니다. MAILGUN_API_KEY를 확인하세요.');
+    }
+
+    const domain = process.env.MAILGUN_DOMAIN || 'sandbox-mailgun.mailgun.org';
+    const html = this.generateLandingAdminEmailHTML(params);
+
+    await this.mg.messages.create(domain, {
+      from: `띵매러 <mailgun@${domain}>`,
+      to: ADMIN_EMAIL_RECIPIENTS,
+      subject: `[새 랜딩 주문] ${params.sourceLabel} - ${params.order.customerName}님 (${this.formatWon(params.order.totalPrice)})`,
+      html,
+    });
+
+    console.log('✅ 랜딩 주문 관리자 이메일 전송 완료');
+  }
+
   async sendQuote(orderData: OrderData, quoteBuffer: Buffer): Promise<void> {
     if (!this.mg) {
       throw new Error('Mailgun이 초기화되지 않았습니다. MAILGUN_API_KEY를 확인하세요.');
@@ -403,7 +562,7 @@ export class EmailService {
       // 관리자에게 전송
       await this.mg.messages.create(domain, {
         from: `띵매러 <mailgun@${domain}>`,
-        to: ['flowerpanty@gmail.com', 'betterbetters@kakao.com'],
+        to: ADMIN_EMAIL_RECIPIENTS,
         subject: `🚨 🍪 [새 주문] ${orderData.customerName} 님의 새로운 쿠키 주문이 도착했습니다! 🍪 🚨`,
         html: adminHTML,
         attachment: {

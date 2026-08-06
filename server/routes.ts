@@ -680,6 +680,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         totalPrice: built.totalPrice,
       });
 
+      const emailService = new EmailService();
+      emailService.sendLandingAdminNotification({
+        order,
+        sourceLabel,
+        customerPhone: customer.customerPhone,
+        customerEmail: customer.customerEmail,
+        deliveryAddress: customer.deliveryAddress,
+        request: customer.request,
+      })
+        .catch((error) => console.error('❌ 랜딩 주문 관리자 이메일 전송 실패:', error));
+
       pushNotificationService.sendNewOrderNotification(customer.customerName, order.id)
         .catch((error) => console.error('❌ 랜딩 주문 푸시 알림 전송 실패:', error));
 
