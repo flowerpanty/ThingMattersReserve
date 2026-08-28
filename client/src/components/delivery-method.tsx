@@ -14,7 +14,7 @@ const methodCopy = {
   pickup: {
     emoji: "🏪",
     title: "매장 픽업",
-    description: "직접 오시면 제일 신선해요!",
+    description: "강서구 공항동 송정로 25",
   },
   quick: {
     emoji: "🛵",
@@ -49,7 +49,7 @@ export function DeliveryMethod({ deliveryMethod, deliveryAddress, pickupTime, on
             >
               <span className="text-5xl" aria-hidden="true">{copy.emoji}</span>
               <p className="text-lg font-black text-[#1a1a1a]">{copy.title}</p>
-              <p className="text-sm font-bold text-gray-600">{method === "pickup" ? "직접 오시면 더 신선해요!" : "집에서 편하게!"}</p>
+              <p className="text-sm font-bold text-gray-600">{copy.description}</p>
               {selected && <span className="count-badge">✓ 선택됨</span>}
             </motion.button>
           );
