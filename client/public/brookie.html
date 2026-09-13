@@ -2538,6 +2538,10 @@
       <span class="topStepLine" aria-hidden="true"></span>
       <a class="topStep" href="#top" data-step-link="4" data-icon="📄"><span class="topStepDot">📄</span><span>견적 확인</span></a>
     </nav>
+    <div class="mobileStepStatus" aria-live="polite">
+      <div><span id="mobileStepCount">1 / 4</span><strong id="mobileStepTitle">조합 만들기</strong></div>
+      <span class="mobileStepTrack"><span id="mobileStepProgress"></span></span>
+    </div>
   </header>
 
   <main id="top">
@@ -2549,7 +2553,7 @@
       </div>
       <div class="orderStack">
         <article class="orderCard">
-          <h2 class="orderCardTitle">👤 고객 정보</h2>
+          <h2 class="orderCardTitle">👤 주문자 정보를 알려주세요</h2>
           <div class="customerGrid">
             <label>
               <span>이름 *</span>
@@ -2565,7 +2569,7 @@
         </article>
 
         <article class="orderCard">
-          <h2 class="orderCardTitle">📅 수령 희망일</h2>
+          <h2 class="orderCardTitle">📅 언제 받을까요?</h2>
           <div class="dateBox">
             <label for="needDate" id="needDateLabel">📅 수령 날짜 선택</label>
             <input id="needDate" type="date" />
@@ -2576,7 +2580,7 @@
         </article>
 
         <article class="orderCard">
-          <h2 class="orderCardTitle">🚗 수령 방법</h2>
+          <h2 class="orderCardTitle">🚗 어떻게 받을까요?</h2>
           <input id="deliveryMethod" type="hidden" value="매장 픽업" />
           <div class="methodGrid">
             <button class="methodOption" type="button" data-delivery-method="매장 픽업" aria-pressed="true">
@@ -2626,6 +2630,7 @@
         <p class="eyebrow">Build Your Brookie</p>
         <h1 id="heroTitle">나만의<br />브루키 만들기</h1>
         <p>캐릭터, 문구, 포장 종이를 고르면 상담에 바로 보낼 수 있는 커스텀 조합이 완성돼요.</p>
+        <p class="orderActionHint">순서대로 고른 뒤, 원하는 조합을 장바구니에 담아주세요.</p>
         <p id="selectedName" class="eyebrow"></p>
       </section>
 
@@ -2640,6 +2645,12 @@
       </section>
 
       <aside class="panel" aria-label="브루키 옵션">
+        <ol class="builderProgress" id="builderProgress" aria-label="브루키 조합 순서">
+          <li data-builder-stage="character">캐릭터</li>
+          <li data-builder-stage="heart">문구</li>
+          <li data-builder-stage="paper">포장</li>
+          <li data-builder-stage="quantity">수량</li>
+        </ol>
         <section class="miniCard">
           <div class="stepHead">
             <div class="stepTitle"><span class="stepBadge">1</span>캐릭터 고르기</div>
@@ -2657,6 +2668,7 @@
             <div class="stepTitle"><span class="stepBadge">2</span>하트 문구</div>
             <span class="stepHint" id="heartStepHint">기본 하트</span>
           </div>
+          <span class="orderBadge orderBadge--optional">선택</span>
           <div class="seg">
             <button class="pill" id="noText" type="button">기본 하트</button>
             <button class="pill" id="withText" type="button">문구 추가 +500원</button>
@@ -2670,6 +2682,7 @@
             <div class="stepTitle"><span class="stepBadge">3</span>포장 종이</div>
             <span class="stepHint" id="paperStepHint">네이비 선택</span>
           </div>
+          <span class="orderBadge orderBadge--required">필수 선택</span>
           <div class="scrollFrame">
             <span class="railArrow left" aria-hidden="true">‹</span>
             <div class="row" id="papers"></div>
@@ -2700,8 +2713,9 @@
               </span>
             </label>
           </div>
-          <button class="comboAddButton" id="comboAdd" type="button">🛒 장바구니에 담기</button>
+          <button class="comboAddButton" id="comboAdd" type="button">이 조합 장바구니에 담기</button>
           <p class="cartHint">브루키는 총 12개부터 주문 가능해요. 여러 조합을 담아 합산할 수 있어요.</p>
+          <div class="orderQuickSummary" id="comboOrderStatus" aria-live="polite"></div>
           <div class="comboList" id="comboList" aria-live="polite"></div>
         </section>
       </aside>
@@ -2713,6 +2727,7 @@
           <p class="eyebrow">Optional</p>
           <h2 id="addonTitle">추가 옵션</h2>
           <p class="sectionLead">토퍼나 스티커가 필요하면 아래에서 선택해 주세요.</p>
+          <p class="orderOptionalLead">필요한 경우에만 선택하세요. 없으면 바로 다음 단계로 넘어가도 돼요.</p>
         </div>
         <div class="addonGrid" id="addonGrid"></div>
       </div>
@@ -2738,7 +2753,7 @@
         <article class="quoteActionCard">
           <span class="quoteActionBadge">마지막 단계</span>
           <h3>📋 견적서 요청</h3>
-          <p>아래 버튼을 누르면 견적서 이미지가 생성되고, 이후 카카오톡으로 최종 상담을 이어갑니다.</p>
+          <p>선택 내용 확인 → 견적서 받기 → 카카오 상담 순서로 주문을 이어갑니다.</p>
           <button class="quoteActionButton" id="quoteBtn" type="button">📄 견적서 받기</button>
         </article>
 
@@ -2965,6 +2980,7 @@
       customCaseKind: "wedding"
     };
     let activeStep = 1;
+    let activeBuilderStage = "character";
     let pushOrderStep = () => {};
 
     const $ = (id) => document.getElementById(id);
@@ -3116,6 +3132,7 @@
           pressed: state.character === id,
           html: `<img src="public/images/characters/${id}.webp" alt="${label}"><span>${label}</span>${premiumChars.has(id) ? '<small class="premium">+500원</small>' : ""}`,
           onClick: () => {
+            activeBuilderStage = "character";
             state.character = id;
             state.heartText = clampHeartText($("heartText").value);
             $("heartText").value = state.heartText;
@@ -3132,6 +3149,7 @@
           pressed: state.paper === id,
           html: `<span class="pillSwatch" style="--swatch:${color}"></span><span class="pillText">${id === "custom" ? "커스텀 +700원 추가" : label}</span>`,
           onClick: () => {
+            activeBuilderStage = "paper";
             state.paper = id;
             draw();
           }
@@ -3162,7 +3180,8 @@
       $("paperStepHint").textContent = `${nameOf(papers, state.paper)} 선택`;
       $("noText").setAttribute("aria-pressed", String(!state.heartTextEnabled));
       $("withText").setAttribute("aria-pressed", String(state.heartTextEnabled));
-      $("selectedName").textContent = `${nameOf(chars, state.character)} · ${nameOf(papers, state.paper)}`;
+      $("selectedName").textContent = `현재 선택 · ${nameOf(chars, state.character)} · ${comboHeartLabel(currentCombo())} · ${nameOf(papers, state.paper)}`;
+      renderBuilderProgress();
       renderComboPanel();
       requestAnimationFrame(() => {
         drawIcing();
@@ -3325,6 +3344,7 @@
       $("comboStepHint").textContent = state.items.length
         ? `총 ${totalQty()}/${MIN_BROOKIE_QTY}개`
         : `최소 ${MIN_BROOKIE_QTY}개`;
+      renderComboOrderStatus();
       const list = $("comboList");
       if (!state.items.length) {
         const currentRemaining = Math.max(0, MIN_BROOKIE_QTY - state.qty);
@@ -3347,6 +3367,37 @@
           <button class="comboRemove" type="button" data-remove-combo="${combo.id}">삭제</button>
         </div>
       `).join("") + `<div class="comboMinimum${remaining ? "" : " ok"}">${minimumOrderMessage()}</div>`;
+    }
+
+    function renderComboOrderStatus() {
+      const isCartEmpty = !state.items.length;
+      if (isCartEmpty) {
+        $("comboOrderStatus").innerHTML = `
+          <div><span>현재 조합 수량</span><strong>${state.qty}개</strong></div>
+          <div><span>장바구니 총 수량</span><strong>0 / ${MIN_BROOKIE_QTY}개</strong></div>
+          <div><span>주문 조건</span><strong>${MIN_BROOKIE_QTY}개 더 담아야 해요</strong></div>
+        `;
+        return;
+      }
+      const quantity = totalQty();
+      const remaining = Math.max(0, MIN_BROOKIE_QTY - quantity);
+      $("comboOrderStatus").innerHTML = `
+        <div><span>장바구니 총 수량</span><strong>${quantity} / ${MIN_BROOKIE_QTY}개</strong></div>
+        <div><span>주문 상태</span><strong>${remaining ? `${remaining}개 더 필요` : "주문 가능"}</strong></div>
+        <div><span>현재 예상금액</span><strong>${won(totalPrice())}</strong></div>
+      `;
+    }
+
+    function renderBuilderProgress() {
+      const stages = ["character", "heart", "paper", "quantity"];
+      const activeIndex = stages.indexOf(activeBuilderStage);
+      document.querySelectorAll("[data-builder-stage]").forEach((item, index) => {
+        const isCurrent = index === activeIndex;
+        const isComplete = index < activeIndex;
+        item.classList.toggle("is-current", isCurrent);
+        item.classList.toggle("is-complete", isComplete);
+        item.setAttribute("aria-current", isCurrent ? "step" : "false");
+      });
     }
 
     function addCurrentCombo() {
@@ -3751,10 +3802,11 @@ ${custom ? `${custom}\n` : ""}
       $("floatingCartTitle").textContent = `${cartTitle()} · ${won(totalPrice())}`;
       $("floatingCartDetail").textContent = floatingNextHint();
       $("floatingPrice").textContent = "";
-      $("floatingNext").textContent = activeStep === 4 ? "✨ 견적서 받기" : "다음";
+      $("floatingNext").textContent = floatingNextLabel();
       $("floatingPrev").style.visibility = activeStep === 1 ? "hidden" : "visible";
       $("floatingPrev").textContent = "← 뒤로";
       $("floatingProgress").style.width = `${Math.round((activeStep / 4) * 100)}%`;
+      updateMobileStep(labels[activeStep] || ["주문", ""]);
       $("floatingNext").classList.toggle("hasItems", totalQty() > 0);
       $("floatingCart").classList.toggle("floatingEmptyNudge", activeStep === 1 && !state.items.length);
       $("floatingCart").classList.remove("pricePop");
@@ -3774,13 +3826,36 @@ ${custom ? `${custom}\n` : ""}
 
     function floatingNextHint() {
       if (activeStep === 1 && !state.items.length) {
-        return `총 ${MIN_BROOKIE_QTY}개 이상 담아야 다음 단계로 넘어갈 수 있어요.`;
+        return "현재 조합을 장바구니에 담으면 총 수량에 반영돼요.";
       }
       if (activeStep === 1 && !hasMinimumOrderQty()) return `${minimumQtyRemaining()}개 더 담으면 주문 가능해요.`;
       if (activeStep === 1) return `${cartDetail()} · 추가 옵션 확인하기`;
       if (activeStep === 2) return "토퍼/스티커가 필요 없다면 바로 기본 정보로 가도 돼요.";
       if (activeStep === 3) return "이름, 연락처, 날짜, 시간을 입력하면 견적서 생성 가능";
       return "견적서를 받은 뒤 카카오톡 상담으로 이어집니다.";
+    }
+
+    function floatingNextLabel() {
+      if (activeStep === 1) {
+        if (!state.items.length) return "이 조합 담기";
+        if (!hasMinimumOrderQty()) return `${minimumQtyRemaining()}개 더 담아주세요`;
+        return "추가 옵션 확인하기 →";
+      }
+      if (activeStep === 2) return "고객 정보 입력하기 →";
+      if (activeStep === 3) return "견적 내용 확인하기 →";
+      return "견적서 받기 →";
+    }
+
+    function updateMobileStep() {
+      const mobileTitles = {
+        1: "캐릭터 선택",
+        2: "추가 옵션",
+        3: "주문 정보",
+        4: "견적 확인"
+      };
+      $("mobileStepCount").textContent = `${activeStep} / 4`;
+      $("mobileStepTitle").textContent = mobileTitles[activeStep];
+      $("mobileStepProgress").style.width = `${Math.round((activeStep / 4) * 100)}%`;
     }
 
     function cartTitle() {
@@ -3817,6 +3892,10 @@ ${custom ? `${custom}\n` : ""}
     }
 
     function goFloatingNext() {
+      if (activeStep === 1 && !state.items.length) {
+        addCurrentCombo();
+        return;
+      }
       if (activeStep === 4) {
         receiveQuote();
       } else {
@@ -4047,12 +4126,14 @@ ${custom ? `${custom}\n` : ""}
         isHeartComposing = true;
       });
       $("heartText").addEventListener("compositionend", (event) => {
+        activeBuilderStage = "heart";
         isHeartComposing = false;
         state.heartText = clampHeartText(event.target.value);
         event.target.value = state.heartText;
         draw();
       });
       $("heartText").addEventListener("input", (event) => {
+        activeBuilderStage = "heart";
         if (isHeartComposing || event.isComposing) {
           state.heartText = event.target.value;
           draw();
@@ -4063,30 +4144,36 @@ ${custom ? `${custom}\n` : ""}
         draw();
       });
       $("noText").addEventListener("click", () => {
+        activeBuilderStage = "heart";
         state.heartTextEnabled = false;
         draw();
       });
       $("withText").addEventListener("click", () => {
+        activeBuilderStage = "heart";
         state.heartTextEnabled = true;
         draw();
       });
       $("paper1").addEventListener("input", (event) => {
+        activeBuilderStage = "paper";
         state.customPaperLine1 = clampPaperText(event.target.value);
         event.target.value = state.customPaperLine1;
         draw();
       });
       $("paper2").addEventListener("input", (event) => {
+        activeBuilderStage = "paper";
         state.customPaperLine2 = clampPaperText(event.target.value);
         event.target.value = state.customPaperLine2;
         draw();
       });
       $("qty").addEventListener("input", (event) => {
+        activeBuilderStage = "quantity";
         state.qty = Math.max(1, Math.min(999, parseInt(event.target.value || "1", 10) || 1));
         event.target.value = state.qty;
         renderComboPanel();
         updateSummary();
       });
       $("qtyPlus").addEventListener("click", () => {
+        activeBuilderStage = "quantity";
         state.qty += 1;
         $("qty").value = state.qty;
         renderComboPanel();
