@@ -1236,13 +1236,14 @@
         <p class="eyebrow">Step 02</p>
         <h2 id="flavorTitle">맛 수량 선택</h2>
         <p class="lead" id="flavorGuide">원하는 맛을 누르거나 + 버튼으로 수량을 담아주세요.</p>
-        <p class="orderActionHint">맛 고르기가 어렵다면 추천 조합을 누르면 패키지 수량에 맞춰 자동 선택돼요.</p>
+        <p class="orderActionHint">맛 고르기가 어렵다면 추천 조합을 골라보세요.</p>
       </div>
+      <p class="presetGuide">추천 조합을 누르면 패키지 수량에 맞춰 자동으로 담겨요.</p>
       <div class="presetPills" aria-label="빠른 추천 조합">
-        <button type="button" onclick="applyFlavorPreset('popular')">인기 조합 자동 선택</button>
-        <button type="button" onclick="applyFlavorPreset('choco')">초코 좋아요 자동 선택</button>
-        <button type="button" onclick="applyFlavorPreset('bulk')">단체 답례 자동 선택</button>
-        <button type="button" onclick="applyFlavorPreset('kids')">아이들 간식 자동 선택</button>
+        <button type="button" onclick="applyFlavorPreset('popular')">인기 조합</button>
+        <button type="button" onclick="applyFlavorPreset('choco')">초코 좋아요</button>
+        <button type="button" onclick="applyFlavorPreset('bulk')">단체 답례</button>
+        <button type="button" onclick="applyFlavorPreset('kids')">아이들 간식</button>
       </div>
       <div class="flavorGrid" id="flavorGrid"></div>
       <div class="currentBox">
@@ -1260,7 +1261,7 @@
     <section class="stepPage" data-step-page="3" aria-labelledby="addonTitle">
       <div class="pageHead">
         <p class="eyebrow">Step 03</p>
-        <h2 id="addonTitle">추가옵션</h2>
+        <h2 id="addonTitle">추가 옵션이 필요하신가요?</h2>
         <p class="lead">필요한 옵션만 선택하면 견적서에 바로 반영돼요.</p>
         <p class="orderOptionalLead">선택 사항이에요. 필요 없으면 바로 주문 정보로 넘어가도 돼요.</p>
       </div>
@@ -1588,14 +1589,15 @@
     function renderPackages() {
       $("packageRail").innerHTML = packages.map((pkg, index) => `
         <button class="packageCard" type="button" aria-pressed="${state.packageId === pkg.id}" onclick="selectPackage('${pkg.id}')">
+          <h3>${pkg.name}</h3>
+          <span class="packageUse">${packageUseCases[pkg.id] || "선물용 구성"}</span>
           <span class="packageImage imageFrame">
             <img src="${pkg.image}" alt="낫띵메터스 수제 꾸덕쿠키 ${pkg.name} 답례품 패키지" width="640" height="480" ${index === 0 ? 'fetchpriority="high"' : 'loading="lazy"'} decoding="async" onerror="imageFallback(this)" />
             <span class="fallback">이미지 준비 중</span>
           </span>
-          <span class="badge">${pkg.badge}</span>
-          <h3>${pkg.name}</h3>
           <p>${pkg.desc}</p>
-          <span class="packageUse">${packageUseCases[pkg.id] || "선물용 구성"}</span>
+          <span class="badge">${pkg.badge}</span>
+          ${state.packageId === pkg.id ? '<span class="packageSelected">선택됨</span>' : ""}
         </button>
       `).join("");
       $("drinkPanel").classList.toggle("show", state.packageId === "drink-set");
@@ -1767,6 +1769,7 @@
       $("nextButton").textContent = nextLabels[state.step];
       $("floatingProgress").style.width = `${Math.round((state.step / 5) * 100)}%`;
       updateMobileStep();
+      document.body.classList.toggle("is-flavor-step", state.step === 2);
       $("nextButton").classList.toggle("hasItems", subtotal() > 0);
       $("floatingCart").classList.toggle("floatingEmptyNudge", state.step === 1 && subtotal() === 0);
       $("floatingCart").classList.remove("pricePop");

@@ -2628,9 +2628,9 @@
     <section class="builderHero stepPage active" data-step-page="1" aria-label="브루키 커스텀 빌더">
       <section class="intro" aria-labelledby="heroTitle">
         <p class="eyebrow">Build Your Brookie</p>
-        <h1 id="heroTitle">나만의<br />브루키 만들기</h1>
-        <p>캐릭터, 문구, 포장 종이를 고르면 상담에 바로 보낼 수 있는 커스텀 조합이 완성돼요.</p>
-        <p class="orderActionHint">순서대로 고른 뒤, 원하는 조합을 장바구니에 담아주세요.</p>
+        <h1 id="heroTitle">어떤 캐릭터로<br />만들까요?</h1>
+        <p>마음에 드는 캐릭터를 하나 골라주세요.</p>
+        <p class="orderActionHint">문구, 포장, 수량을 차례로 고르면 조합이 완성돼요.</p>
         <p id="selectedName" class="eyebrow"></p>
       </section>
 
@@ -2653,7 +2653,7 @@
         </ol>
         <section class="miniCard">
           <div class="stepHead">
-            <div class="stepTitle"><span class="stepBadge">1</span>캐릭터 고르기</div>
+            <div class="stepTitle"><span class="stepBadge">1</span>어떤 캐릭터로 만들까요?</div>
             <span class="stepHint" id="charStepHint">곰돌이 선택</span>
           </div>
           <div class="scrollFrame">
@@ -2697,7 +2697,7 @@
 
         <section class="miniCard comboOrderCard">
           <div class="stepHead">
-            <div class="stepTitle"><span class="stepBadge">4</span>장바구니 담기</div>
+            <div class="stepTitle"><span class="stepBadge">4</span>수량 선택</div>
             <span class="stepHint" id="comboStepHint">최소 12개</span>
           </div>
           <div class="comboNow">
@@ -3132,7 +3132,7 @@
           pressed: state.character === id,
           html: `<img src="public/images/characters/${id}.webp" alt="${label}"><span>${label}</span>${premiumChars.has(id) ? '<small class="premium">+500원</small>' : ""}`,
           onClick: () => {
-            activeBuilderStage = "character";
+            activeBuilderStage = "heart";
             state.character = id;
             state.heartText = clampHeartText($("heartText").value);
             $("heartText").value = state.heartText;
@@ -3149,7 +3149,7 @@
           pressed: state.paper === id,
           html: `<span class="pillSwatch" style="--swatch:${color}"></span><span class="pillText">${id === "custom" ? "커스텀 +700원 추가" : label}</span>`,
           onClick: () => {
-            activeBuilderStage = "paper";
+            activeBuilderStage = id === "custom" ? "paper" : "quantity";
             state.paper = id;
             draw();
           }
@@ -3375,7 +3375,7 @@
         $("comboOrderStatus").innerHTML = `
           <div><span>현재 조합 수량</span><strong>${state.qty}개</strong></div>
           <div><span>장바구니 총 수량</span><strong>0 / ${MIN_BROOKIE_QTY}개</strong></div>
-          <div><span>주문 조건</span><strong>${MIN_BROOKIE_QTY}개 더 담아야 해요</strong></div>
+          <div><span>주문 조건</span><strong>${MIN_BROOKIE_QTY}개 더 담아야 주문 가능</strong></div>
         `;
         return;
       }
@@ -3837,7 +3837,7 @@ ${custom ? `${custom}\n` : ""}
 
     function floatingNextLabel() {
       if (activeStep === 1) {
-        if (!state.items.length) return "이 조합 담기";
+        if (!state.items.length) return "먼저 이 조합을 담아주세요";
         if (!hasMinimumOrderQty()) return `${minimumQtyRemaining()}개 더 담아주세요`;
         return "추가 옵션 확인하기 →";
       }
@@ -4126,10 +4126,10 @@ ${custom ? `${custom}\n` : ""}
         isHeartComposing = true;
       });
       $("heartText").addEventListener("compositionend", (event) => {
-        activeBuilderStage = "heart";
         isHeartComposing = false;
         state.heartText = clampHeartText(event.target.value);
         event.target.value = state.heartText;
+        activeBuilderStage = state.heartText ? "paper" : "heart";
         draw();
       });
       $("heartText").addEventListener("input", (event) => {
@@ -4141,10 +4141,11 @@ ${custom ? `${custom}\n` : ""}
         }
         state.heartText = clampHeartText(event.target.value);
         event.target.value = state.heartText;
+        activeBuilderStage = state.heartText ? "paper" : "heart";
         draw();
       });
       $("noText").addEventListener("click", () => {
-        activeBuilderStage = "heart";
+        activeBuilderStage = "paper";
         state.heartTextEnabled = false;
         draw();
       });
@@ -4152,6 +4153,7 @@ ${custom ? `${custom}\n` : ""}
         activeBuilderStage = "heart";
         state.heartTextEnabled = true;
         draw();
+        requestAnimationFrame(() => $("heartText").focus());
       });
       $("paper1").addEventListener("input", (event) => {
         activeBuilderStage = "paper";

@@ -59,11 +59,24 @@
   box-shadow: var(--soft-shadow, 0 10px 24px rgba(40, 27, 18, 0.07));
 }
 
-.presetPills button:hover,
+.presetPills button:hover {
+  border-color: var(--orange, #ff7a00);
+  background: rgba(255, 122, 0, 0.1);
+}
+
 .presetPills button:focus-visible {
   border-color: var(--orange, #ff7a00);
   background: rgba(255, 122, 0, 0.1);
-  outline: none;
+  outline: 3px solid var(--orange, #ff7a00);
+  outline-offset: 3px;
+}
+
+.presetGuide {
+  margin: -2px 0 10px;
+  color: var(--muted, #6b5a51);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.45;
 }
 
 /* Small, shared guidance surfaces for the order steps. */
@@ -218,6 +231,7 @@
   gap: 8px;
   margin: 18px 0 0;
   padding: 0;
+  counter-reset: builder-step;
   list-style: none;
 }
 
@@ -243,7 +257,8 @@
   place-items: center;
   border-radius: 999px;
   background: rgba(0, 0, 0, 0.08);
-  content: "";
+  counter-increment: builder-step;
+  content: counter(builder-step);
   font-size: 11px;
 }
 
@@ -321,6 +336,23 @@
   color: #fff;
   content: "✓";
   font-weight: 950;
+}
+
+.packageSelected {
+  display: none;
+  margin-top: 8px;
+  color: var(--orange, #ff7a00);
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.packageCard[aria-pressed="true"] .packageSelected {
+  display: block;
+}
+
+:where(.pill, .packageCard, .choiceBtn, .methodOption, .floatingNext, .floatingBack, .comboAddButton, .qtyBtn, .presetPills button, .btn):focus-visible {
+  outline: 3px solid var(--orange, #ff7a00);
+  outline-offset: 3px;
 }
 
 .floatingCart.pricePop,
@@ -479,6 +511,14 @@
     border-radius: 14px !important;
     box-shadow: none !important;
     transform: none !important;
+  }
+
+  .is-flavor-step #continueFromFlavor {
+    display: none;
+  }
+
+  .luckyHeroImage img {
+    aspect-ratio: 16 / 9 !important;
   }
 
   .quantityCard .qtyBtn {
