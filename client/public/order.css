@@ -225,6 +225,31 @@
   display: none;
 }
 
+.siteHeader .headerInner {
+  position: relative;
+}
+
+.orderHubLink {
+  position: absolute;
+  top: 11px;
+  left: 14px;
+  color: var(--muted, #6b5a51);
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1.2;
+  text-decoration: none;
+}
+
+.orderHubLink:hover {
+  color: var(--ink, #171313);
+  text-decoration: underline;
+}
+
+.orderHubLink:focus-visible {
+  outline: 3px solid var(--orange, #ff7a00);
+  outline-offset: 3px;
+}
+
 .builderProgress {
   display: flex;
   flex-wrap: wrap;
@@ -376,6 +401,12 @@
     width: min(100% - 28px, 560px);
     margin: 0 auto;
     padding: 10px 0 8px;
+  }
+
+  .orderHubLink {
+    top: 12px;
+    left: 12px;
+    font-size: 10px;
   }
 
   .mobileStepStatus > div {
