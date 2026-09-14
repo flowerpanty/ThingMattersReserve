@@ -3139,7 +3139,7 @@
             state.character = id;
             state.heartText = clampHeartText($("heartText").value);
             $("heartText").value = state.heartText;
-            setBuilderStage("heart", true);
+            setBuilderStage("heart");
           }
         });
         $("characters").append(button);
@@ -3153,7 +3153,7 @@
           html: `<span class="pillSwatch" style="--swatch:${color}"></span><span class="pillText">${id === "custom" ? "커스텀 +700원 추가" : label}</span>`,
           onClick: () => {
             state.paper = id;
-            setBuilderStage(id === "custom" ? "paper" : "quantity", true);
+            setBuilderStage(id === "custom" ? "paper" : "quantity");
           }
         });
         $("papers").append(button);
@@ -3443,19 +3443,13 @@
         </div>
       `;
       document.querySelectorAll("[data-builder-edit]").forEach((button) => {
-        button.addEventListener("click", () => setBuilderStage(button.dataset.builderEdit, true));
+        button.addEventListener("click", () => setBuilderStage(button.dataset.builderEdit));
       });
     }
 
-    function setBuilderStage(stage, shouldScroll = false) {
+    function setBuilderStage(stage) {
       activeBuilderStage = stage;
       draw();
-      if (!shouldScroll || !window.matchMedia("(max-width: 600px)").matches) return;
-      requestAnimationFrame(() => {
-        const panel = document.querySelector(`[data-builder-panel="${stage}"]`);
-        const behavior = window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth";
-        panel?.scrollIntoView({ behavior, block: "start" });
-      });
     }
 
     function addCurrentCombo() {
@@ -4194,7 +4188,6 @@ ${custom ? `${custom}\n` : ""}
         activeBuilderStage = "heart";
         if (isHeartComposing || event.isComposing) {
           state.heartText = event.target.value;
-          draw();
           return;
         }
         state.heartText = clampHeartText(event.target.value);
@@ -4203,7 +4196,7 @@ ${custom ? `${custom}\n` : ""}
       });
       $("noText").addEventListener("click", () => {
         state.heartTextEnabled = false;
-        setBuilderStage("paper", true);
+        setBuilderStage("paper");
       });
       $("withText").addEventListener("click", () => {
         state.heartTextEnabled = true;
@@ -4234,8 +4227,8 @@ ${custom ? `${custom}\n` : ""}
         renderComboPanel();
         updateSummary();
       });
-      $("heartComplete").addEventListener("click", () => setBuilderStage("paper", true));
-      $("paperComplete").addEventListener("click", () => setBuilderStage("quantity", true));
+      $("heartComplete").addEventListener("click", () => setBuilderStage("paper"));
+      $("paperComplete").addEventListener("click", () => setBuilderStage("quantity"));
       window.addEventListener("resize", () => renderBuilderProgress());
       $("needDate").addEventListener("change", (event) => {
         state.date = event.target.value < minDate || window.NMOrderCore?.isUnavailableDeliveryDate?.(event.target.value) ? minDate : event.target.value;
