@@ -1219,17 +1219,21 @@
 
     <section class="stepPage active" data-step-page="1" aria-labelledby="packageTitle">
       <div class="pageHead">
-        <p class="eyebrow">Step 01</p>
-        <h1 id="packageTitle">수제 꾸덕쿠키 답례품 주문</h1>
-        <p class="lead">사진을 보면서 포장 형태를 고르고, 7가지 맛으로 행사와 선물용 견적서를 만들어보세요.</p>
-        <p class="orderActionHint">먼저 포장을 고르고, 다음 화면에서 맛과 수량을 선택해요.</p>
+        <p class="eyebrow">꾸덕쿠키 · Step 1</p>
+        <h1 id="packageTitle">어떤 포장으로<br>준비할까요?</h1>
+        <p class="lead">용도에 맞는 포장을 먼저 고르면 다음 단계에서 맛을 선택할 수 있어요.</p>
       </div>
       <div class="packageRail" id="packageRail"></div>
+      <p class="mobilePackageHint">옆으로 넘겨 포장을 비교해보세요 →</p>
+      <div class="compactChoiceSummary" id="packageChoiceSummary" aria-live="polite"></div>
       <div class="drinkPanel card" id="drinkPanel">
         <p class="eyebrow">Drink</p>
         <div class="pillRow" id="drinkRow"></div>
       </div>
-      <div class="packagePreview" id="packagePreview"></div>
+      <details class="mobilePackageDisclosure" id="packagePreviewDisclosure">
+        <summary id="packagePreviewDisclosureSummary">선택한 포장 사진 더 보기</summary>
+        <div class="packagePreview" id="packagePreview"></div>
+      </details>
     </section>
 
     <section class="stepPage" data-step-page="2" aria-labelledby="flavorTitle">
@@ -1246,6 +1250,7 @@
         <button type="button" onclick="applyFlavorPreset('bulk')">단체 답례</button>
         <button type="button" onclick="applyFlavorPreset('kids')">아이들 간식</button>
       </div>
+      <button class="mobileFlavorDisclosure" id="toggleFlavorDetails" type="button" aria-expanded="false">직접 맛 고르기</button>
       <div class="flavorGrid" id="flavorGrid"></div>
       <div class="currentBox">
         <div>
@@ -1605,7 +1610,13 @@
       $("drinkRow").innerHTML = ["수제초코", "밀크티", "콜드브루"].map((drink) =>
         `<button class="pill" type="button" aria-pressed="${state.drink === drink}" onclick="selectDrink('${drink}')">${drink}</button>`
       ).join("");
+      renderPackageChoiceSummary();
       renderPackagePreview();
+    }
+
+    function renderPackageChoiceSummary() {
+      const pkg = selectedPackage();
+      $("packageChoiceSummary").innerHTML = `<span>현재 선택</span><strong>${pkg.name} · ${packageUseCases[pkg.id] || "선물용 구성"}</strong>`;
     }
 
     function renderPackagePreview() {
@@ -1628,6 +1639,9 @@
           <button class="slideBtn right" type="button" aria-label="예시 사진 오른쪽으로 보기" onclick="slideRail('packageExampleRail', 1)">›</button>
         </div>
       `;
+      $("packagePreviewDisclosureSummary").textContent = `${pkg.name} 포장 사진 더 보기`;
+      const disclosure = $("packagePreviewDisclosure");
+      disclosure.open = !window.matchMedia("(max-width: 600px)").matches;
     }
 
     function slideRail(id, direction) {
@@ -2220,6 +2234,11 @@ ${lines}
       $("nextButton").addEventListener("click", nextStep);
       $("addBundleButton").addEventListener("click", addCurrentItem);
       $("continueFromFlavor").addEventListener("click", continueFromFlavor);
+      $("toggleFlavorDetails").addEventListener("click", () => {
+        const isOpen = document.body.classList.toggle("flavor-grid-open");
+        $("toggleFlavorDetails").setAttribute("aria-expanded", String(isOpen));
+        $("toggleFlavorDetails").textContent = isOpen ? "맛 선택 접기" : "직접 맛 고르기";
+      });
       $("ribbonButton").addEventListener("click", () => { state.ribbon = !state.ribbon; render(); });
       $("stickerButton").addEventListener("click", () => { state.sticker = !state.sticker; render(); });
       $("copyButton").addEventListener("click", copyOrder);

@@ -2652,7 +2652,8 @@
           <li data-builder-stage="paper">포장</li>
           <li data-builder-stage="quantity">수량</li>
         </ol>
-        <section class="miniCard">
+        <div class="mobileBuilderStage" id="mobileBuilderStage" aria-live="polite"></div>
+        <section class="miniCard" data-builder-panel="character">
           <div class="stepHead">
             <div class="stepTitle"><span class="stepBadge">1</span>어떤 캐릭터로 만들까요?</div>
             <span class="stepHint" id="charStepHint">곰돌이 선택</span>
@@ -2664,7 +2665,7 @@
           </div>
         </section>
 
-        <section class="miniCard">
+        <section class="miniCard" data-builder-panel="heart">
           <div class="stepHead">
             <div class="stepTitle"><span class="stepBadge">2</span>하트 문구</div>
             <span class="stepHint" id="heartStepHint">기본 하트</span>
@@ -2676,9 +2677,10 @@
           </div>
           <p class="helper" id="heartGuide"></p>
           <input id="heartText" value="" placeholder="영문은 4글자 한글은 2글자" />
+          <button class="mobileStageAction" id="heartComplete" type="button" hidden>문구 선택 완료 →</button>
         </section>
 
-        <section class="miniCard">
+        <section class="miniCard" data-builder-panel="paper">
           <div class="stepHead">
             <div class="stepTitle"><span class="stepBadge">3</span>포장 종이</div>
             <span class="stepHint" id="paperStepHint">네이비 선택</span>
@@ -2694,9 +2696,10 @@
             <input id="paper1" value="" maxlength="28" placeholder="첫번째줄 글을 넣어주세요" aria-label="커스텀 종이 1줄" />
             <input id="paper2" value="" maxlength="28" placeholder="두번째줄 글을 넣어주세요" aria-label="커스텀 종이 2줄" />
           </div>
+          <button class="mobileStageAction" id="paperComplete" type="button" hidden>포장 선택 완료 →</button>
         </section>
 
-        <section class="miniCard comboOrderCard">
+        <section class="miniCard comboOrderCard" data-builder-panel="quantity">
           <div class="stepHead">
             <div class="stepTitle"><span class="stepBadge">4</span>수량 선택</div>
             <span class="stepHint" id="comboStepHint">최소 12개</span>
@@ -3133,11 +3136,10 @@
           pressed: state.character === id,
           html: `<img src="public/images/characters/${id}.webp" alt="${label}"><span>${label}</span>${premiumChars.has(id) ? '<small class="premium">+500원</small>' : ""}`,
           onClick: () => {
-            activeBuilderStage = "heart";
             state.character = id;
             state.heartText = clampHeartText($("heartText").value);
             $("heartText").value = state.heartText;
-            draw();
+            setBuilderStage("heart", true);
           }
         });
         $("characters").append(button);
@@ -3150,9 +3152,8 @@
           pressed: state.paper === id,
           html: `<span class="pillSwatch" style="--swatch:${color}"></span><span class="pillText">${id === "custom" ? "커스텀 +700원 추가" : label}</span>`,
           onClick: () => {
-            activeBuilderStage = id === "custom" ? "paper" : "quantity";
             state.paper = id;
-            draw();
+            setBuilderStage(id === "custom" ? "paper" : "quantity", true);
           }
         });
         $("papers").append(button);
@@ -3168,6 +3169,8 @@
       $("customInputs").style.display = state.paper === "custom" ? "grid" : "none";
       $("customNote").style.display = state.paper === "custom" ? "block" : "none";
       $("heartText").style.display = state.heartTextEnabled ? "block" : "none";
+      $("heartComplete").hidden = !state.heartTextEnabled;
+      $("paperComplete").hidden = state.paper !== "custom";
       $("heartGuide").textContent = state.character === "miss_bear"
         ? "미스곰 한글은 불가능해요. 영문/숫자만 입력해 주세요."
         : "";
@@ -3399,6 +3402,60 @@
         item.classList.toggle("is-complete", isComplete);
         item.setAttribute("aria-current", isCurrent ? "step" : "false");
       });
+      renderMobileBuilderStage(stages, activeIndex);
+      document.querySelectorAll("[data-builder-panel]").forEach((panel) => {
+        const isActive = panel.dataset.builderPanel === activeBuilderStage;
+        panel.classList.toggle("is-mobile-stage", isActive);
+        if (window.matchMedia("(max-width: 600px)").matches) {
+          panel.hidden = !isActive;
+          panel.setAttribute("aria-hidden", String(!isActive));
+        } else {
+          panel.hidden = false;
+          panel.setAttribute("aria-hidden", "false");
+        }
+      });
+    }
+
+    function renderMobileBuilderStage(stages, activeIndex) {
+      const labels = {
+        character: { name: "캐릭터", prompt: "어떤 캐릭터로 만들까요?" },
+        heart: { name: "문구", prompt: "문구를 선택해 주세요" },
+        paper: { name: "포장", prompt: "포장 종이를 골라주세요" },
+        quantity: { name: "수량", prompt: "수량을 정해 주세요" }
+      };
+      const summary = {
+        character: nameOf(chars, state.character),
+        heart: comboHeartLabel(currentCombo()),
+        paper: comboPaperLabel(currentCombo())
+      };
+      const completed = stages.slice(0, activeIndex).map((stage) => `
+        <button class="builderStageSummary" type="button" data-builder-edit="${stage}">
+          <span>✓ ${labels[stage].name} · ${escapeHtml(summary[stage])}</span>
+          <small>수정</small>
+        </button>
+      `).join("");
+      const current = labels[activeBuilderStage];
+      $("mobileBuilderStage").innerHTML = `
+        ${completed}
+        <div class="mobileBuilderCurrent">
+          <span>브루키 만들기 · ${activeIndex + 1}/4</span>
+          <strong>${current.prompt}</strong>
+        </div>
+      `;
+      document.querySelectorAll("[data-builder-edit]").forEach((button) => {
+        button.addEventListener("click", () => setBuilderStage(button.dataset.builderEdit, true));
+      });
+    }
+
+    function setBuilderStage(stage, shouldScroll = false) {
+      activeBuilderStage = stage;
+      draw();
+      if (!shouldScroll || !window.matchMedia("(max-width: 600px)").matches) return;
+      requestAnimationFrame(() => {
+        const panel = document.querySelector(`[data-builder-panel="${stage}"]`);
+        const behavior = window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth";
+        panel?.scrollIntoView({ behavior, block: "start" });
+      });
     }
 
     function addCurrentCombo() {
@@ -3417,6 +3474,7 @@
     }
 
     function resetCurrentCombo() {
+      activeBuilderStage = "character";
       state.character = "bear";
       state.paper = "navy";
       state.heartTextEnabled = false;
@@ -4130,7 +4188,6 @@ ${custom ? `${custom}\n` : ""}
         isHeartComposing = false;
         state.heartText = clampHeartText(event.target.value);
         event.target.value = state.heartText;
-        activeBuilderStage = state.heartText ? "paper" : "heart";
         draw();
       });
       $("heartText").addEventListener("input", (event) => {
@@ -4142,28 +4199,23 @@ ${custom ? `${custom}\n` : ""}
         }
         state.heartText = clampHeartText(event.target.value);
         event.target.value = state.heartText;
-        activeBuilderStage = state.heartText ? "paper" : "heart";
         draw();
       });
       $("noText").addEventListener("click", () => {
-        activeBuilderStage = "paper";
         state.heartTextEnabled = false;
-        draw();
+        setBuilderStage("paper", true);
       });
       $("withText").addEventListener("click", () => {
-        activeBuilderStage = "heart";
         state.heartTextEnabled = true;
-        draw();
+        setBuilderStage("heart");
         requestAnimationFrame(() => $("heartText").focus());
       });
       $("paper1").addEventListener("input", (event) => {
-        activeBuilderStage = "paper";
         state.customPaperLine1 = clampPaperText(event.target.value);
         event.target.value = state.customPaperLine1;
         draw();
       });
       $("paper2").addEventListener("input", (event) => {
-        activeBuilderStage = "paper";
         state.customPaperLine2 = clampPaperText(event.target.value);
         event.target.value = state.customPaperLine2;
         draw();
@@ -4182,6 +4234,9 @@ ${custom ? `${custom}\n` : ""}
         renderComboPanel();
         updateSummary();
       });
+      $("heartComplete").addEventListener("click", () => setBuilderStage("paper", true));
+      $("paperComplete").addEventListener("click", () => setBuilderStage("quantity", true));
+      window.addEventListener("resize", () => renderBuilderProgress());
       $("needDate").addEventListener("change", (event) => {
         state.date = event.target.value < minDate || window.NMOrderCore?.isUnavailableDeliveryDate?.(event.target.value) ? minDate : event.target.value;
         event.target.value = state.date;
