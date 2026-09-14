@@ -8,6 +8,7 @@ import { createServer as createViteServer, createLogger } from 'vite'
 
 const viteLogger = createLogger()
 const landingPages: Record<string, string> = {
+  '/order': 'order.html',
   '/brookie': 'brookie.html',
   '/cookies': 'cookies.html',
   '/lucky': 'lucky.html',
