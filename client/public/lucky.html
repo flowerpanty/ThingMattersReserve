@@ -418,6 +418,7 @@
 
     .luckyOrderIntro {
       display: block;
+      margin-top: 30px;
     }
 
     .luckyOrderIntro .quantityCard {
@@ -446,6 +447,13 @@
       margin-top: 6px;
       font-size: 16px;
       font-weight: 900;
+    }
+
+    .quantityOrderTitle {
+      margin: 0 0 14px;
+      font-size: clamp(24px, 5vw, 34px);
+      line-height: 1.1;
+      letter-spacing: -.05em;
     }
 
     .luckyCoreInfo {
@@ -503,9 +511,54 @@
       font-weight: 700;
     }
 
-    .luckyDeepDetails {
+    .luckyExpandedInfo {
       width: min(100%, 860px);
-      margin: 26px auto 0;
+      margin: 28px auto 0;
+    }
+
+    .luckyExpandedInfo .setGrid {
+      gap: 8px;
+    }
+
+    .luckyExpandedInfo .setCard {
+      grid-template-columns: 70px minmax(0, 1fr);
+      align-items: start;
+      gap: 8px;
+      padding: 9px;
+    }
+
+    .luckyExpandedInfo .setPhoto {
+      aspect-ratio: 1;
+      border-radius: 14px;
+    }
+
+    .luckyExpandedInfo .setCard h3 {
+      font-size: 13px;
+    }
+
+    .luckyExpandedInfo .setCard p,
+    .luckyExpandedInfo .setCard small {
+      font-size: 10px;
+      line-height: 1.35;
+    }
+
+    .luckyExpandedInfo .effectPill {
+      margin-top: 5px;
+      padding: 4px 6px;
+      font-size: 8.5px;
+    }
+
+    .luckyExpandedInfo .sectionDividerTitle {
+      margin-top: 18px;
+      font-size: clamp(22px, 5vw, 30px);
+    }
+
+    .luckyExpandedInfo .card {
+      padding: 12px;
+    }
+
+    .luckyExpandedInfo .galleryCard {
+      flex-basis: 58%;
     }
 
     .setGrid {
@@ -1020,6 +1073,9 @@
       main { padding-inline: 24px; }
       .fieldGrid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
       .luckyCoreGrid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+      .luckyExpandedInfo .setGrid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+      .luckyExpandedInfo .setCard { grid-template-columns: 1fr; }
+      .luckyExpandedInfo .setPhoto { aspect-ratio: 1; }
       .quoteGrid { grid-template-columns: 1.15fr .85fr; }
     }
 
@@ -1029,6 +1085,7 @@
       .luckyOrderIntro .qtyBtn,
       .luckyOrderIntro #quantityInput { min-height: 54px; }
       .luckyOrderIntro #quantityContinue { min-height: 52px; }
+      .luckyExpandedInfo .galleryCard { flex-basis: 68%; }
       .floatingInner {
         grid-template-columns: 54px minmax(0, 1fr) 112px;
         min-height: 54px;
@@ -1172,23 +1229,6 @@
         <h1 id="quantityTitle">행복한 럭키 세트를<br>몇 개 준비할까요?</h1>
         <p class="lead">4가지 감정 쿠키 세트의 수량을 선택해 주세요.</p>
       </div>
-      <div class="setIntro luckyOrderIntro">
-        <article class="quantityCard">
-          <span class="pricePill">4가지맛 세트 · 15,000원</span>
-          <div class="qtyRow" aria-label="세트 수량">
-            <button class="qtyBtn" type="button" onclick="changeQty(-1)" aria-label="세트 수량 감소">−</button>
-            <input id="quantityInput" type="number" min="1" inputmode="numeric" value="1" onchange="setQty(this.value)" />
-            <button class="qtyBtn" type="button" onclick="changeQty(1)" aria-label="세트 수량 추가">+</button>
-          </div>
-          <div class="orderQuickSummary" aria-label="선택 요약">
-            <div><span>선택 수량</span><strong id="liveQuantity">1세트</strong></div>
-            <div><span>1세트 가격</span><strong>15,000원</strong></div>
-            <div><span>예상 총액</span><strong id="liveTotal">15,000원</strong></div>
-          </div>
-          <button class="btn blue full" id="quantityContinue" type="button">주문 정보 입력하기 →</button>
-        </article>
-      </div>
-
       <section class="luckyCoreInfo" aria-labelledby="luckyCoreTitle">
         <h2 id="luckyCoreTitle">한 세트에 4가지 행운을 담았어요</h2>
         <div class="luckyCoreGrid" aria-label="럭키쿠키 4가지맛 구성">
@@ -1200,10 +1240,8 @@
         <p>답례 · 응원 · 행사 · 선물용</p>
       </section>
 
-      <details class="orderDetails luckyDeepDetails">
-        <summary>박스 구성과 사진 더 보기</summary>
-        <div>
-        <h2 class="sectionDividerTitle">🍪 4가지 감정 쿠키</h2>
+      <section class="luckyExpandedInfo" aria-labelledby="luckyExpandedTitle">
+        <h2 class="sectionDividerTitle" id="luckyExpandedTitle">🍪 4가지 감정 쿠키</h2>
         <p class="sectionDividerSub">HAPPY, RESET, MONEY, UP 네 가지 감정을 한 세트에 담았어요.</p>
         <div class="setGrid" aria-label="4가지맛 구성">
           <article class="setCard">
@@ -1243,7 +1281,6 @@
             </div>
           </article>
         </div>
-      </div>
 
       <article class="card" style="margin-top:14px;">
         <h2 class="sectionDividerTitle">📦 박스 내부 보기</h2>
@@ -1269,8 +1306,25 @@
           <button class="slideBtn right" type="button" aria-label="실물컷 오른쪽으로 보기" onclick="slideRail('galleryRail', 1)">›</button>
         </div>
       </article>
-        </div>
-      </details>
+      </section>
+
+      <div class="setIntro luckyOrderIntro" id="quantityOrderCard">
+        <article class="quantityCard">
+          <h2 class="quantityOrderTitle">몇 세트 준비할까요?</h2>
+          <span class="pricePill">4가지맛 세트 · 15,000원</span>
+          <div class="qtyRow" aria-label="세트 수량">
+            <button class="qtyBtn" type="button" onclick="changeQty(-1)" aria-label="세트 수량 감소">−</button>
+            <input id="quantityInput" type="number" min="1" inputmode="numeric" value="1" onchange="setQty(this.value)" />
+            <button class="qtyBtn" type="button" onclick="changeQty(1)" aria-label="세트 수량 추가">+</button>
+          </div>
+          <div class="orderQuickSummary" aria-label="선택 요약">
+            <div><span>선택 수량</span><strong id="liveQuantity">1세트</strong></div>
+            <div><span>1세트 가격</span><strong>15,000원</strong></div>
+            <div><span>예상 총액</span><strong id="liveTotal">15,000원</strong></div>
+          </div>
+          <button class="btn blue full" id="quantityContinue" type="button">주문 정보 입력하기 →</button>
+        </article>
+      </div>
     </section>
 
     <section class="stepPage" data-step-page="3" aria-labelledby="quoteTitle">
@@ -1483,7 +1537,9 @@
         2: "견적 내용 확인하기 →",
         3: "견적서 받기 →"
       };
-      $("nextButton").textContent = nextLabels[state.step];
+      $("nextButton").textContent = state.step === 1 && !isQuantityCardVisible()
+        ? "수량 선택하기 ↓"
+        : nextLabels[state.step];
       $("floatingProgress").style.width = `${Math.round((state.step / 3) * 100)}%`;
       updateMobileStep(labels[state.step]);
       $("nextButton").classList.toggle("hasItems", state.quantity > 0);
@@ -1575,8 +1631,20 @@
     }
 
     function nextStep() {
+      if (state.step === 1 && !isQuantityCardVisible()) {
+        const behavior = window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth";
+        $("quantityOrderCard").scrollIntoView({ behavior, block: "center" });
+        return;
+      }
       if (state.step === 3) return receiveQuote();
       setStep(state.step + 1);
+    }
+
+    function isQuantityCardVisible() {
+      const card = $("quantityOrderCard");
+      if (!card) return true;
+      const rect = card.getBoundingClientRect();
+      return rect.top < window.innerHeight - 96 && rect.bottom > 0;
     }
 
     function syncInputs() {
@@ -1818,6 +1886,9 @@
       $("prevButton").addEventListener("click", () => setStep(state.step - 1));
       $("nextButton").addEventListener("click", nextStep);
       $("quantityContinue").addEventListener("click", () => setStep(2));
+      window.addEventListener("scroll", () => {
+        if (state.step === 1) renderFloating();
+      }, { passive: true });
       $("copyButton").addEventListener("click", copyOrder);
       $("quoteButton").addEventListener("click", receiveQuote);
       pushOrderStep = window.NMOrderCore?.setupStepHistory({
