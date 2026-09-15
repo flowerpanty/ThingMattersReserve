@@ -416,6 +416,98 @@
       gap: 12px;
     }
 
+    .luckyOrderIntro {
+      display: block;
+    }
+
+    .luckyOrderIntro .quantityCard {
+      width: min(100%, 860px);
+      margin: 0 auto;
+      padding: 24px;
+    }
+
+    .luckyOrderIntro .qtyRow {
+      grid-template-columns: 64px minmax(0, 1fr) 64px;
+      margin-top: 20px;
+    }
+
+    .luckyOrderIntro .qtyBtn,
+    .luckyOrderIntro #quantityInput {
+      min-height: 60px;
+    }
+
+    .luckyOrderIntro #quantityInput {
+      font-size: 26px;
+      font-weight: 900;
+    }
+
+    .luckyOrderIntro #quantityContinue {
+      min-height: 58px;
+      margin-top: 6px;
+      font-size: 16px;
+      font-weight: 900;
+    }
+
+    .luckyCoreInfo {
+      width: min(100%, 860px);
+      margin: 30px auto 0;
+      padding-top: 26px;
+      border-top: 1px solid var(--line);
+    }
+
+    .luckyCoreInfo h2 {
+      margin: 0 0 14px;
+      font-size: clamp(23px, 5vw, 32px);
+      line-height: 1.1;
+      letter-spacing: -.05em;
+    }
+
+    .luckyCoreGrid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 9px;
+    }
+
+    .luckyCoreGrid article {
+      min-width: 0;
+      padding: 13px;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: #fff;
+    }
+
+    .luckyCoreGrid strong,
+    .luckyCoreGrid span {
+      display: block;
+    }
+
+    .luckyCoreGrid strong {
+      color: var(--blue);
+      font-size: 13px;
+      font-weight: 900;
+      letter-spacing: .04em;
+    }
+
+    .luckyCoreGrid span {
+      margin-top: 5px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 650;
+      line-height: 1.4;
+    }
+
+    .luckyCoreInfo > p {
+      margin: 12px 2px 0;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .luckyDeepDetails {
+      width: min(100%, 860px);
+      margin: 26px auto 0;
+    }
+
     .setGrid {
       display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -927,11 +1019,16 @@
       .headerInner { padding-inline: 24px; }
       main { padding-inline: 24px; }
       .fieldGrid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-      .setIntro { grid-template-columns: .9fr 1.1fr; align-items: start; }
+      .luckyCoreGrid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
       .quoteGrid { grid-template-columns: 1.15fr .85fr; }
     }
 
     @media (max-width: 760px) {
+      .luckyOrderIntro .quantityCard { padding: 18px; }
+      .luckyOrderIntro .qtyRow { grid-template-columns: 56px minmax(0, 1fr) 56px; }
+      .luckyOrderIntro .qtyBtn,
+      .luckyOrderIntro #quantityInput { min-height: 54px; }
+      .luckyOrderIntro #quantityContinue { min-height: 52px; }
       .floatingInner {
         grid-template-columns: 54px minmax(0, 1fr) 112px;
         min-height: 54px;
@@ -1075,7 +1172,7 @@
         <h1 id="quantityTitle">행복한 럭키 세트를<br>몇 개 준비할까요?</h1>
         <p class="lead">4가지 감정 쿠키 세트의 수량을 선택해 주세요.</p>
       </div>
-      <div class="setIntro">
+      <div class="setIntro luckyOrderIntro">
         <article class="quantityCard">
           <span class="pricePill">4가지맛 세트 · 15,000원</span>
           <div class="qtyRow" aria-label="세트 수량">
@@ -1090,10 +1187,22 @@
           </div>
           <button class="btn blue full" id="quantityContinue" type="button">주문 정보 입력하기 →</button>
         </article>
+      </div>
 
-        <details class="orderDetails">
-          <summary>상품 자세히 보기</summary>
-          <div>
+      <section class="luckyCoreInfo" aria-labelledby="luckyCoreTitle">
+        <h2 id="luckyCoreTitle">한 세트에 4가지 행운을 담았어요</h2>
+        <div class="luckyCoreGrid" aria-label="럭키쿠키 4가지맛 구성">
+          <article><strong>HAPPY</strong><span>곰돌이 · 초코맛</span></article>
+          <article><strong>RESET</strong><span>금붕어 · 코코넛맛</span></article>
+          <article><strong>MONEY</strong><span>복돼지 · 흑임자맛</span></article>
+          <article><strong>UP</strong><span>하트 · 피넛버터맛</span></article>
+        </div>
+        <p>답례 · 응원 · 행사 · 선물용</p>
+      </section>
+
+      <details class="orderDetails luckyDeepDetails">
+        <summary>박스 구성과 사진 더 보기</summary>
+        <div>
         <h2 class="sectionDividerTitle">🍪 4가지 감정 쿠키</h2>
         <p class="sectionDividerSub">HAPPY, RESET, MONEY, UP 네 가지 감정을 한 세트에 담았어요.</p>
         <div class="setGrid" aria-label="4가지맛 구성">
@@ -1160,8 +1269,8 @@
           <button class="slideBtn right" type="button" aria-label="실물컷 오른쪽으로 보기" onclick="slideRail('galleryRail', 1)">›</button>
         </div>
       </article>
-          </div>
-        </details>
+        </div>
+      </details>
     </section>
 
     <section class="stepPage" data-step-page="3" aria-labelledby="quoteTitle">
