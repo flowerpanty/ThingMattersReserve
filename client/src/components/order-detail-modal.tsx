@@ -1,4 +1,4 @@
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
@@ -30,7 +30,17 @@ interface Order {
     pickupTime?: string;
     orderItems: OrderItem[];
     totalPrice: number;
+    orderStatus?: string;
+    paymentConfirmed?: number;
     createdAt: string;
+}
+
+function getStatusLabel(order: Pick<Order, 'orderStatus' | 'paymentConfirmed'>) {
+    if (order.orderStatus === 'completed') return '완료';
+    if (order.orderStatus === 'in_production') return '제작 중';
+    if (order.paymentConfirmed || order.orderStatus === 'payment_confirmed') return '제작 대기';
+    if (order.orderStatus === 'order_confirmed') return '입금 확인 필요';
+    return '주문 확인 필요';
 }
 
 import { useToast } from "@/hooks/use-toast";
@@ -722,24 +732,28 @@ export function OrderDetailModal({ order, isOpen, onClose, onDelete }: OrderDeta
     };
 
     return (
-        <Dialog open={isOpen} onOpenChange={onClose}>
-            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-                <DialogHeader>
-                    <DialogTitle className="text-2xl font-bold flex items-center gap-2">
+        <Sheet open={isOpen} onOpenChange={(open) => { if (!open) onClose(); }}>
+            <SheetContent side="right" className="w-[min(100vw,640px)] max-w-none overflow-y-auto p-0 sm:max-w-[640px]">
+                <SheetHeader className="sticky top-0 z-20 border-b bg-background/95 px-5 py-4 pr-12 text-left backdrop-blur">
+                    <SheetTitle className="flex items-center gap-2 text-xl font-bold">
                         <Package className="w-6 h-6" />
-                        주문 상세 정보
+                        {order.customerName}
                         {landingSource && (
                             <Badge className={`ml-1 rounded-full border px-2.5 py-0.5 text-xs font-semibold shadow-none ${landingSource.tone}`}>
                                 {landingSource.label}
                             </Badge>
                         )}
-                    </DialogTitle>
-                    <DialogDescription>
-                        주문번호: {order.id.slice(0, 8)}...
-                    </DialogDescription>
-                </DialogHeader>
+                    </SheetTitle>
+                    <SheetDescription className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                        <span>{order.deliveryDate}{order.pickupTime ? ` · ${order.pickupTime}` : ''}</span>
+                        <span>·</span>
+                        <strong className="text-foreground">{formatCurrency(order.totalPrice)}</strong>
+                        <span className="text-xs">#{order.id.slice(0, 8)}</span>
+                        <Badge variant="outline" className="rounded-full bg-white text-[11px]">{getStatusLabel(order)}</Badge>
+                    </SheetDescription>
+                </SheetHeader>
 
-                <div className="space-y-6 py-4">
+                <div className="space-y-6 px-5 py-5">
                     {/* 고객 정보 */}
                     <div className="space-y-3">
                         <h3 className="font-semibold text-lg flex items-center gap-2">
@@ -1048,7 +1062,7 @@ export function OrderDetailModal({ order, isOpen, onClose, onDelete }: OrderDeta
                         <QuoteImageTemplate ref={quoteTemplateRef} order={order} />
                     </div>
                 </div>
-            </DialogContent>
-        </Dialog>
+            </SheetContent>
+        </Sheet>
     );
 }

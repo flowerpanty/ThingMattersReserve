@@ -117,6 +117,50 @@ function getLandingSourceInfo(order: Pick<Order, 'orderItems'>) {
   return labels[source as string] || null;
 }
 
+function getLandingSourceKey(order: Pick<Order, 'orderItems'>) {
+  const meta = order.orderItems.find((item) => item.type === 'meta')?.options || {};
+  return String(meta.landingSource || meta.source || '');
+}
+
+function getPickupMinutes(value?: string) {
+  const match = value?.match(/(\d{1,2}):(\d{2})/);
+  return match ? Number(match[1]) * 60 + Number(match[2]) : Number.MAX_SAFE_INTEGER;
+}
+
+function getOrderItemSummary(order: Pick<Order, 'orderItems'>) {
+  const items = order.orderItems.filter((item) => item.type !== 'meta');
+  if (!items.length) return '주문 품목 없음';
+  const first = `${items[0].name} ×${items[0].quantity}`;
+  return items.length > 1 ? `${first} 외 ${items.length - 1}개` : first;
+}
+
+function getDateUrgency(order: Pick<Order, 'deliveryDate' | 'pickupTime' | 'orderStatus' | 'paymentConfirmed'>, todayKey: string) {
+  const delivery = new Date(`${order.deliveryDate}T00:00:00+09:00`).getTime();
+  const today = new Date(`${todayKey}T00:00:00+09:00`).getTime();
+  const diff = Number.isFinite(delivery) && Number.isFinite(today) ? Math.round((delivery - today) / DAY_IN_MS) : 99;
+  const completed = getNormalizedOrderStatus(order) === 'completed';
+  const timePassed = diff === 0 && order.pickupTime && getPickupMinutes(order.pickupTime) < new Date().getHours() * 60 + new Date().getMinutes() && !completed;
+  const label = timePassed ? '시간 지남' : diff < 0 ? '지난 일정' : diff === 0 ? '오늘' : diff === 1 ? '내일' : `D-${diff}`;
+  const tone = completed
+    ? 'border-slate-200 bg-slate-50 text-slate-500'
+    : timePassed || diff < 0 ? 'border-red-200 bg-red-50 text-red-700'
+      : diff === 0 ? 'border-rose-200 bg-rose-50 text-rose-700'
+        : diff === 1 ? 'border-amber-200 bg-amber-50 text-amber-700'
+          : 'border-slate-200 bg-slate-50 text-slate-600';
+  return { label, tone, diff };
+}
+
+function sortOperationalOrders(list: Order[], completed = false) {
+  return [...list].sort((a, b) => {
+    if (completed) return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    const dateCompare = (a.deliveryDate || '9999-12-31').localeCompare(b.deliveryDate || '9999-12-31');
+    if (dateCompare) return dateCompare;
+    const timeCompare = getPickupMinutes(a.pickupTime) - getPickupMinutes(b.pickupTime);
+    if (timeCompare) return timeCompare;
+    return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+  });
+}
+
 type DashboardOrderStatus =
   | 'pending'
   | 'order_confirmed'
@@ -280,15 +324,15 @@ function getOrderStatusMessage(order: Pick<Order, 'orderStatus' | 'paymentConfir
 
   switch (status) {
     case 'pending':
-      return { text: '주문😘을 확인중입니다.', tone: 'text-amber-700' };
+      return { text: '주문 확인 필요', tone: 'border-amber-200 bg-amber-50 text-amber-700' };
     case 'order_confirmed':
-      return { text: '입금💰을 확인중입니다.', tone: 'text-blue-700' };
+      return { text: '입금 확인 필요', tone: 'border-blue-200 bg-blue-50 text-blue-700' };
     case 'payment_confirmed':
-      return { text: '맛있는쿠키🍪를 만들어주세요!', tone: 'text-violet-700' };
+      return { text: '제작 대기', tone: 'border-violet-200 bg-violet-50 text-violet-700' };
     case 'in_production':
-      return { text: '쿠키 만드는중❤️', tone: 'text-rose-700' };
+      return { text: '제작 중', tone: 'border-violet-200 bg-violet-50 text-violet-700' };
     case 'completed':
-      return { text: '완료', tone: 'text-emerald-700' };
+      return { text: '완료', tone: 'border-emerald-200 bg-emerald-50 text-emerald-700' };
   }
 }
 
@@ -322,46 +366,57 @@ function PaymentMethodSelector({ order, onUpdate }: { order: Order; onUpdate: (m
   );
 }
 
-// 오늘의 할 일 요약 카드
-function TodaySummaryCards({ stats }: { stats: DashboardStats }) {
+function TodayOperationsBoard({
+  stats,
+  nextOrder,
+  todayRevenue,
+  onToday,
+  onUnpaid,
+  onProduction,
+}: {
+  stats: DashboardStats;
+  nextOrder: Order | null;
+  todayRevenue: number;
+  onToday: () => void;
+  onUnpaid: () => void;
+  onProduction: () => void;
+}) {
+  const source = nextOrder ? getLandingSourceInfo(nextOrder) : null;
   const cards = [
-    {
-      icon: <Package className="w-5 h-5" />,
-      label: '오늘 픽업',
-      value: stats.todayPickups,
-      color: stats.todayPickups > 0 ? 'text-blue-600 bg-blue-50 border-blue-200' : 'text-gray-500 bg-gray-50 border-gray-200',
-    },
-    {
-      icon: <ChefHat className="w-5 h-5" />,
-      label: '제작 중',
-      value: stats.inProductionCount,
-      color: stats.inProductionCount > 0 ? 'text-purple-600 bg-purple-50 border-purple-200' : 'text-gray-500 bg-gray-50 border-gray-200',
-    },
-    {
-      icon: <Clock className="w-5 h-5" />,
-      label: '미확인 입금',
-      value: stats.unpaidCount,
-      color: stats.unpaidCount > 0 ? 'text-red-600 bg-red-50 border-red-200' : 'text-gray-500 bg-gray-50 border-gray-200',
-      pulse: stats.unpaidCount > 0,
-    },
-    {
-      icon: <TrendingUp className="w-5 h-5" />,
-      label: '총 매출',
-      value: `${(stats.totalRevenue / 10000).toFixed(0)}만`,
-      color: 'text-green-600 bg-green-50 border-green-200',
-    },
+    { label: '입금 확인 필요', value: stats.unpaidCount, onClick: onUnpaid, tone: stats.unpaidCount ? 'text-rose-700' : 'text-slate-700' },
+    { label: '제작 중', value: stats.inProductionCount, onClick: onProduction, tone: 'text-violet-700' },
+    { label: '오늘 매출', value: `${todayRevenue.toLocaleString()}원`, tone: 'text-emerald-700' },
   ];
 
   return (
-    <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 md:gap-3">
-      {cards.map((card, i) => (
-        <div key={i} className={`${card.color} border rounded-xl p-3 text-center transition-all`}>
-          <div className="flex justify-center mb-1">{card.icon}</div>
-          <div className={`text-lg md:text-2xl font-bold ${card.pulse ? 'animate-pulse' : ''}`}>{card.value}</div>
-          <div className="text-xs font-medium opacity-80">{card.label}</div>
+    <section aria-labelledby="today-board-title" className="grid gap-2 md:grid-cols-[1.35fr_1fr] md:gap-3">
+      <button type="button" onClick={onToday} className="rounded-2xl border border-blue-200 bg-blue-50/70 p-4 text-left transition-colors hover:bg-blue-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <p id="today-board-title" className="text-sm font-semibold text-blue-700">오늘 수령</p>
+            <p className="mt-1 text-3xl font-black tracking-tight text-slate-950">{stats.todayPickups}건</p>
+          </div>
+          <CalendarDays className="h-7 w-7 text-blue-600" />
         </div>
-      ))}
-    </div>
+        <div className="mt-4 rounded-xl border border-blue-100 bg-white/80 p-3">
+          <p className="text-[11px] font-semibold text-slate-500">다음 수령/배송</p>
+          {nextOrder ? (
+            <>
+              <p className="mt-1 text-base font-bold text-slate-900">{nextOrder.pickupTime || '시간 미지정'} · {nextOrder.customerName}</p>
+              <p className="mt-0.5 text-xs text-slate-600">{source?.label || getOrderItemSummary(nextOrder)} · {getOrderItemSummary(nextOrder)}</p>
+            </>
+          ) : <p className="mt-1 text-sm font-semibold text-slate-600">오늘 남은 수령 일정 없음</p>}
+        </div>
+      </button>
+      <div className="grid grid-cols-3 gap-2 md:grid-cols-1">
+        {cards.map((card) => (
+          <button key={card.label} type="button" onClick={card.onClick} className="rounded-xl border border-slate-200 bg-white p-3 text-left transition-colors hover:bg-slate-50 disabled:cursor-default" disabled={!card.onClick}>
+            <p className={`text-lg font-black tracking-tight md:text-xl ${card.tone}`}>{typeof card.value === 'number' ? `${card.value}건` : card.value}</p>
+            <p className="mt-1 text-[10px] font-semibold text-slate-500 md:text-xs">{card.label}</p>
+          </button>
+        ))}
+      </div>
+    </section>
   );
 }
 
@@ -415,11 +470,11 @@ function StatusFilterTabs({
   counts: Record<string, number>;
 }) {
   const filters = [
-    { key: 'all', label: '전체', emoji: '📋' },
-    { key: 'pending', label: '주문확인', emoji: '⏳' },
-    { key: 'payment_confirmed', label: '입금완료', emoji: '💰' },
-    { key: 'in_production', label: '제작중', emoji: '👩‍🍳' },
-    { key: 'completed', label: '완료', emoji: '✅' },
+    { key: 'all', label: '전체' },
+    { key: 'pending', label: '주문확인' },
+    { key: 'payment_confirmed', label: '입금완료' },
+    { key: 'in_production', label: '제작중' },
+    { key: 'completed', label: '완료' },
   ];
 
   return (
@@ -428,6 +483,7 @@ function StatusFilterTabs({
         <button
           key={f.key}
           onClick={() => onFilterChange(f.key)}
+          aria-pressed={activeFilter === f.key}
           className={`
             flex items-center gap-1.5 px-3 py-2 rounded-full text-xs font-semibold whitespace-nowrap transition-all border
             ${activeFilter === f.key
@@ -436,7 +492,6 @@ function StatusFilterTabs({
             }
           `}
         >
-          <span>{f.emoji}</span>
           <span>{f.label}</span>
           {counts[f.key] > 0 && (
             <span className={`
@@ -462,6 +517,7 @@ function OrderCard({
   onAdvanceStatus,
   onUpdatePaymentMethod,
   onDelete,
+  todayKey,
 }: {
   order: Order;
   isSelectionMode: boolean;
@@ -471,6 +527,7 @@ function OrderCard({
   onAdvanceStatus: (order: Order, overrideAction?: OrderFlowAction | null) => void;
   onUpdatePaymentMethod: (id: string, method: string | null) => void;
   onDelete: (id: string) => void;
+  todayKey: string;
 }) {
   const [expanded, setExpanded] = useState(false);
   const displayStatus = getNormalizedOrderStatus(order);
@@ -480,6 +537,8 @@ function OrderCard({
   const nonMetaItems = order.orderItems.filter((item) => item.type !== 'meta');
   const itemCount = nonMetaItems.length;
   const landingSource = getLandingSourceInfo(order);
+  const urgency = getDateUrgency(order, todayKey);
+  const itemSummary = getOrderItemSummary(order);
   const timelineDotTone: Record<DashboardOrderStatus, string> = {
     pending: 'bg-amber-400',
     order_confirmed: 'bg-yellow-400',
@@ -507,13 +566,13 @@ function OrderCard({
   return (
     <div
       className={`
-        overflow-hidden rounded-3xl border border-slate-200 bg-white transition-all duration-200 hover:border-slate-300 hover:shadow-sm
+        overflow-hidden rounded-2xl border border-slate-200 bg-white transition-all duration-200 hover:border-slate-300 hover:shadow-sm
         ${isSelectionMode && isSelected ? 'ring-2 ring-red-200 bg-red-50/20' : ''}
       `}
     >
       {/* 메인 행 */}
       <div
-        className="flex gap-3 p-4 sm:gap-4 sm:p-5 cursor-pointer hover:bg-slate-50/70"
+        className="flex gap-3 p-3.5 sm:gap-4 sm:p-4 cursor-pointer hover:bg-slate-50/70"
         onClick={() => {
           if (isSelectionMode) {
             onToggleSelect(order.id, !isSelected);
@@ -535,22 +594,26 @@ function OrderCard({
                 <span className="truncate text-lg font-semibold tracking-tight text-slate-900 sm:text-xl">
                   {order.customerName}
                 </span>
-              </div>
-
-              <div className="mt-2 flex flex-wrap gap-1.5">
                 {landingSource && (
-                  <Badge className={`rounded-full border px-2.5 py-0.5 text-[11px] font-semibold shadow-none ${landingSource.tone}`}>
+                  <Badge className={`rounded-full border px-2 py-0.5 text-[10px] font-semibold shadow-none ${landingSource.tone}`}>
                     {landingSource.label}
                   </Badge>
                 )}
+              </div>
+
+              <div className="mt-2 flex flex-wrap gap-1.5">
+                <Badge className={`rounded-full border px-2.5 py-0.5 text-[11px] font-semibold shadow-none ${urgency.tone}`}>
+                  {urgency.label}{order.pickupTime ? ` · ${order.pickupTime}` : ''}
+                </Badge>
                 <Badge className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-0.5 text-[11px] font-medium text-slate-600 shadow-none">
-                  {order.deliveryMethod === 'quick' ? '🚚 퀵배송' : '🏪 픽업'}
+                  {order.deliveryMethod === 'quick' ? '퀵배송' : '매장픽업'}
                 </Badge>
               </div>
 
-              <div className={`mt-2 text-base font-black tracking-tight sm:text-lg ${statusMessage.tone}`}>
+              <div className={`mt-2 inline-flex rounded-full border px-2.5 py-1 text-xs font-bold ${statusMessage.tone}`}>
                 {statusMessage.text}
               </div>
+              <p className="mt-2 truncate text-sm font-semibold text-slate-700">{itemSummary}</p>
             </div>
 
             <div className="flex shrink-0 items-start gap-2">
@@ -558,7 +621,6 @@ function OrderCard({
                 <div className="text-xl font-semibold tracking-tight text-slate-900 sm:text-2xl">
                   {order.totalPrice.toLocaleString()}원
                 </div>
-                <div className="mt-1 text-[11px] text-muted-foreground">{itemCount}개 품목</div>
 
                 {!isSelectionMode ? (
                   <div onClick={(e) => e.stopPropagation()}>
@@ -567,7 +629,7 @@ function OrderCard({
                         <button
                           type="button"
                           onClick={() => onAdvanceStatus(order, previousAction)}
-                          className="inline-flex h-9 items-center justify-center rounded-full border border-slate-200 bg-white px-3 text-xs font-medium text-slate-600 transition-colors hover:bg-slate-50"
+                          className="inline-flex min-h-11 items-center justify-center rounded-xl border border-slate-200 bg-white px-3 text-xs font-medium text-slate-600 transition-colors hover:bg-slate-50"
                         >
                           {previousAction.label}
                         </button>
@@ -579,7 +641,7 @@ function OrderCard({
                         aria-label={`${order.customerName} ${progressControl.label}`}
                         title={progressControl.description}
                         className={`
-                          inline-flex h-9 items-center justify-center rounded-full border px-3 text-xs font-semibold transition-all
+                          inline-flex min-h-11 items-center justify-center rounded-xl border px-4 text-sm font-semibold transition-all
                           ${progressControl.tone}
                           ${progressControl.disabled ? 'cursor-default opacity-80' : ''}
                         `}
@@ -592,7 +654,7 @@ function OrderCard({
                   <label
                     onClick={(e) => e.stopPropagation()}
                     className={`
-                      mt-2 inline-flex h-9 items-center gap-2 rounded-full border px-3 text-xs font-semibold transition-colors
+                      mt-2 inline-flex min-h-11 items-center gap-2 rounded-xl border px-3 text-xs font-semibold transition-colors
                       ${isSelected ? 'border-red-200 bg-red-50 text-red-700' : 'border-slate-200 bg-white text-slate-600'}
                     `}
                     title="삭제할 주문 선택"
@@ -617,20 +679,8 @@ function OrderCard({
           </div>
 
           <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-xs text-slate-500">
-            <span className="inline-flex items-center gap-1">
-              <CalendarDays className="h-3.5 w-3.5" />
-              {formatDeliveryDate(order.deliveryDate)}
-            </span>
-            {order.pickupTime && (
-              <span className="inline-flex items-center gap-1">
-                <Clock className="h-3.5 w-3.5" />
-                {order.pickupTime}
-              </span>
-            )}
-            <span className="inline-flex items-center gap-1">
-              <Package className="h-3.5 w-3.5" />
-              {itemCount}개 품목
-            </span>
+            <span>{formatDeliveryDate(order.deliveryDate)}</span>
+            <span>{order.customerContact}</span>
           </div>
         </div>
       </div>
@@ -685,6 +735,10 @@ export function Dashboard() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [productFilter, setProductFilter] = useState('all');
+  const [dateFilter, setDateFilter] = useState('all');
+  const [analyticsPeriod, setAnalyticsPeriod] = useState<'7d' | '30d' | 'month' | 'all'>('7d');
+  const [activeDashboardTab, setActiveDashboardTab] = useState('orders');
   const [isSelectionMode, setIsSelectionMode] = useState(false);
   const [selectedOrderIds, setSelectedOrderIds] = useState<string[]>([]);
   const [now, setNow] = useState(() => new Date());
@@ -853,9 +907,13 @@ export function Dashboard() {
     enabled: isAuthenticated,
   });
 
+  const today = getKoreanDateKey(now);
+  const tomorrow = getKoreanDateKeyWithOffset(now, 1);
+  const weekEnd = getKoreanDateKeyWithOffset(now, 6 - new Date(`${today}T12:00:00+09:00`).getUTCDay());
+
   // 필터링
   const filteredOrders = useMemo(() => {
-    return orders.filter(order => {
+    const matches = orders.filter(order => {
       // 검색 필터
       if (searchQuery) {
         const q = searchQuery.toLowerCase();
@@ -873,9 +931,15 @@ export function Dashboard() {
         return false;
       }
 
+      if (productFilter !== 'all' && getLandingSourceKey(order) !== productFilter) return false;
+      if (dateFilter === 'today' && order.deliveryDate !== today) return false;
+      if (dateFilter === 'tomorrow' && order.deliveryDate !== tomorrow) return false;
+      if (dateFilter === 'week' && (order.deliveryDate < today || order.deliveryDate > weekEnd)) return false;
+
       return true;
     });
-  }, [orders, searchQuery, statusFilter]);
+    return sortOperationalOrders(matches, statusFilter === 'completed');
+  }, [orders, searchQuery, statusFilter, productFilter, dateFilter, today, tomorrow, weekEnd]);
 
   const filteredOrderIds = useMemo(() => filteredOrders.map((order) => order.id), [filteredOrders]);
 
@@ -965,7 +1029,6 @@ export function Dashboard() {
   }, [orders]);
 
   // 통계: 날짜 집계는 매장 운영 기준인 한국시간 자정에 맞춘다.
-  const today = getKoreanDateKey(now);
   const todayLabel = formatKoreanHeaderDate(now);
   const stats: DashboardStats = useMemo(() => ({
     totalOrders: orders.length,
@@ -983,8 +1046,63 @@ export function Dashboard() {
     })(),
   }), [orders, today]);
 
+  const todayOrders = useMemo(() => sortOperationalOrders(
+    orders.filter((order) => order.deliveryDate === today && getNormalizedOrderStatus(order) !== 'completed')
+  ), [orders, today]);
+  const currentMinutes = now.getHours() * 60 + now.getMinutes();
+  const nextTodayOrder = todayOrders.find((order) => getPickupMinutes(order.pickupTime) >= currentMinutes)
+    || todayOrders.find((order) => !order.pickupTime)
+    || null;
+  const todayRevenue = orders.filter((order) => order.deliveryDate === today).reduce((sum, order) => sum + order.totalPrice, 0);
+
+  const analyticsOrders = useMemo(() => {
+    if (analyticsPeriod === 'all') return orders;
+    const currentMonth = today.slice(0, 7);
+    const days = analyticsPeriod === '7d' ? 7 : 30;
+    const earliest = getKoreanDateKeyWithOffset(now, -(days - 1));
+    return orders.filter((order) => {
+      const created = getKoreanDateKey(order.createdAt);
+      return analyticsPeriod === 'month' ? created.startsWith(currentMonth) : created >= earliest && created <= today;
+    });
+  }, [analyticsPeriod, now, orders, today]);
+
+  const analyticsStats = useMemo(() => {
+    const revenue = analyticsOrders.reduce((sum, order) => sum + order.totalPrice, 0);
+    const counts: Record<string, number> = {};
+    analyticsOrders.forEach((order) => order.orderItems.forEach((item) => {
+      if (item.type !== 'meta') counts[item.name] = (counts[item.name] || 0) + item.quantity;
+    }));
+    return {
+      orders: analyticsOrders.length,
+      revenue,
+      average: analyticsOrders.length ? Math.round(revenue / analyticsOrders.length) : 0,
+      popularProducts: Object.entries(counts).sort(([, a], [, b]) => b - a).slice(0, 5).map(([name, count]) => ({ name, count })),
+    };
+  }, [analyticsOrders]);
+
+  const analyticsTrendData = useMemo(() => {
+    if (analyticsPeriod === '7d' || analyticsPeriod === '30d') {
+      const days = analyticsPeriod === '7d' ? 7 : 30;
+      return Array.from({ length: days }, (_, index) => {
+        const dateKey = getKoreanDateKeyWithOffset(now, index - days + 1);
+        const dayOrders = analyticsOrders.filter((order) => getKoreanDateKey(order.createdAt) === dateKey);
+        return { date: formatKoreanDateKeyShort(dateKey), orders: dayOrders.length, revenue: dayOrders.reduce((sum, order) => sum + order.totalPrice, 0) };
+      });
+    }
+    const grouped = new Map<string, Order[]>();
+    analyticsOrders.forEach((order) => {
+      const key = getKoreanDateKey(order.createdAt);
+      grouped.set(key, [...(grouped.get(key) || []), order]);
+    });
+    return Array.from(grouped.entries()).sort(([a], [b]) => a.localeCompare(b)).map(([dateKey, dayOrders]) => ({
+      date: formatKoreanDateKeyShort(dateKey),
+      orders: dayOrders.length,
+      revenue: dayOrders.reduce((sum, order) => sum + order.totalPrice, 0),
+    }));
+  }, [analyticsOrders, analyticsPeriod, now]);
+
   const formatCurrency = (amount: number) => `${amount.toLocaleString('ko-KR')}원`;
-  const hasActiveOrderFilters = Boolean(searchQuery) || statusFilter !== 'all';
+  const hasActiveOrderFilters = Boolean(searchQuery) || statusFilter !== 'all' || productFilter !== 'all' || dateFilter !== 'all';
   const hasOnlyCompletedOrders = !hasActiveOrderFilters && statusCounts.all === 0 && statusCounts.completed > 0;
   const headerOrderSummary = statusFilter === 'all'
     ? `${filteredOrders.length}건 진행 주문`
@@ -1018,10 +1136,10 @@ export function Dashboard() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-xl md:text-2xl font-black text-foreground tracking-tight">
-              🍪 주문 관리
+              주문 관리
             </h1>
             <p className="text-xs text-muted-foreground mt-0.5">
-              {headerOrderSummary} • {todayLabel} • 한국시간 기준
+              {todayLabel} · 진행 주문 {statusCounts.all}건 <span className="hidden sm:inline">· 한국시간</span>
             </p>
           </div>
           <div className="flex items-center gap-1.5">
@@ -1064,10 +1182,19 @@ export function Dashboard() {
         </div>
 
         {/* 오늘의 요약 */}
-        {ordersLoading ? <TodaySummaryCardsSkeleton /> : <TodaySummaryCards stats={stats} />}
+        {ordersLoading ? <TodaySummaryCardsSkeleton /> : (
+          <TodayOperationsBoard
+            stats={stats}
+            nextOrder={nextTodayOrder}
+            todayRevenue={todayRevenue}
+            onToday={() => { setActiveDashboardTab('orders'); setStatusFilter('all'); setDateFilter('today'); }}
+            onUnpaid={() => { setActiveDashboardTab('orders'); setStatusFilter('pending'); setDateFilter('all'); }}
+            onProduction={() => { setActiveDashboardTab('orders'); setStatusFilter('in_production'); setDateFilter('all'); }}
+          />
+        )}
 
         {/* 메인 탭 */}
-        <Tabs defaultValue="orders" className="w-full">
+        <Tabs value={activeDashboardTab} onValueChange={setActiveDashboardTab} className="w-full">
           <TabsList className="grid w-full grid-cols-3 h-11 rounded-xl">
             <TabsTrigger value="orders" className="text-xs md:text-sm font-semibold rounded-lg">📦 주문</TabsTrigger>
             <TabsTrigger value="calendar" className="text-xs md:text-sm font-semibold rounded-lg">📅 캘린더</TabsTrigger>
@@ -1076,7 +1203,7 @@ export function Dashboard() {
 
           {/* ===== 주문 목록 탭 ===== */}
           <TabsContent value="orders" className="space-y-3 mt-3">
-            {/* 검색 + 필터 */}
+            <div className="sticky top-0 z-30 -mx-3 space-y-2 border-b border-slate-200 bg-white/95 px-3 py-2 backdrop-blur md:static md:mx-0 md:border-0 md:bg-transparent md:px-0 md:py-0">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <Input
@@ -1085,16 +1212,34 @@ export function Dashboard() {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-9 h-10 rounded-xl border-muted"
+                />
+              </div>
+
+              <StatusFilterTabs
+                activeFilter={statusFilter}
+                onFilterChange={setStatusFilter}
+                counts={statusCounts}
               />
+
+              <div className="flex gap-2 overflow-x-auto pb-1">
+                <select value={productFilter} onChange={(event) => setProductFilter(event.target.value)} aria-label="상품 필터" className="h-9 min-w-[120px] rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold">
+                  <option value="all">전체 상품</option>
+                  <option value="brookie">브루키</option>
+                  <option value="cookie7">꾸덕쿠키</option>
+                  <option value="lucky">럭키</option>
+                </select>
+                <select value={dateFilter} onChange={(event) => setDateFilter(event.target.value)} aria-label="일정 필터" className="h-9 min-w-[112px] rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold">
+                  <option value="all">전체 일정</option>
+                  <option value="today">오늘</option>
+                  <option value="tomorrow">내일</option>
+                  <option value="week">이번주</option>
+                </select>
+              </div>
             </div>
 
             <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
               <div className="min-w-0 flex-1">
-                <StatusFilterTabs
-                  activeFilter={statusFilter}
-                  onFilterChange={setStatusFilter}
-                  counts={statusCounts}
-                />
+                <p className="text-xs font-semibold text-slate-500">{headerOrderSummary}</p>
               </div>
 
               {!ordersLoading && filteredOrders.length > 0 && (
@@ -1184,6 +1329,8 @@ export function Dashboard() {
                         onClick={() => {
                           setSearchQuery('');
                           setStatusFilter('all');
+                          setProductFilter('all');
+                          setDateFilter('all');
                         }}
                       >
                         <Filter className="w-4 h-4 mr-2" />
@@ -1220,6 +1367,7 @@ export function Dashboard() {
                     onAdvanceStatus={advanceOrderStatus}
                     onUpdatePaymentMethod={updatePaymentMethod}
                     onDelete={handleDeleteOrder}
+                    todayKey={today}
                   />
                 ))}
               </div>
@@ -1240,6 +1388,18 @@ export function Dashboard() {
 
           {/* ===== 분석 탭 ===== */}
           <TabsContent value="analytics" className="space-y-4 mt-3">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="grid flex-1 grid-cols-3 gap-2">
+                <div className="rounded-xl border bg-white p-3"><p className="text-lg font-black">{analyticsStats.orders}건</p><p className="text-[10px] text-slate-500">주문</p></div>
+                <div className="rounded-xl border bg-white p-3"><p className="text-sm font-black sm:text-lg">{formatCurrency(analyticsStats.revenue)}</p><p className="text-[10px] text-slate-500">매출</p></div>
+                <div className="rounded-xl border bg-white p-3"><p className="text-sm font-black sm:text-lg">{formatCurrency(analyticsStats.average)}</p><p className="text-[10px] text-slate-500">평균 주문금액</p></div>
+              </div>
+              <div className="flex rounded-xl border bg-white p-1" aria-label="분석 기간">
+                {([['7d', '7일'], ['30d', '30일'], ['month', '이번 달'], ['all', '전체']] as const).map(([key, label]) => (
+                  <button key={key} type="button" aria-pressed={analyticsPeriod === key} onClick={() => setAnalyticsPeriod(key)} className={`rounded-lg px-2.5 py-2 text-xs font-semibold ${analyticsPeriod === key ? 'bg-slate-900 text-white' : 'text-slate-600 hover:bg-slate-50'}`}>{label}</button>
+                ))}
+              </div>
+            </div>
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
               {/* 인기 제품 */}
               <Card>
@@ -1247,12 +1407,12 @@ export function Dashboard() {
                   <CardTitle className="text-base">🏆 인기 제품</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  {stats.popularProducts.length === 0 ? (
+                  {analyticsStats.popularProducts.length === 0 ? (
                     <div className="text-center py-8 text-muted-foreground text-sm">분석할 데이터가 없습니다.</div>
                   ) : (
                     <div className="h-48 md:h-56">
                       <ResponsiveContainer width="100%" height="100%">
-                        <BarChart data={stats.popularProducts}>
+                        <BarChart data={analyticsStats.popularProducts}>
                           <CartesianGrid strokeDasharray="3 3" />
                           <XAxis dataKey="name" tick={{ fontSize: 10 }} angle={-20} textAnchor="end" height={50} interval={0} />
                           <YAxis tick={{ fontSize: 10 }} />
@@ -1268,24 +1428,15 @@ export function Dashboard() {
               {/* 일별 추이 */}
               <Card>
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-base">📈 최근 7일</CardTitle>
+                  <CardTitle className="text-base">주문 추이 · {analyticsPeriod === '30d' ? '30일' : analyticsPeriod === 'month' ? '이번 달' : analyticsPeriod === 'all' ? '최근 7일' : '7일'}</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  {(() => {
-                    const last7Days = [];
-                    for (let i = 6; i >= 0; i--) {
-                      const dateKey = getKoreanDateKeyWithOffset(now, -i);
-                      const dayOrders = orders.filter(o => getKoreanDateKey(o.createdAt) === dateKey);
-                      last7Days.push({
-                        date: formatKoreanDateKeyShort(dateKey),
-                        orders: dayOrders.length,
-                        revenue: dayOrders.reduce((sum, o) => sum + o.totalPrice, 0)
-                      });
-                    }
-                    return (
+                  {analyticsTrendData.length === 0 ? (
+                    <div className="py-8 text-center text-sm text-muted-foreground">분석할 데이터가 없습니다.</div>
+                  ) : (
                       <div className="h-48 md:h-56">
                         <ResponsiveContainer width="100%" height="100%">
-                          <LineChart data={last7Days}>
+                          <LineChart data={analyticsTrendData}>
                             <CartesianGrid strokeDasharray="3 3" />
                             <XAxis dataKey="date" tick={{ fontSize: 10 }} />
                             <YAxis tick={{ fontSize: 10 }} />
@@ -1297,8 +1448,7 @@ export function Dashboard() {
                           </LineChart>
                         </ResponsiveContainer>
                       </div>
-                    );
-                  })()}
+                  )}
                 </CardContent>
               </Card>
             </div>
@@ -1312,7 +1462,7 @@ export function Dashboard() {
                 <CardContent>
                   {(() => {
                     const productRevenue: Record<string, number> = {};
-                    orders.forEach(o => o.orderItems.forEach(i => {
+                    analyticsOrders.forEach(o => o.orderItems.forEach(i => {
                       if (i.type !== 'meta') productRevenue[i.name] = (productRevenue[i.name] || 0) + (i.price * i.quantity);
                     }));
                     const pieData = Object.entries(productRevenue).sort(([, a], [, b]) => b - a).slice(0, 5).map(([name, v]) => ({ name, value: v }));
@@ -1320,17 +1470,25 @@ export function Dashboard() {
                     return pieData.length === 0 ? (
                       <div className="text-center py-8 text-muted-foreground text-sm">매출 데이터 없음</div>
                     ) : (
-                      <div className="h-48 md:h-56">
+                      <div>
+                        <div className="h-44 md:h-52">
                         <ResponsiveContainer width="100%" height="100%">
                           <PieChart>
-                            <Pie data={pieData} cx="50%" cy="50%" outerRadius={65} fill="#8884d8" dataKey="value"
-                              label={({ name, percent }) => `${name.length > 5 ? name.substring(0, 5) + '..' : name} ${(percent * 100).toFixed(0)}%`}
-                            >
+                            <Pie data={pieData} cx="50%" cy="50%" outerRadius={65} fill="#8884d8" dataKey="value">
                               {pieData.map((_, i) => (<Cell key={i} fill={colors[i % colors.length]} />))}
                             </Pie>
                             <Tooltip formatter={(v) => [formatCurrency(Number(v)), '매출']} />
                           </PieChart>
                         </ResponsiveContainer>
+                        </div>
+                        <div className="grid gap-1.5 sm:grid-cols-2">
+                          {pieData.map((item, index) => (
+                            <div key={item.name} className="flex items-center justify-between gap-2 text-xs">
+                              <span className="flex min-w-0 items-center gap-2"><i className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: colors[index % colors.length] }} /><span className="truncate">{item.name}</span></span>
+                              <strong>{formatCurrency(item.value)}</strong>
+                            </div>
+                          ))}
+                        </div>
                       </div>
                     );
                   })()}
@@ -1343,11 +1501,9 @@ export function Dashboard() {
                 </CardHeader>
                 <CardContent className="space-y-2">
                   {[
-                    { l: '총 주문', v: `${stats.totalOrders}건`, c: '' },
-                    { l: '오늘 주문', v: `${stats.todayOrders}건`, c: 'text-blue-600' },
-                    { l: '평균 금액', v: orders.length > 0 ? formatCurrency(Math.round(stats.totalRevenue / orders.length)) : '0원', c: '' },
-                    { l: '총 매출', v: formatCurrency(stats.totalRevenue), c: 'text-green-600 font-bold' },
-                    { l: '미입금 건', v: `${stats.unpaidCount}건`, c: stats.unpaidCount > 0 ? 'text-red-600 font-bold' : '' },
+                    { l: '주문', v: `${analyticsStats.orders}건`, c: '' },
+                    { l: '평균 금액', v: formatCurrency(analyticsStats.average), c: '' },
+                    { l: '매출', v: formatCurrency(analyticsStats.revenue), c: 'text-green-600 font-bold' },
                   ].map((item, i) => (
                     <div key={i} className="flex justify-between items-center p-2.5 bg-muted/30 rounded-lg">
                       <span className="text-sm">{item.l}</span>

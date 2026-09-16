@@ -110,7 +110,9 @@ export function CalendarView({ orders, onOrderClick }: CalendarViewProps) {
     };
 
     // 선택된 날짜의 주문들
-    const selectedOrders = selectedDate ? (ordersByDate[selectedDate] || []) : [];
+    const selectedOrders = selectedDate
+        ? [...(ordersByDate[selectedDate] || [])].sort((a, b) => (a.pickupTime || '99:99').localeCompare(b.pickupTime || '99:99'))
+        : [];
 
     return (
         <div className="space-y-4 pb-8">
@@ -160,7 +162,7 @@ export function CalendarView({ orders, onOrderClick }: CalendarViewProps) {
                             className={`
                                 relative min-h-[60px] md:min-h-[100px] p-1 md:p-2 bg-background transition-all hover:bg-accent/50 text-left flex flex-col items-start justify-between
                                 ${!isCurrentMonthDay ? 'text-muted-foreground bg-muted/10' : ''}
-                                ${isSelected ? 'ring-2 ring-primary ring-inset z-10' : ''}
+                                ${isSelected ? 'ring-2 ring-blue-500 ring-inset z-10 bg-blue-50/60' : ''}
                             `}
                         >
                             <span className={`
@@ -172,14 +174,12 @@ export function CalendarView({ orders, onOrderClick }: CalendarViewProps) {
 
                             {dayOrders.length > 0 && (
                                 <div className="mt-auto flex w-full flex-col gap-1">
-                                    <div className="flex flex-wrap gap-1">
+                                    <div className="flex items-center gap-1">
                                         <span className="inline-flex items-center rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] font-semibold text-primary">
-                                            {daySummary.totalCount}건
+                                            주문 {daySummary.totalCount}
                                         </span>
                                         {daySummary.unpaidCount > 0 && (
-                                            <span className="inline-flex items-center rounded-full bg-red-100 px-1.5 py-0.5 text-[10px] font-semibold text-red-700">
-                                                미입금 {daySummary.unpaidCount}
-                                            </span>
+                                            <span className="h-2 w-2 rounded-full bg-red-500" aria-label={`미입금 ${daySummary.unpaidCount}건`} />
                                         )}
                                     </div>
                                     <div className="hidden md:flex flex-wrap gap-1">
@@ -204,56 +204,31 @@ export function CalendarView({ orders, onOrderClick }: CalendarViewProps) {
             {/* 선택된 날짜의 주문 목록 */}
             {selectedDate && (
                 <div className="mt-6">
-                    <h3 className="text-lg font-semibold mb-4">
-                        {format(new Date(selectedDate), 'M월 d일 (EEEE)', { locale: ko })}
-                    </h3>
+                    <div className="mb-4 flex items-end justify-between gap-3">
+                        <h3 className="text-lg font-semibold">{format(new Date(selectedDate), 'M월 d일 EEEE', { locale: ko })}</h3>
+                        <span className="text-sm font-semibold text-muted-foreground">{selectedOrders.length}건</span>
+                    </div>
 
                     {selectedOrders.length === 0 ? (
                         <div className="text-center py-8 text-muted-foreground">
                             이 날짜에 예정된 배송이 없습니다.
                         </div>
                     ) : (
-                        <div className="space-y-3">
+                        <div className="space-y-2">
                             {selectedOrders.map((order) => (
-                                <Card
+                                <button
                                     key={order.id}
-                                    className="cursor-pointer hover:shadow-md transition-shadow"
+                                    type="button"
+                                    className="grid w-full grid-cols-[56px_minmax(0,1fr)_auto] items-center gap-3 rounded-xl border bg-white p-3 text-left transition-colors hover:bg-slate-50"
                                     onClick={() => onOrderClick(order)}
                                 >
-                                    <CardContent className="p-4">
-                                        <div className="flex flex-col gap-2">
-                                            {/* 첫째 줄: 고객명 + 입금확인 + 상세정보 */}
-                                            <div className="flex items-center gap-2">
-                                                <h4 className="font-semibold text-base">
-                                                    {order.customerName}
-                                                </h4>
-                                                {order.paymentConfirmed === 1 && (
-                                                    <Badge variant="default" className="text-xs bg-blue-500 hover:bg-blue-600">
-                                                        입금확인
-                                                    </Badge>
-                                                )}
-                                                {!order.paymentConfirmed && order.orderStatus !== 'completed' && (
-                                                    <Badge variant="outline" className="text-xs border-red-200 bg-red-50 text-red-600">
-                                                        미입금
-                                                    </Badge>
-                                                )}
-                                                <Badge variant="outline" className="text-xs text-muted-foreground hover:bg-accent cursor-pointer">
-                                                    상세정보 <ChevronRight className="w-3 h-3 ml-1" />
-                                                </Badge>
-                                            </div>
-
-                                            {/* 둘째 줄: 픽업/배송 구분 + 시간 */}
-                                            <div className="flex items-center gap-2 text-sm">
-                                                <Badge variant="outline" className="text-xs font-normal">
-                                                    {order.deliveryMethod === 'quick' ? '퀵배송' : '매장 픽업'}
-                                                </Badge>
-                                                <span className="font-medium">
-                                                    {order.pickupTime || '시간 미지정'}
-                                                </span>
-                                            </div>
-                                        </div>
-                                    </CardContent>
-                                </Card>
+                                    <span className="text-sm font-black text-slate-900">{order.pickupTime || '미정'}</span>
+                                    <span className="min-w-0">
+                                        <strong className="block truncate text-sm">{order.customerName} · {order.orderItems.find((item) => item.type !== 'meta')?.name || '주문'}</strong>
+                                        <small className="mt-1 block text-xs text-slate-500">{order.deliveryMethod === 'quick' ? '퀵배송' : '픽업'} · {order.paymentConfirmed ? '입금완료' : '미입금'}</small>
+                                    </span>
+                                    <ChevronRight className="h-4 w-4 text-slate-400" />
+                                </button>
                             ))}
                         </div>
                     )}
