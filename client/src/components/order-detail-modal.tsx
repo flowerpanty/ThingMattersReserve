@@ -1,4 +1,4 @@
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
+import { Sheet, SheetClose, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
@@ -736,7 +736,16 @@ export function OrderDetailModal({ order, isOpen, onClose, onDelete }: OrderDeta
         <Sheet open={isOpen} onOpenChange={(open) => { if (!open) onClose(); }}>
             <SheetContent side="right" className="w-[min(100vw,640px)] max-w-none overflow-y-auto p-0 sm:max-w-[640px]">
                 <SheetHeader className="sticky top-0 z-20 border-b bg-background/95 px-5 py-4 pr-12 text-left backdrop-blur">
-                    <div className="flex items-start justify-between gap-3">
+                    <SheetClose asChild>
+                        <button
+                            type="button"
+                            className="inline-flex min-h-11 items-center rounded-xl px-3 text-sm font-bold text-slate-700 transition-colors hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400"
+                        >
+                            <span aria-hidden="true" className="mr-1.5 text-base">←</span>
+                            주문 목록
+                        </button>
+                    </SheetClose>
+                    <div className="mt-2 flex items-start justify-between gap-3">
                         <div className="min-w-0">
                             <SheetTitle className="flex min-w-0 items-center gap-2 text-xl font-bold">
                                 <Package className="h-5 w-5 shrink-0" />
