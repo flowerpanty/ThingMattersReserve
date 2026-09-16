@@ -401,6 +401,7 @@ function TodayOperationsBoard({
   onToday,
   onUnpaid,
   onProduction,
+  onOpenNext,
 }: {
   stats: DashboardStats;
   nextOrder: Order | null;
@@ -408,6 +409,7 @@ function TodayOperationsBoard({
   onToday: () => void;
   onUnpaid: () => void;
   onProduction: () => void;
+  onOpenNext: (order: Order) => void;
 }) {
   const source = nextOrder ? getLandingSourceInfo(nextOrder) : null;
   const cards = [
@@ -418,7 +420,8 @@ function TodayOperationsBoard({
 
   return (
     <section aria-labelledby="today-board-title" className="grid gap-2 md:grid-cols-[1.35fr_1fr] md:gap-3">
-      <button type="button" onClick={onToday} className="rounded-2xl border border-blue-200 bg-blue-50/70 p-4 text-left transition-colors hover:bg-blue-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500">
+      <div className="overflow-hidden rounded-2xl border border-blue-200 bg-blue-50/70">
+        <button type="button" onClick={onToday} className="block w-full p-4 text-left transition-colors hover:bg-blue-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500">
         <div className="flex items-center justify-between gap-3">
           <div>
             <p id="today-board-title" className="text-sm font-semibold text-blue-700">오늘 수령</p>
@@ -426,16 +429,30 @@ function TodayOperationsBoard({
           </div>
           <CalendarDays className="h-7 w-7 text-blue-600" />
         </div>
-        <div className="mt-4 rounded-xl border border-blue-100 bg-white/80 p-3">
-          <p className="text-[11px] font-semibold text-slate-500">다음 수령/배송</p>
-          {nextOrder ? (
-            <>
-              <p className="mt-1 text-base font-bold text-slate-900">{nextOrder.pickupTime || '시간 미지정'} · {nextOrder.customerName}</p>
-              <p className="mt-0.5 text-xs text-slate-600">{source?.label || getOrderItemSummary(nextOrder)} · {getOrderItemSummary(nextOrder)}</p>
-            </>
-          ) : <p className="mt-1 text-sm font-semibold text-slate-600">오늘 남은 수령 일정 없음</p>}
+        </button>
+        <div className="mx-4 mb-4 rounded-xl border border-blue-100 bg-white/80 p-3">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <p className="text-[11px] font-semibold text-slate-500">다음 수령/배송</p>
+              {nextOrder ? (
+                <>
+                  <p className="mt-1 truncate text-base font-bold text-slate-900">{nextOrder.pickupTime || '시간 미지정'} · {nextOrder.customerName}</p>
+                  <p className="mt-0.5 truncate text-xs text-slate-600">{source?.label || getOrderItemSummary(nextOrder)} · {getOrderItemSummary(nextOrder)}</p>
+                </>
+              ) : <p className="mt-1 text-sm font-semibold text-slate-600">오늘 남은 수령 일정 없음</p>}
+            </div>
+            {nextOrder && (
+              <button
+                type="button"
+                onClick={() => onOpenNext(nextOrder)}
+                className="shrink-0 rounded-lg px-2 py-1 text-xs font-semibold text-blue-700 transition-colors hover:bg-blue-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+              >
+                상세 보기 →
+              </button>
+            )}
+          </div>
         </div>
-      </button>
+      </div>
       <div className="grid grid-cols-3 gap-2 md:grid-cols-1">
         {cards.map((card) => (
           <button key={card.label} type="button" onClick={card.onClick} className="rounded-xl border border-slate-200 bg-white p-3 text-left transition-colors hover:bg-slate-50 disabled:cursor-default" disabled={!card.onClick}>
@@ -450,36 +467,50 @@ function TodayOperationsBoard({
 
 function TodaySummaryCardsSkeleton() {
   return (
-    <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 md:gap-3">
-      {Array.from({ length: 4 }).map((_, index) => (
-        <div key={index} className="rounded-xl border bg-white p-3">
-          <Skeleton className="h-5 w-5 mx-auto mb-2 rounded-full" />
-          <Skeleton className="h-7 w-12 mx-auto mb-2" />
-          <Skeleton className="h-3 w-16 mx-auto" />
+    <div className="grid gap-2 md:grid-cols-[1.35fr_1fr] md:gap-3">
+      <div className="rounded-2xl border border-blue-100 bg-blue-50/50 p-4">
+        <div className="flex items-start justify-between">
+          <div className="space-y-2">
+            <Skeleton className="h-4 w-16" />
+            <Skeleton className="h-8 w-14" />
+          </div>
+          <Skeleton className="h-7 w-7 rounded-full" />
         </div>
-      ))}
+        <div className="mt-4 rounded-xl border border-blue-100 bg-white/70 p-3">
+          <Skeleton className="h-3 w-20" />
+          <Skeleton className="mt-2 h-5 w-36" />
+          <Skeleton className="mt-2 h-3 w-44" />
+        </div>
+      </div>
+      <div className="grid grid-cols-3 gap-2 md:grid-cols-1">
+        {Array.from({ length: 3 }).map((_, index) => (
+          <div key={index} className="rounded-xl border bg-white p-3">
+            <Skeleton className="h-6 w-14" />
+            <Skeleton className="mt-2 h-3 w-16" />
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
 
 function OrdersListSkeleton() {
   return (
-    <div className="space-y-3">
+    <div className="space-y-2">
       {Array.from({ length: 4 }).map((_, index) => (
-        <div key={index} className="rounded-xl border bg-white p-4">
+        <div key={index} className="rounded-2xl border bg-white p-3.5 sm:p-4">
           <div className="flex items-start justify-between gap-3">
-            <div className="flex items-start gap-3 flex-1">
-              <Skeleton className="h-5 w-5 rounded-md mt-1" />
-              <div className="space-y-2 flex-1">
-                <Skeleton className="h-5 w-28" />
-                <Skeleton className="h-4 w-44" />
-                <Skeleton className="h-3 w-36" />
-              </div>
+            <div className="space-y-2">
+              <Skeleton className="h-5 w-28" />
+              <Skeleton className="h-5 w-32 rounded-full" />
             </div>
-            <div className="space-y-2 text-right">
-              <Skeleton className="h-5 w-20 ml-auto" />
-              <Skeleton className="h-3 w-14 ml-auto" />
-            </div>
+            <Skeleton className="h-6 w-20" />
+          </div>
+          <Skeleton className="mt-3 h-4 w-44" />
+          <Skeleton className="mt-2 h-6 w-24 rounded-full" />
+          <div className="mt-3 flex gap-2">
+            <Skeleton className="h-11 w-16 rounded-xl" />
+            <Skeleton className="h-11 flex-1 rounded-xl" />
           </div>
         </div>
       ))}
@@ -628,87 +659,116 @@ function OrderCard({
                   </Badge>
                 )}
               </div>
-
-              <div className="mt-2 flex flex-wrap gap-1.5">
-                <Badge className={`rounded-full border px-2.5 py-0.5 text-[11px] font-semibold shadow-none ${urgency.tone}`}>
-                  {urgency.label}{order.pickupTime ? ` · ${order.pickupTime}` : ''}
-                </Badge>
-                <Badge className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-0.5 text-[11px] font-medium text-slate-600 shadow-none">
-                  {order.deliveryMethod === 'quick' ? '퀵배송' : '매장픽업'}
-                </Badge>
-              </div>
-
-              <div className={`mt-2 inline-flex rounded-full border px-2.5 py-1 text-xs font-bold ${statusMessage.tone}`}>
-                {statusMessage.text}
-              </div>
-              <p className="mt-2 truncate text-sm font-semibold text-slate-700">{itemSummary}</p>
             </div>
 
-            <div className="flex shrink-0 items-start gap-2">
-              <div className="text-right">
-                <div className="text-xl font-semibold tracking-tight text-slate-900 sm:text-2xl">
-                  {order.totalPrice.toLocaleString()}원
-                </div>
-
-                {!isSelectionMode ? (
-                  <div onClick={(e) => e.stopPropagation()}>
-                    <div className="mt-2 flex items-center justify-end gap-1.5">
-                      {previousAction && (
-                        <button
-                          type="button"
-                          onClick={() => onAdvanceStatus(order, previousAction)}
-                          className="inline-flex min-h-11 items-center justify-center rounded-xl border border-slate-200 bg-white px-3 text-xs font-medium text-slate-600 transition-colors hover:bg-slate-50"
-                        >
-                          {previousAction.label}
-                        </button>
-                      )}
-                      <button
-                        type="button"
-                        onClick={() => onAdvanceStatus(order)}
-                        disabled={progressControl.disabled}
-                        aria-label={`${order.customerName} ${progressControl.label}`}
-                        title={progressControl.description}
-                        className={`
-                          inline-flex min-h-11 items-center justify-center rounded-xl border px-4 text-sm font-semibold transition-all
-                          ${progressControl.tone}
-                          ${progressControl.disabled ? 'cursor-default opacity-80' : ''}
-                        `}
-                      >
-                        {progressControl.label}
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  <label
-                    onClick={(e) => e.stopPropagation()}
-                    className={`
-                      mt-2 inline-flex min-h-11 items-center gap-2 rounded-xl border px-3 text-xs font-semibold transition-colors
-                      ${isSelected ? 'border-red-200 bg-red-50 text-red-700' : 'border-slate-200 bg-white text-slate-600'}
-                    `}
-                    title="삭제할 주문 선택"
-                  >
-                    <Checkbox
-                      checked={isSelected}
-                      onCheckedChange={(checked) => onToggleSelect(order.id, checked === true)}
-                      aria-label={`${order.customerName} 주문 삭제 선택`}
-                    />
-                    삭제 선택
-                  </label>
-                )}
+            <div className="flex shrink-0 items-start gap-1">
+              <div className="text-right text-xl font-semibold tracking-tight text-slate-900 sm:text-2xl">
+                {order.totalPrice.toLocaleString()}원
               </div>
-
               <button
+                type="button"
                 onClick={(e) => { e.stopPropagation(); setExpanded(!expanded); }}
-                className="rounded-full p-2 text-slate-500 hover:bg-slate-100"
+                aria-expanded={expanded}
+                aria-label={`${order.customerName} 주문 상세 ${expanded ? '접기' : '펼치기'}`}
+                className="inline-flex h-9 w-9 items-center justify-center rounded-full text-slate-500 transition-colors hover:bg-slate-100"
               >
                 {expanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
               </button>
             </div>
           </div>
 
-          <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-xs text-slate-500">
-            <span>{formatDeliveryDate(order.deliveryDate)}</span>
-            <span>{order.customerContact}</span>
+          <div className="mt-2 flex flex-wrap gap-1.5">
+            <Badge className={`rounded-full border px-2.5 py-0.5 text-[11px] font-semibold shadow-none ${urgency.tone}`}>
+              {urgency.label}{order.pickupTime ? ` · ${order.pickupTime}` : ''}
+            </Badge>
+            <Badge className="rounded-full border border-slate-200 bg-slate-50 px-2.5 py-0.5 text-[11px] font-medium text-slate-600 shadow-none">
+              {order.deliveryMethod === 'quick' ? '퀵배송' : '매장픽업'}
+            </Badge>
+          </div>
+
+          <p className="mt-2 truncate text-sm font-semibold text-slate-700">{itemSummary}</p>
+          <div className={`mt-2 inline-flex rounded-full border px-2.5 py-1 text-xs font-bold ${statusMessage.tone}`}>
+            {statusMessage.text}
+          </div>
+
+          {isSelectionMode ? (
+            <label
+              onClick={(e) => e.stopPropagation()}
+              className={`mt-3 flex min-h-11 items-center justify-center gap-2 rounded-xl border px-3 text-xs font-semibold transition-colors sm:hidden ${isSelected ? 'border-red-200 bg-red-50 text-red-700' : 'border-slate-200 bg-white text-slate-600'}`}
+              title="삭제할 주문 선택"
+            >
+              <Checkbox
+                checked={isSelected}
+                onCheckedChange={(checked) => onToggleSelect(order.id, checked === true)}
+                aria-label={`${order.customerName} 주문 삭제 선택`}
+              />
+              삭제 선택
+            </label>
+          ) : (
+            <div className="mt-3 flex gap-2 sm:hidden" onClick={(e) => e.stopPropagation()}>
+              {previousAction && (
+                <button
+                  type="button"
+                  onClick={() => onAdvanceStatus(order, previousAction)}
+                  className="inline-flex min-h-11 items-center justify-center rounded-xl border border-slate-200 bg-white px-3 text-xs font-medium text-slate-600 transition-colors hover:bg-slate-50"
+                >
+                  {previousAction.label}
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={() => onAdvanceStatus(order)}
+                disabled={progressControl.disabled}
+                aria-label={`${order.customerName} ${progressControl.label}`}
+                title={progressControl.description}
+                className={`inline-flex min-h-11 flex-1 items-center justify-center rounded-xl border px-4 text-sm font-semibold transition-all ${progressControl.tone} ${progressControl.disabled ? 'cursor-default opacity-80' : ''}`}
+              >
+                {progressControl.label}
+              </button>
+            </div>
+          )}
+
+          <div className="mt-3 hidden items-center justify-between gap-3 border-t border-slate-100 pt-3 sm:flex">
+            <div className="flex min-w-0 items-center gap-x-3 text-xs text-slate-500">
+              <span>{formatDeliveryDate(order.deliveryDate)}</span>
+              <span className="truncate">{order.customerContact}</span>
+            </div>
+            {isSelectionMode ? (
+              <label
+                onClick={(e) => e.stopPropagation()}
+                className={`inline-flex min-h-11 shrink-0 items-center gap-2 rounded-xl border px-3 text-xs font-semibold transition-colors ${isSelected ? 'border-red-200 bg-red-50 text-red-700' : 'border-slate-200 bg-white text-slate-600'}`}
+                title="삭제할 주문 선택"
+              >
+                <Checkbox
+                  checked={isSelected}
+                  onCheckedChange={(checked) => onToggleSelect(order.id, checked === true)}
+                  aria-label={`${order.customerName} 주문 삭제 선택`}
+                />
+                삭제 선택
+              </label>
+            ) : (
+              <div className="flex shrink-0 items-center gap-1.5" onClick={(e) => e.stopPropagation()}>
+                {previousAction && (
+                  <button
+                    type="button"
+                    onClick={() => onAdvanceStatus(order, previousAction)}
+                    className="inline-flex min-h-11 items-center justify-center rounded-xl border border-slate-200 bg-white px-3 text-xs font-medium text-slate-600 transition-colors hover:bg-slate-50"
+                  >
+                    {previousAction.label}
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => onAdvanceStatus(order)}
+                  disabled={progressControl.disabled}
+                  aria-label={`${order.customerName} ${progressControl.label}`}
+                  title={progressControl.description}
+                  className={`inline-flex min-h-11 items-center justify-center rounded-xl border px-4 text-sm font-semibold transition-all ${progressControl.tone} ${progressControl.disabled ? 'cursor-default opacity-80' : ''}`}
+                >
+                  {progressControl.label}
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -1131,6 +1191,16 @@ export function Dashboard() {
 
   const formatCurrency = (amount: number) => `${amount.toLocaleString('ko-KR')}원`;
   const hasActiveOrderFilters = Boolean(searchQuery) || statusFilter !== 'all' || productFilter !== 'all' || dateFilter !== 'all';
+  const activeFilterCount = Number(Boolean(searchQuery)) + Number(statusFilter !== 'all') + Number(productFilter !== 'all') + Number(dateFilter !== 'all');
+  const analyticsXAxisInterval = analyticsPeriod === '7d'
+    ? 0
+    : Math.max(0, Math.ceil(analyticsTrendData.length / 6) - 1);
+  const resetOrderFilters = () => {
+    setSearchQuery('');
+    setStatusFilter('all');
+    setProductFilter('all');
+    setDateFilter('all');
+  };
   const hasOnlyCompletedOrders = !hasActiveOrderFilters && statusCounts.all === 0 && statusCounts.completed > 0;
   const headerOrderSummary = statusFilter === 'all'
     ? `${filteredOrders.length}건 진행 주문`
@@ -1218,6 +1288,7 @@ export function Dashboard() {
             onToday={() => { setActiveDashboardTab('orders'); setStatusFilter('all'); setDateFilter('today'); }}
             onUnpaid={() => { setActiveDashboardTab('orders'); setStatusFilter('pending'); setDateFilter('all'); }}
             onProduction={() => { setActiveDashboardTab('orders'); setStatusFilter('in_production'); setDateFilter('all'); }}
+            onOpenNext={(order) => { setSelectedOrder(order); setIsModalOpen(true); }}
           />
         )}
 
@@ -1236,7 +1307,7 @@ export function Dashboard() {
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <Input
                 type="text"
-                placeholder="이름, 이메일 검색..."
+                placeholder="이름, 연락처, 주문번호 검색"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-9 h-10 rounded-xl border-muted"
@@ -1263,6 +1334,19 @@ export function Dashboard() {
                   <option value="week">이번주</option>
                 </select>
               </div>
+
+              {hasActiveOrderFilters && (
+                <div className="flex items-center justify-between gap-3 px-1 text-xs" aria-live="polite">
+                  <span className="font-semibold text-slate-600">필터 {activeFilterCount}개 적용 중</span>
+                  <button
+                    type="button"
+                    onClick={resetOrderFilters}
+                    className="min-h-8 rounded-lg px-2 text-xs font-semibold text-slate-600 transition-colors hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400"
+                  >
+                    초기화 ×
+                  </button>
+                </div>
+              )}
             </div>
 
             <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
@@ -1354,12 +1438,7 @@ export function Dashboard() {
                     ) : hasActiveOrderFilters ? (
                       <Button
                         variant="outline"
-                        onClick={() => {
-                          setSearchQuery('');
-                          setStatusFilter('all');
-                          setProductFilter('all');
-                          setDateFilter('all');
-                        }}
+                        onClick={resetOrderFilters}
                       >
                         <Filter className="w-4 h-4 mr-2" />
                         필터 초기화
@@ -1466,7 +1545,7 @@ export function Dashboard() {
                         <ResponsiveContainer width="100%" height="100%">
                           <LineChart data={analyticsTrendData}>
                             <CartesianGrid strokeDasharray="3 3" />
-                            <XAxis dataKey="date" tick={{ fontSize: 10 }} />
+                            <XAxis dataKey="date" tick={{ fontSize: 10 }} interval={analyticsXAxisInterval} minTickGap={18} />
                             <YAxis tick={{ fontSize: 10 }} />
                             <Tooltip formatter={(value, name) => {
                               if (name === 'orders') return [`${value}건`, '주문 수'];

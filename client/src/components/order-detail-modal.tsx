@@ -736,22 +736,27 @@ export function OrderDetailModal({ order, isOpen, onClose, onDelete }: OrderDeta
         <Sheet open={isOpen} onOpenChange={(open) => { if (!open) onClose(); }}>
             <SheetContent side="right" className="w-[min(100vw,640px)] max-w-none overflow-y-auto p-0 sm:max-w-[640px]">
                 <SheetHeader className="sticky top-0 z-20 border-b bg-background/95 px-5 py-4 pr-12 text-left backdrop-blur">
-                    <SheetTitle className="flex items-center gap-2 text-xl font-bold">
-                        <Package className="w-6 h-6" />
-                        {order.customerName}
-                        {landingSource && (
-                            <Badge className={`ml-1 rounded-full border px-2.5 py-0.5 text-xs font-semibold shadow-none ${landingSource.tone}`}>
-                                {landingSource.label}
-                            </Badge>
-                        )}
-                    </SheetTitle>
-                    <SheetDescription className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                        <span>{order.deliveryDate}{order.pickupTime ? ` · ${order.pickupTime}` : ''}</span>
-                        <span>·</span>
-                        <strong className="text-foreground">{formatCurrency(order.totalPrice)}</strong>
-                        <span className="text-xs">#{order.id.slice(0, 8)}</span>
-                        <Badge variant="outline" className="rounded-full bg-white text-[11px]">{getStatusLabel(order)}</Badge>
-                    </SheetDescription>
+                    <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                            <SheetTitle className="flex min-w-0 items-center gap-2 text-xl font-bold">
+                                <Package className="h-5 w-5 shrink-0" />
+                                <span className="truncate">{order.customerName}</span>
+                                {landingSource && (
+                                    <Badge className={`shrink-0 rounded-full border px-2.5 py-0.5 text-xs font-semibold shadow-none ${landingSource.tone}`}>
+                                        {landingSource.label}
+                                    </Badge>
+                                )}
+                            </SheetTitle>
+                            <SheetDescription className="mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-xs">
+                                <span>{order.deliveryDate}{order.pickupTime ? ` · ${order.pickupTime}` : ''} · {getDeliveryMethodText(order.deliveryMethod)}</span>
+                                <span className="text-[11px] text-muted-foreground">#{order.id.slice(0, 8)}</span>
+                            </SheetDescription>
+                        </div>
+                        <div className="shrink-0 text-right">
+                            <strong className="block text-base font-bold tracking-tight text-foreground">{formatCurrency(order.totalPrice)}</strong>
+                            <Badge variant="outline" className="mt-1 rounded-full bg-white text-[11px]">{getStatusLabel(order)}</Badge>
+                        </div>
+                    </div>
                 </SheetHeader>
 
                 <div className="space-y-6 px-5 py-5">
