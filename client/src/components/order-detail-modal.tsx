@@ -734,8 +734,8 @@ export function OrderDetailModal({ order, isOpen, onClose, onDelete }: OrderDeta
 
     return (
         <Sheet open={isOpen} onOpenChange={(open) => { if (!open) onClose(); }}>
-            <SheetContent side="right" className="w-[min(100vw,640px)] max-w-none overflow-y-auto p-0 sm:max-w-[640px]">
-                <SheetHeader className="sticky top-0 z-20 border-b bg-background/95 px-5 py-4 pr-12 text-left backdrop-blur">
+            <SheetContent side="right" className="w-[min(100vw,640px)] max-w-none overflow-y-auto p-0 [&>button:last-child]:hidden sm:max-w-[640px] sm:[&>button:last-child]:block">
+                <SheetHeader className="sticky top-0 z-20 border-b bg-background/95 px-5 pb-4 pr-5 pt-[calc(env(safe-area-inset-top)+12px)] text-left backdrop-blur sm:py-4 sm:pr-12">
                     <SheetClose asChild>
                         <button
                             type="button"
