@@ -65,13 +65,14 @@ interface OrderDetailModalProps {
 }
 
 export function OrderDetailModal({ order, isOpen, onClose, onDelete }: OrderDetailModalProps) {
-    if (!order) return null;
-
     const [isDeleting, setIsDeleting] = useState(false);
     const quoteTemplateRef = useRef<HTMLDivElement>(null);
     const [isDownloadingImage, setIsDownloadingImage] = useState(false);
     const [isCopyingToSheet, setIsCopyingToSheet] = useState(false);
     const { toast } = useToast();
+
+    if (!order) return null;
+
     const landingSource = getLandingSourceInfo(order);
 
     const closePreOpenedWindow = (openedWindow?: Window | null) => {

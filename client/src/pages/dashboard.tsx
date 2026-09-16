@@ -77,6 +77,13 @@ const koreanHeaderDateFormatter = new Intl.DateTimeFormat('ko-KR', {
   weekday: 'long',
 });
 
+const koreanTimeFormatter = new Intl.DateTimeFormat('en-US', {
+  timeZone: KOREA_TIME_ZONE,
+  hour: '2-digit',
+  minute: '2-digit',
+  hourCycle: 'h23',
+});
+
 function getKoreanDateKey(value: Date | string | number = new Date()) {
   const date = value instanceof Date ? value : new Date(value);
 
@@ -122,9 +129,27 @@ function getLandingSourceKey(order: Pick<Order, 'orderItems'>) {
   return String(meta.landingSource || meta.source || '');
 }
 
-function getPickupMinutes(value?: string) {
-  const match = value?.match(/(\d{1,2}):(\d{2})/);
-  return match ? Number(match[1]) * 60 + Number(match[2]) : Number.MAX_SAFE_INTEGER;
+function getKoreanTimeMinutes(value: Date = new Date()) {
+  const parts = koreanTimeFormatter.formatToParts(value);
+  const hour = Number(parts.find((part) => part.type === 'hour')?.value);
+  const minute = Number(parts.find((part) => part.type === 'minute')?.value);
+
+  return Number.isFinite(hour) && Number.isFinite(minute)
+    ? hour * 60 + minute
+    : 0;
+}
+
+function getPickupTimeBounds(value?: string) {
+  const times = (value?.match(/\d{1,2}:\d{2}/g) || []).map((time) => {
+    const [hour, minute] = time.split(':').map(Number);
+    return hour * 60 + minute;
+  });
+
+  if (!times.length) {
+    return { start: Number.MAX_SAFE_INTEGER, end: Number.MAX_SAFE_INTEGER };
+  }
+
+  return { start: times[0], end: times[times.length - 1] };
 }
 
 function getOrderItemSummary(order: Pick<Order, 'orderItems'>) {
@@ -139,7 +164,10 @@ function getDateUrgency(order: Pick<Order, 'deliveryDate' | 'pickupTime' | 'orde
   const today = new Date(`${todayKey}T00:00:00+09:00`).getTime();
   const diff = Number.isFinite(delivery) && Number.isFinite(today) ? Math.round((delivery - today) / DAY_IN_MS) : 99;
   const completed = getNormalizedOrderStatus(order) === 'completed';
-  const timePassed = diff === 0 && order.pickupTime && getPickupMinutes(order.pickupTime) < new Date().getHours() * 60 + new Date().getMinutes() && !completed;
+  const timePassed = diff === 0
+    && order.pickupTime
+    && getPickupTimeBounds(order.pickupTime).end < getKoreanTimeMinutes()
+    && !completed;
   const label = timePassed ? '시간 지남' : diff < 0 ? '지난 일정' : diff === 0 ? '오늘' : diff === 1 ? '내일' : `D-${diff}`;
   const tone = completed
     ? 'border-slate-200 bg-slate-50 text-slate-500'
@@ -155,7 +183,7 @@ function sortOperationalOrders(list: Order[], completed = false) {
     if (completed) return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
     const dateCompare = (a.deliveryDate || '9999-12-31').localeCompare(b.deliveryDate || '9999-12-31');
     if (dateCompare) return dateCompare;
-    const timeCompare = getPickupMinutes(a.pickupTime) - getPickupMinutes(b.pickupTime);
+    const timeCompare = getPickupTimeBounds(a.pickupTime).start - getPickupTimeBounds(b.pickupTime).start;
     if (timeCompare) return timeCompare;
     return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
   });
@@ -385,7 +413,7 @@ function TodayOperationsBoard({
   const cards = [
     { label: '입금 확인 필요', value: stats.unpaidCount, onClick: onUnpaid, tone: stats.unpaidCount ? 'text-rose-700' : 'text-slate-700' },
     { label: '제작 중', value: stats.inProductionCount, onClick: onProduction, tone: 'text-violet-700' },
-    { label: '오늘 매출', value: `${todayRevenue.toLocaleString()}원`, tone: 'text-emerald-700' },
+    { label: '오늘 수령 예정금액', value: `${todayRevenue.toLocaleString()}원`, tone: 'text-emerald-700' },
   ];
 
   return (
@@ -1035,7 +1063,7 @@ export function Dashboard() {
     todayOrders: orders.filter(o => getKoreanDateKey(o.createdAt) === today).length,
     totalRevenue: orders.reduce((sum, o) => sum + o.totalPrice, 0),
     unpaidCount: orders.filter(o => !o.paymentConfirmed && o.orderStatus !== 'completed').length,
-    todayPickups: orders.filter(o => o.deliveryDate === today).length,
+    todayPickups: orders.filter(o => o.deliveryDate === today && getNormalizedOrderStatus(o) !== 'completed').length,
     inProductionCount: orders.filter(o => o.orderStatus === 'in_production').length,
     popularProducts: (() => {
       const counts: Record<string, number> = {};
@@ -1049,8 +1077,8 @@ export function Dashboard() {
   const todayOrders = useMemo(() => sortOperationalOrders(
     orders.filter((order) => order.deliveryDate === today && getNormalizedOrderStatus(order) !== 'completed')
   ), [orders, today]);
-  const currentMinutes = now.getHours() * 60 + now.getMinutes();
-  const nextTodayOrder = todayOrders.find((order) => getPickupMinutes(order.pickupTime) >= currentMinutes)
+  const currentMinutes = getKoreanTimeMinutes(now);
+  const nextTodayOrder = todayOrders.find((order) => getPickupTimeBounds(order.pickupTime).start >= currentMinutes)
     || todayOrders.find((order) => !order.pickupTime)
     || null;
   const todayRevenue = orders.filter((order) => order.deliveryDate === today).reduce((sum, order) => sum + order.totalPrice, 0);
@@ -1428,7 +1456,7 @@ export function Dashboard() {
               {/* 일별 추이 */}
               <Card>
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-base">주문 추이 · {analyticsPeriod === '30d' ? '30일' : analyticsPeriod === 'month' ? '이번 달' : analyticsPeriod === 'all' ? '최근 7일' : '7일'}</CardTitle>
+                  <CardTitle className="text-base">주문 추이 · {analyticsPeriod === '30d' ? '30일' : analyticsPeriod === 'month' ? '이번 달' : analyticsPeriod === 'all' ? '전체 기간' : '7일'}</CardTitle>
                 </CardHeader>
                 <CardContent>
                   {analyticsTrendData.length === 0 ? (
