@@ -1,5 +1,5 @@
 import { google } from 'googleapis';
-import { type Order, cookiePrices } from '@shared/schema';
+import { type Order, cookiePrices, isPricingPendingOrder } from '@shared/schema';
 import { buildOrderDataFromOrder } from './order-data-utils';
 
 interface GoogleSheetsConfig {
@@ -89,6 +89,28 @@ export class GoogleSheetsService {
         return `'${escapedName}'!${range}`;
     }
 
+    private async ensureLandingDetailColumn(sheetName: string): Promise<void> {
+        const response = await this.sheets.spreadsheets.get({
+            spreadsheetId: this.config.spreadsheetId,
+            fields: 'sheets(properties(sheetId,title,gridProperties(columnCount)))',
+        });
+        const properties = (response.data.sheets || [])
+            .find((sheet: any) => sheet.properties?.title === sheetName)?.properties;
+        const columnCount = properties?.gridProperties?.columnCount ?? 26;
+        if (properties?.sheetId === undefined || columnCount >= 27) return;
+
+        await this.sheets.spreadsheets.batchUpdate({
+            spreadsheetId: this.config.spreadsheetId,
+            requestBody: {
+                requests: [{ appendDimension: {
+                    sheetId: properties.sheetId,
+                    dimension: 'COLUMNS',
+                    length: 27 - columnCount,
+                } }],
+            },
+        });
+    }
+
     private async resolveSheetName(): Promise<string> {
         if (this.resolvedSheetName) {
             return this.resolvedSheetName;
@@ -157,7 +179,7 @@ export class GoogleSheetsService {
 
     private buildSavedDetailLines(order: Order): string[] {
         return (Array.isArray(order.orderItems) ? (order.orderItems as any[]) : [])
-            .filter((item) => item && item.type !== 'meta' && item.options?.landingSource === 'brookie')
+            .filter((item) => item && item.type !== 'meta' && ['brookie', 'cookieFlight', 'airplaneButter'].includes(item.options?.landingSource))
             .map((item) => {
                 const options = item.options || {};
                 const details = [
@@ -166,6 +188,9 @@ export class GoogleSheetsService {
                     options.heartMessage ? `하트 문구 ${options.heartMessage}` : '',
                     [options.customPaperLine1, options.customPaperLine2].filter(Boolean).join(' / '),
                     options.topperKind ? `토퍼 ${options.topperKind}` : '',
+                    options.packageName ? `포장 ${options.packageName}` : '',
+                    Array.isArray(options.flavors) ? `맛 ${options.flavors.join(', ')}` : '',
+                    options.individuallyWrapped ? '개별 포장' : '',
                 ].filter(Boolean);
 
                 return details.length ? `• ${item.name}: ${details.join(', ')}` : `• ${item.name}`;
@@ -202,7 +227,7 @@ export class GoogleSheetsService {
 
             rows.push({
                 name,
-                quantity,
+                quantity: item.options?.unitLabel ? `${quantity}${item.options.unitLabel}` : quantity,
                 price,
                 amount,
                 height: name.length > 28 ? 60 : undefined,
@@ -1094,13 +1119,24 @@ export class GoogleSheetsService {
             const rowData = this.orderToRowData(order);
             const sheetName = await this.resolveSheetName();
 
+            const hasLandingDetails = Boolean(rowData[26]);
+            if (hasLandingDetails) {
+                await this.ensureLandingDetailColumn(sheetName);
+                await this.sheets.spreadsheets.values.update({
+                    spreadsheetId: this.config.spreadsheetId,
+                    range: this.formatSheetRange(sheetName, 'AA1'),
+                    valueInputOption: 'RAW',
+                    requestBody: { values: [['랜딩 상품 상세']] },
+                });
+            }
+
             // 스프레드시트에 행 추가
             await this.sheets.spreadsheets.values.append({
                 spreadsheetId: this.config.spreadsheetId,
-                range: this.formatSheetRange(sheetName, 'A:Z'),
+                range: this.formatSheetRange(sheetName, hasLandingDetails ? 'A:AA' : 'A:Z'),
                 valueInputOption: 'USER_ENTERED',
                 requestBody: {
-                    values: [rowData],
+                    values: [hasLandingDetails ? rowData : rowData.slice(0, 26)],
                 },
             });
 
@@ -1219,6 +1255,11 @@ export class GoogleSheetsService {
         // 입금 확인 여부
         const paymentConfirmed = order.paymentConfirmed ? 'Y' : 'N';
 
+        const landingDetails = (Array.isArray(order.orderItems) ? order.orderItems as any[] : [])
+            .filter((item) => item?.type !== 'meta' && ['cookieFlight', 'airplaneButter', 'cookieCrew'].includes(item?.options?.landingSource))
+            .map((item) => `${item.name} ${item.quantity}${item.options?.unitLabel || '개'}`)
+            .join(', ');
+
         // 행 데이터 생성 (컬럼 순서에 맞게)
         return [
             orderTime,                      // A: 주문 시간
@@ -1244,9 +1285,10 @@ export class GoogleSheetsService {
             airplaneSandwichQuantity,       // U: 비행기샌드쿠키 수량
             packagingName,                  // V: 포장 종류
             packagingQuantity,              // W: 포장 수량
-            order.totalPrice,               // X: 총 금액
+            isPricingPendingOrder(order) ? '가격 상담 필요' : order.totalPrice, // X: 총 금액
             orderStatus,                    // Y: 주문 상태
             paymentConfirmed,               // Z: 입금 확인
+            landingDetails,                 // AA: 랜딩 상품 상세
         ];
     }
 
@@ -1288,11 +1330,14 @@ export class GoogleSheetsService {
                 '총 금액',
                 '주문 상태',
                 '입금 확인',
+                '랜딩 상품 상세',
             ];
+
+            await this.ensureLandingDetailColumn(sheetName);
 
             await this.sheets.spreadsheets.values.update({
                 spreadsheetId: this.config.spreadsheetId,
-                range: this.formatSheetRange(sheetName, 'A1:Z1'),
+                range: this.formatSheetRange(sheetName, 'A1:AA1'),
                 valueInputOption: 'USER_ENTERED',
                 requestBody: {
                     values: [headers],

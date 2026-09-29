@@ -26,6 +26,7 @@ import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { InstallPrompt } from '@/components/install-prompt';
 import { Skeleton } from '@/components/ui/skeleton';
+import { isPricingPendingOrder } from '@shared/schema';
 
 interface OrderItem {
   type: string;
@@ -119,6 +120,9 @@ function getLandingSourceInfo(order: Pick<Order, 'orderItems'>) {
     brookie: { label: '브루키', tone: 'border-orange-200 bg-orange-50 text-orange-700' },
     cookie7: { label: '수제꾸덕쿠키', tone: 'border-blue-200 bg-blue-50 text-blue-700' },
     lucky: { label: '행운쿠키', tone: 'border-emerald-200 bg-emerald-50 text-emerald-700' },
+    cookieFlight: { label: '쿠키플라이트', tone: 'border-sky-200 bg-sky-50 text-sky-700' },
+    airplaneButter: { label: '비행기버터쿠키', tone: 'border-amber-200 bg-amber-50 text-amber-800' },
+    cookieCrew: { label: '쿠키크루', tone: 'border-fuchsia-200 bg-fuchsia-50 text-fuchsia-700' },
   };
 
   return labels[source as string] || null;
@@ -663,7 +667,7 @@ function OrderCard({
 
             <div className="flex shrink-0 items-start gap-1">
               <div className="text-right text-xl font-semibold tracking-tight text-slate-900 sm:text-2xl">
-                {order.totalPrice.toLocaleString()}원
+                {isPricingPendingOrder(order) ? '가격 상담 필요' : `${order.totalPrice.toLocaleString()}원`}
               </div>
               <button
                 type="button"
@@ -1007,7 +1011,9 @@ export function Dashboard() {
         const q = searchQuery.toLowerCase();
         if (!order.customerName.toLowerCase().includes(q) &&
           !order.customerContact.toLowerCase().includes(q) &&
-          !order.id.toLowerCase().includes(q)) return false;
+          !order.id.toLowerCase().includes(q) &&
+          !order.orderItems.some((item) => item.name.toLowerCase().includes(q)) &&
+          !getLandingSourceInfo(order)?.label.toLowerCase().includes(q)) return false;
       }
 
       const effectiveStatus = getOrderFilterStatus(order);
@@ -1326,6 +1332,9 @@ export function Dashboard() {
                   <option value="brookie">브루키</option>
                   <option value="cookie7">꾸덕쿠키</option>
                   <option value="lucky">럭키</option>
+                  <option value="cookieFlight">쿠키플라이트</option>
+                  <option value="airplaneButter">비행기버터쿠키</option>
+                  <option value="cookieCrew">쿠키크루</option>
                 </select>
                 <select value={dateFilter} onChange={(event) => setDateFilter(event.target.value)} aria-label="일정 필터" className="h-9 min-w-[112px] rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold">
                   <option value="all">전체 일정</option>

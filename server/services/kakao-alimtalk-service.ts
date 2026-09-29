@@ -53,6 +53,7 @@ export class KakaoAlimtalkService {
         deliveryDate: string;
         deliveryMethod: string;
         totalPrice: number;
+        pricingPending?: boolean;
     }): Promise<boolean> {
         if (!this.enabled) {
             console.log('[알림톡] 비활성화 상태 - 관리자 알림 전송 생략');
@@ -73,7 +74,7 @@ export class KakaoAlimtalkService {
                     customerContact: orderData.customerContact,
                     deliveryDate: orderData.deliveryDate,
                     deliveryMethod: orderData.deliveryMethod === 'delivery' ? '배송' : '픽업/퀵',
-                    totalPrice: orderData.totalPrice.toLocaleString(),
+                    totalPrice: orderData.pricingPending ? '가격 상담 필요' : orderData.totalPrice.toLocaleString(),
                 },
             };
 

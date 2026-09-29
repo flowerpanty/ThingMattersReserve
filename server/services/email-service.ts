@@ -1,7 +1,7 @@
 // EmailService.ts (Mailgun 사용)
 import formData from 'form-data';
 import Mailgun from 'mailgun.js';
-import { type Order, type OrderData, type OrderItem, cookiePrices } from '@shared/schema';
+import { type Order, type OrderData, type OrderItem, cookiePrices, isPricingPendingOrder } from '@shared/schema';
 
 const ADMIN_EMAIL_RECIPIENTS = ['flowerpanty@gmail.com', 'betterbetters@kakao.com'];
 
@@ -419,6 +419,7 @@ export class EmailService {
     request?: string;
   }): string {
     const { order, sourceLabel, customerPhone, customerEmail, deliveryAddress, request } = params;
+    const pricingPending = isPricingPendingOrder(order);
     const orderItems = Array.isArray(order.orderItems) ? (order.orderItems as OrderItem[]) : [];
     const visibleItems = orderItems.filter((item) => item && item.type !== 'meta' && Number(item.quantity || 0) > 0);
     const itemRows = visibleItems.map((item) => {
@@ -431,8 +432,8 @@ export class EmailService {
             <strong>${this.escapeHTML(item.name)}</strong>
             ${optionDetails ? `<div style="margin-top: 6px; color: #666; font-size: 12px; line-height: 1.5;">${optionDetails}</div>` : ''}
           </td>
-          <td style="padding: 12px; border-bottom: 1px solid #eee; color: #222; font-size: 14px; white-space: nowrap;">${Number(item.quantity || 0).toLocaleString('ko-KR')}개</td>
-          <td style="padding: 12px; border-bottom: 1px solid #eee; color: #222; font-size: 14px; white-space: nowrap;">${this.formatWon(lineTotal)}</td>
+          <td style="padding: 12px; border-bottom: 1px solid #eee; color: #222; font-size: 14px; white-space: nowrap;">${Number(item.quantity || 0).toLocaleString('ko-KR')}${this.escapeHTML(item.options?.unitLabel || '개')}</td>
+          <td style="padding: 12px; border-bottom: 1px solid #eee; color: #222; font-size: 14px; white-space: nowrap;">${pricingPending ? '가격 상담 필요' : this.formatWon(lineTotal)}</td>
         </tr>
       `;
     }).join('');
@@ -485,7 +486,7 @@ export class EmailService {
                 ${itemRows}
                 <tr style="background-color: #fff7ed;">
                   <td colspan="2" style="padding: 14px 12px; font-weight: bold; font-size: 16px; color: #111;">총 금액</td>
-                  <td style="padding: 14px 12px; font-weight: bold; font-size: 16px; color: #111;">${this.formatWon(order.totalPrice)}</td>
+                  <td style="padding: 14px 12px; font-weight: bold; font-size: 16px; color: #111;">${pricingPending ? '가격 상담 필요' : this.formatWon(order.totalPrice)}</td>
                 </tr>
               </table>
 
@@ -525,7 +526,7 @@ export class EmailService {
     await this.mg.messages.create(domain, {
       from: `띵매러 <mailgun@${domain}>`,
       to: ADMIN_EMAIL_RECIPIENTS,
-      subject: `[새 랜딩 주문] ${params.sourceLabel} - ${params.order.customerName}님 (${this.formatWon(params.order.totalPrice)})`,
+      subject: `[새 랜딩 주문] ${params.sourceLabel} - ${params.order.customerName}님 (${isPricingPendingOrder(params.order) ? '가격 상담 필요' : this.formatWon(params.order.totalPrice)})`,
       html,
     });
 

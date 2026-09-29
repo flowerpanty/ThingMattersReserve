@@ -103,3 +103,11 @@ export type Order = typeof orders.$inferSelect;
 export type OrderData = z.infer<typeof orderDataSchema>;
 export type OrderItem = z.infer<typeof orderItemSchema>;
 export type PushSubscriptionRecord = typeof pushSubscriptions.$inferSelect;
+
+export function isPricingPendingOrder(order: Pick<Order, 'orderItems'>): boolean {
+  const items = Array.isArray(order.orderItems)
+    ? order.orderItems as Array<{ type?: string; options?: Record<string, unknown> }>
+    : [];
+  const metadata = items.find((item) => item?.type === 'meta')?.options;
+  return metadata?.landingSource === 'cookieCrew' && metadata?.pricingPending === true;
+}

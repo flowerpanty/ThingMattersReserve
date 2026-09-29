@@ -1,7 +1,100 @@
 import ExcelJS from 'exceljs';
-import { type OrderData, cookiePrices, cookieTypes, drinkTypes } from '@shared/schema';
+import { type Order, type OrderData, cookiePrices, cookieTypes, drinkTypes } from '@shared/schema';
 
 export class ExcelGenerator {
+  async generateQuoteFromStoredItems(order: Order, landingSource: 'cookieFlight' | 'airplaneButter'): Promise<Buffer> {
+    const items = (Array.isArray(order.orderItems) ? order.orderItems as any[] : [])
+      .filter((item) => item?.type !== 'meta' && item?.options?.landingSource === landingSource);
+    if (!items.length || items.some((item) =>
+      !Number.isSafeInteger(item.quantity) || item.quantity < 1 ||
+      !Number.isSafeInteger(item.price) || item.price < 1 ||
+      typeof item.name !== 'string' || !item.name.trim())) {
+      throw new Error('저장된 주문 항목의 수량 또는 가격을 확인할 수 없습니다.');
+    }
+
+    const calculatedTotal = items.reduce((sum, item) => sum + item.quantity * item.price, 0);
+    if (!Number.isSafeInteger(calculatedTotal) || calculatedTotal !== order.totalPrice) {
+      throw new Error('저장된 주문 항목과 총 금액이 일치하지 않습니다.');
+    }
+
+    const workbook = new ExcelJS.Workbook();
+    const sheet = workbook.addWorksheet('nothingmatters 견적서');
+    sheet.columns = [
+      { width: 36 }, { width: 14 }, { width: 16 }, { width: 18 },
+    ];
+    const border = {
+      top: { style: 'thin' as const }, left: { style: 'thin' as const },
+      bottom: { style: 'thin' as const }, right: { style: 'thin' as const },
+    };
+    const money = '#,##0"원"';
+
+    sheet.mergeCells('A1:D1');
+    sheet.getCell('A1').value = 'nothingmatters 견적서';
+    sheet.getCell('A1').font = { bold: true, size: 16, color: { argb: 'FFFFFFFF' } };
+    sheet.getCell('A1').fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF4F46E5' } };
+    sheet.getCell('A1').alignment = { horizontal: 'center', vertical: 'middle' };
+    sheet.getRow(1).height = 35;
+
+    sheet.mergeCells('A2:D2');
+    sheet.getCell('A2').value = `고객명: ${order.customerName} | 연락처: ${order.customerContact}`;
+    sheet.mergeCells('A3:D3');
+    const method = order.deliveryMethod === 'quick' ? '퀵 배송' : '매장 픽업';
+    const metadata = (order.orderItems as any[]).find((item) => item?.type === 'meta')?.options || {};
+    sheet.getCell('A3').value = `수령 방법: ${method} | 수령 희망일: ${order.deliveryDate}${order.pickupTime ? ` | 시간: ${order.pickupTime}` : ''}${metadata.deliveryAddress ? ` | 주소: ${metadata.deliveryAddress}` : ''}`;
+    sheet.getRow(3).height = metadata.deliveryAddress ? 44 : 28;
+    sheet.getCell('A3').alignment = { wrapText: true, vertical: 'middle' };
+
+    ['제품명', '수량', '단가', '합계'].forEach((label, index) => {
+      const cell = sheet.getCell(5, index + 1);
+      cell.value = label;
+      cell.font = { bold: true };
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE5E7EB' } };
+      cell.alignment = { horizontal: 'center', vertical: 'middle' };
+      cell.border = border;
+    });
+
+    let rowNumber = 6;
+    for (const item of items) {
+      const row = sheet.getRow(rowNumber++);
+      row.values = [item.name, `${item.quantity}${item.options?.unitLabel || '개'}`, item.price, item.quantity * item.price];
+      row.height = 32;
+      row.eachCell((cell) => { cell.border = border; cell.alignment = { vertical: 'middle', wrapText: true }; });
+      row.getCell(3).numFmt = money;
+      row.getCell(4).numFmt = money;
+    }
+
+    rowNumber++;
+    sheet.mergeCells(`A${rowNumber}:C${rowNumber}`);
+    sheet.getCell(rowNumber, 1).value = '총 합계';
+    sheet.getCell(rowNumber, 4).value = calculatedTotal;
+    sheet.getCell(rowNumber, 4).numFmt = money;
+    sheet.getRow(rowNumber).height = 35;
+    for (let column = 1; column <= 4; column++) {
+      const cell = sheet.getCell(rowNumber, column);
+      cell.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF4F46E5' } };
+      cell.border = border;
+    }
+
+    for (const item of items) {
+      const options = item.options || {};
+      const details = [
+        options.packageName && `포장: ${options.packageName}`,
+        Array.isArray(options.flavors) && `맛 구성: ${options.flavors.join(', ')}`,
+        options.individuallyWrapped && '개별 포장',
+      ].filter(Boolean);
+      if (!details.length) continue;
+      rowNumber += 2;
+      sheet.mergeCells(`A${rowNumber}:D${rowNumber}`);
+      sheet.getCell(rowNumber, 1).value = `${item.name} · ${details.join(' · ')}`;
+      sheet.getCell(rowNumber, 1).alignment = { wrapText: true, vertical: 'middle' };
+      sheet.getRow(rowNumber).height = 44;
+    }
+
+    sheet.pageSetup = { paperSize: 9, orientation: 'portrait', fitToPage: true, fitToWidth: 1, fitToHeight: 0 };
+    return Buffer.from(await workbook.xlsx.writeBuffer());
+  }
+
   async generateQuote(orderData: OrderData): Promise<Buffer> {
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet('nothingmatters 견적서');

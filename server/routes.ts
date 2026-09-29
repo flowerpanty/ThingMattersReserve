@@ -1,7 +1,7 @@
 import type { Express, RequestHandler } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { cookiePrices, minimumOrderQuantities, orderDataSchema } from "@shared/schema";
+import { cookiePrices, isPricingPendingOrder, minimumOrderQuantities, orderDataSchema } from "@shared/schema";
 import { ExcelGenerator } from "./services/excel-generator";
 import { EmailService } from "./services/email-service";
 import { KakaoTemplateService } from "./services/kakao-template";
@@ -44,6 +44,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     brookie: '브루키',
     cookie7: '수제꾸덕쿠키',
     lucky: '행운쿠키',
+    cookieFlight: '쿠키플라이트',
+    airplaneButter: '비행기버터쿠키',
+    cookieCrew: '쿠키크루',
   };
 
   const priceCalculationSchema = z.object({
@@ -379,6 +382,97 @@ export async function registerRoutes(app: Express): Promise<Server> {
     };
   };
 
+  const requireLandingQuantity = (value: unknown) => {
+    const quantity = Number(value);
+    if (!Number.isSafeInteger(quantity) || quantity < 1 || quantity > 10000) {
+      throw new Error('수량은 1개 이상 선택해주세요.');
+    }
+    return quantity;
+  };
+
+  const buildCookieFlightLandingItems = (body: any) => {
+    const quantity = requireLandingQuantity(body.quantity);
+    return {
+      orderItems: [{
+        type: 'addon',
+        name: '쿠키 플라이트',
+        quantity,
+        price: cookiePrices.cookieFlight,
+        options: {
+          landingSource: 'cookieFlight',
+          unitLabel: 'BOX',
+          packageSize: 4,
+          packageName: '4개입 1세트',
+          flavors: ['클래식버터', '더블초코', '제주말차', '오렌지'],
+        },
+      }],
+      totalPrice: quantity * cookiePrices.cookieFlight,
+    };
+  };
+
+  const buildAirplaneButterLandingItems = (body: any) => {
+    const quantity = requireLandingQuantity(body.quantity);
+    return {
+      orderItems: [{
+        type: 'addon',
+        name: '비행기 버터쿠키',
+        quantity,
+        price: cookiePrices.airplaneButter,
+        options: {
+          landingSource: 'airplaneButter',
+          unitLabel: '개',
+          individuallyWrapped: true,
+        },
+      }],
+      totalPrice: quantity * cookiePrices.airplaneButter,
+    };
+  };
+
+  const buildCookieCrewLandingItems = (body: any) => {
+    const crewNames = {
+      captain: '쿠키기장',
+      blue: '쿠키블루',
+      orange: '쿠키오렌지',
+      green: '쿠키그린',
+    } as const;
+    const quantities = body.crewQuantities;
+    if (!quantities || typeof quantities !== 'object' || Array.isArray(quantities)) {
+      throw new Error('쿠키크루 수량을 선택해주세요.');
+    }
+    if (Object.keys(quantities).some((key) => !(key in crewNames))) {
+      throw new Error('지원하지 않는 쿠키크루 종류입니다.');
+    }
+
+    const orderItems = Object.entries(crewNames).flatMap(([crewType, name]) => {
+      const rawQuantity = quantities[crewType] ?? 0;
+      const quantity = Number(rawQuantity);
+      if (!Number.isSafeInteger(quantity) || quantity < 0 || quantity > 10000) {
+        throw new Error('쿠키크루 수량을 다시 확인해주세요.');
+      }
+      return quantity > 0 ? [{
+        type: 'addon',
+        name,
+        quantity,
+        price: 0,
+        options: { landingSource: 'cookieCrew', crewType, pricingPending: true },
+      }] : [];
+    });
+
+    if (!orderItems.length) {
+      throw new Error('쿠키크루 상품을 한 개 이상 선택해주세요.');
+    }
+    return { orderItems, totalPrice: 0 };
+  };
+
+  const landingBuilders: Record<string, (body: any) => { orderItems: any[]; totalPrice: number }> = {
+    brookie: buildBrookieLandingItems,
+    cookie7: buildCookie7LandingItems,
+    lucky: buildLuckyLandingItems,
+    cookieFlight: buildCookieFlightLandingItems,
+    airplaneButter: buildAirplaneButterLandingItems,
+    cookieCrew: buildCookieCrewLandingItems,
+  };
+
   const validateOrderBusinessRules = (orderData: any) => {
     const singleWithDrinkQuantity = (orderData.singleWithDrinkSets || [])
       .reduce((sum: number, set: any) => sum + (set.quantity || 0), 0);
@@ -633,19 +727,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const body = req.body || {};
       const source = asText(body.source);
       const sourceLabel = landingSourceLabels[source];
+      const builder = landingBuilders[source];
 
-      if (!sourceLabel) {
+      if (!sourceLabel || !builder) {
         return res.status(400).json({ message: "지원하지 않는 랜딩페이지 주문입니다." });
       }
 
       const customer = getLandingCustomer(body);
-      const built = source === 'brookie'
-        ? buildBrookieLandingItems(body)
-        : source === 'cookie7'
-          ? buildCookie7LandingItems(body)
-          : buildLuckyLandingItems(body);
+      const built = builder(body);
+      const pricingPending = source === 'cookieCrew';
 
-      if (!built.orderItems.length || built.totalPrice <= 0) {
+      if (!built.orderItems.length || (!pricingPending && built.totalPrice <= 0)) {
         return res.status(400).json({ message: "주문할 상품을 선택해주세요." });
       }
 
@@ -661,6 +753,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             source,
             landingSource: source,
             landingSourceLabel: sourceLabel,
+            pricingPending,
             customerPhone: customer.customerPhone,
             customerEmail: customer.customerEmail,
             deliveryAddress: customer.deliveryAddress,
@@ -701,6 +794,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           deliveryDate: customer.deliveryDate,
           deliveryMethod: customer.deliveryMethod,
           totalPrice: built.totalPrice,
+          pricingPending,
         }).catch((error) => console.error('❌ 랜딩 주문 관리자 알림톡 실패:', error));
       }
 
@@ -714,6 +808,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         message: "주문이 관리자 대시보드에 저장되었습니다.",
         orderId: order.id,
         totalPrice: built.totalPrice,
+        pricingPending,
       });
     } catch (error) {
       console.error('Landing order error:', error);
@@ -760,8 +855,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "주문을 찾을 수 없습니다." });
       }
 
-      const orderData = orderDataSchema.parse(buildOrderDataFromOrder(order));
-      const buffer = await excelGenerator.generateQuote(orderData);
+      if (isPricingPendingOrder(order)) {
+        return res.status(409).json({ message: '가격 상담 후 견적서를 만들 수 있습니다.' });
+      }
+
+      const landingSource = (Array.isArray(order.orderItems) ? order.orderItems as any[] : [])
+        .find((item) => item?.type === 'meta')?.options?.landingSource;
+      const buffer = landingSource === 'cookieFlight' || landingSource === 'airplaneButter'
+        ? await excelGenerator.generateQuoteFromStoredItems(order, landingSource)
+        : await excelGenerator.generateQuote(orderDataSchema.parse(buildOrderDataFromOrder(order)));
       const fileName = `견적서_${order.customerName}_${new Date().toISOString().split('T')[0]}.xlsx`;
 
       res.setHeader(
@@ -1366,6 +1468,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           success: false,
           message: '주문을 찾을 수 없습니다.'
         });
+      }
+
+      if (isPricingPendingOrder(order)) {
+        return res.status(409).json({ success: false, message: '가격 상담 후 견적서를 만들 수 있습니다.' });
       }
 
       const quoteSheet = await googleSheetsService.createQuoteSheet(order);

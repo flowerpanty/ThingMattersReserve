@@ -3,7 +3,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Calendar, Mail, Package, MapPin, Clock, DollarSign, Trash2, Image as ImageIcon, FileSpreadsheet } from "lucide-react";
-import { cookiePrices } from "@shared/schema";
+import { cookiePrices, isPricingPendingOrder } from "@shared/schema";
 import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
 import { ko } from "date-fns/locale";
@@ -52,6 +52,9 @@ function getLandingSourceInfo(order: Pick<Order, 'orderItems'>) {
         brookie: { label: '브루키', tone: 'border-orange-200 bg-orange-50 text-orange-700' },
         cookie7: { label: '수제꾸덕쿠키', tone: 'border-blue-200 bg-blue-50 text-blue-700' },
         lucky: { label: '행운쿠키', tone: 'border-emerald-200 bg-emerald-50 text-emerald-700' },
+        cookieFlight: { label: '쿠키플라이트', tone: 'border-sky-200 bg-sky-50 text-sky-700' },
+        airplaneButter: { label: '비행기버터쿠키', tone: 'border-amber-200 bg-amber-50 text-amber-800' },
+        cookieCrew: { label: '쿠키크루', tone: 'border-fuchsia-200 bg-fuchsia-50 text-fuchsia-700' },
     };
 
     return labels[source as string] || null;
@@ -74,6 +77,7 @@ export function OrderDetailModal({ order, isOpen, onClose, onDelete }: OrderDeta
     if (!order) return null;
 
     const landingSource = getLandingSourceInfo(order);
+    const pricingPending = isPricingPendingOrder(order);
 
     const closePreOpenedWindow = (openedWindow?: Window | null) => {
         if (openedWindow && !openedWindow.closed) {
@@ -415,6 +419,11 @@ export function OrderDetailModal({ order, isOpen, onClose, onDelete }: OrderDeta
             };
 
             order.orderItems.forEach(item => {
+                if (item.type === 'meta') return;
+                if (['cookieFlight', 'airplaneButter', 'cookieCrew'].includes(item.options?.landingSource)) {
+                    summary.others.push(item);
+                    return;
+                }
                 const qty = item.quantity;
                 if (item.type === 'regular') {
                     summary.regular.count += qty;
@@ -718,6 +727,12 @@ export function OrderDetailModal({ order, isOpen, onClose, onDelete }: OrderDeta
                 {Array.isArray(item.options.flavors) && item.options.landingSource === 'lucky' && (
                     <div>🍀 구성: {item.options.flavors.join(', ')}</div>
                 )}
+                {item.options.landingSource === 'cookieFlight' && Array.isArray(item.options.flavors) && (
+                    <div>🍪 4개입: {item.options.flavors.join(', ')}</div>
+                )}
+                {item.options.landingSource === 'airplaneButter' && item.options.individuallyWrapped && (
+                    <div>🎁 개별 포장</div>
+                )}
 
                 {/* 스콘 옵션 */}
                 {item.options.flavor && (
@@ -762,7 +777,7 @@ export function OrderDetailModal({ order, isOpen, onClose, onDelete }: OrderDeta
                             </SheetDescription>
                         </div>
                         <div className="shrink-0 text-right">
-                            <strong className="block text-base font-bold tracking-tight text-foreground">{formatCurrency(order.totalPrice)}</strong>
+                            <strong className="block text-base font-bold tracking-tight text-foreground">{pricingPending ? '가격 상담 필요' : formatCurrency(order.totalPrice)}</strong>
                             <Badge variant="outline" className="mt-1 rounded-full bg-white text-[11px]">{getStatusLabel(order)}</Badge>
                         </div>
                     </div>
@@ -830,17 +845,17 @@ export function OrderDetailModal({ order, isOpen, onClose, onDelete }: OrderDeta
                                             <div className="flex items-center gap-2">
                                                 <span className="font-medium">{item.name}</span>
                                                 <Badge variant="outline" className="text-xs">
-                                                    {item.quantity}개
+                                                    {item.quantity}{item.options?.unitLabel || '개'}
                                                 </Badge>
                                             </div>
                                             {renderOptionDetails(item)}
                                         </div>
                                         <div className="text-right">
                                             <div className="text-sm text-muted-foreground">
-                                                단가: {formatCurrency(item.price)}
+                                                단가: {pricingPending ? '가격 상담 필요' : formatCurrency(item.price)}
                                             </div>
                                             <div className="font-semibold">
-                                                {formatCurrency(item.price * item.quantity)}
+                                                {pricingPending ? '가격 상담 필요' : formatCurrency(item.price * item.quantity)}
                                             </div>
                                         </div>
                                     </div>
@@ -869,9 +884,9 @@ export function OrderDetailModal({ order, isOpen, onClose, onDelete }: OrderDeta
                                         allItems.push(
                                             <div key={`${index}-main`} className="flex items-center justify-between text-sm">
                                                 <span className="text-muted-foreground">
-                                                    {item.name} × {item.quantity}
+                                                    {item.name} × {item.quantity}{item.options?.unitLabel || '개'}
                                                 </span>
-                                                <span>{formatCurrency(item.price * item.quantity)}</span>
+                                                <span>{pricingPending ? '가격 상담 필요' : formatCurrency(item.price * item.quantity)}</span>
                                             </div>
                                         );
                                     });
@@ -898,9 +913,9 @@ export function OrderDetailModal({ order, isOpen, onClose, onDelete }: OrderDeta
                                         items.push(
                                             <div key={`${index}-other-main`} className="flex items-center justify-between text-sm">
                                                 <span className="text-muted-foreground">
-                                                    {item.name} × {item.quantity}
+                                                    {item.name} × {item.quantity}{item.options?.unitLabel || '개'}
                                                 </span>
-                                                <span>{formatCurrency(item.price * item.quantity)}</span>
+                                                <span>{pricingPending ? '가격 상담 필요' : formatCurrency(item.price * item.quantity)}</span>
                                             </div>
                                         );
 
@@ -965,8 +980,8 @@ export function OrderDetailModal({ order, isOpen, onClose, onDelete }: OrderDeta
 
                             {/* 총 금액 */}
                             <div className="flex items-center justify-between text-lg font-bold">
-                                <span>총 결제 금액</span>
-                                <span className="text-primary">{formatCurrency(order.totalPrice)}</span>
+                                <span>{pricingPending ? '가격' : '총 결제 금액'}</span>
+                                <span className="text-primary">{pricingPending ? '가격 상담 필요' : formatCurrency(order.totalPrice)}</span>
                             </div>
                         </div>
                     </div>
@@ -994,7 +1009,9 @@ export function OrderDetailModal({ order, isOpen, onClose, onDelete }: OrderDeta
                                 </p>
                             </div>
 
-                            <div className="grid gap-2 sm:grid-cols-2">
+                            {pricingPending ? (
+                                <p className="rounded-xl bg-amber-50 p-3 text-sm font-semibold text-amber-800">가격 상담 후 견적서를 만들 수 있습니다.</p>
+                            ) : <div className="grid gap-2 sm:grid-cols-2">
                                 <Button
                                     onClick={handleCopyToSheet}
                                     className="h-auto min-h-[64px] justify-start rounded-xl px-4 py-3 text-left"
@@ -1028,7 +1045,7 @@ export function OrderDetailModal({ order, isOpen, onClose, onDelete }: OrderDeta
                                         </span>
                                     </span>
                                 </Button>
-                            </div>
+                            </div>}
                         </div>
 
                         {onDelete && (

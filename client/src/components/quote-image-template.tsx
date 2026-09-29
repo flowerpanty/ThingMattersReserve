@@ -57,6 +57,7 @@ function buildOrderDataFromOrder(order: Order): OrderData {
 
   for (const item of orderItems) {
     if (!item || item.type === 'meta') continue;
+    if (['cookieFlight', 'airplaneButter', 'cookieCrew'].includes(item.options?.landingSource)) continue;
 
     const quantity = Number(item.quantity || 0);
     const itemName = typeof item.name === 'string' ? item.name : '';
@@ -505,7 +506,7 @@ function buildQuoteRowsFromSavedItems(order: Order) {
 
     rows.push({
       name: buildSavedItemName(item),
-      quantity,
+      quantity: item.options?.unitLabel ? `${quantity}${item.options.unitLabel}` : quantity,
       price,
       amount,
     });
@@ -531,7 +532,7 @@ function buildQuoteRowsFromSavedItems(order: Order) {
 
 function buildSavedDetailLines(order: Order) {
   return (Array.isArray(order.orderItems) ? order.orderItems : [])
-    .filter((item) => item && item.type !== 'meta' && item.options?.landingSource === 'brookie')
+    .filter((item) => item && item.type !== 'meta' && ['brookie', 'cookieFlight', 'airplaneButter'].includes(item.options?.landingSource))
     .map((item) => {
       const options = item.options || {};
       const details = [
@@ -540,6 +541,9 @@ function buildSavedDetailLines(order: Order) {
         options.heartMessage ? `하트 문구 ${options.heartMessage}` : '',
         [options.customPaperLine1, options.customPaperLine2].filter(Boolean).join(' / '),
         options.topperKind ? `토퍼 ${options.topperKind}` : '',
+        options.packageName ? `포장 ${options.packageName}` : '',
+        Array.isArray(options.flavors) ? `맛 ${options.flavors.join(', ')}` : '',
+        options.individuallyWrapped ? '개별 포장' : '',
       ].filter(Boolean);
 
       return details.length ? `• ${item.name}: ${details.join(', ')}` : `• ${item.name}`;

@@ -41,6 +41,8 @@ export const cookiePrices = {
   scone: 5000,
   fortune: 15000,
   airplane: 22000,
+  cookieFlight: 16000,
+  airplaneButter: 2500,
   twoPackSet: 10500,
   singleWithDrink: 11000,
   packaging: {
