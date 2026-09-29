@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
 import { BarChart3, Check } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { minimumOrderQuantities } from "@shared/schema";
+import { cookiePrices, formatWon, minimumOrderQuantities } from "@shared/schema";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 
 const STEPS = [
@@ -20,6 +20,30 @@ const STEPS = [
   { number: 2, label: "기본 정보", icon: "📋" },
   { number: 3, label: "견적 확인", icon: "📄" },
 ];
+
+const dedicatedOrderProducts = [
+  {
+    name: "쿠키 플라이트",
+    description: "네 가지 맛을 담은 4개입 선물 박스",
+    price: `1 BOX ${formatWon(cookiePrices.cookieFlight)}`,
+    image: "/public/cookie-flight-assets/cookie-flight-hero.webp",
+    href: "/cookie-flight",
+  },
+  {
+    name: "비행기 버터쿠키",
+    description: "한 개씩 개별 포장한 비행기 모양 쿠키",
+    price: `1개 ${formatWon(cookiePrices.airplaneButter)}`,
+    image: "/public/airplane-cookie-assets/hero.webp",
+    href: "/airplane-butter-cookie",
+  },
+  {
+    name: "쿠키크루",
+    description: "쿠키기장·블루·오렌지·그린을 종류별로 선택",
+    price: "합계 12개부터 · 가격 상담",
+    image: "/public/cookie-crew-assets/cookie-crew-hero-main.webp",
+    href: "/cookie-crew",
+  },
+] as const;
 
 function StepIndicator({ currentStep }: { currentStep: number }) {
   const shouldReduce = useReducedMotion();
@@ -309,6 +333,43 @@ export default function OrderForm() {
                   >
                     👇 원하는 쿠키를 골라 담아주세요 🍪
                   </motion.div>
+
+                  <section className="mb-6" aria-labelledby="dedicated-products-title">
+                    <div className="mb-3">
+                      <h2 id="dedicated-products-title" className="text-xl font-black text-[#1a1a1a] sm:text-2xl">
+                        새로 추가된 상품
+                      </h2>
+                      <p className="mt-1 text-sm font-medium text-gray-600">
+                        각 상품의 주문 페이지에서 수량과 수령 정보를 입력할 수 있어요.
+                      </p>
+                    </div>
+                    <div className="grid gap-3 sm:grid-cols-3">
+                      {dedicatedOrderProducts.map((product) => (
+                        <article key={product.href} className="min-w-0 overflow-hidden rounded-2xl border border-[#ead8bd] bg-white shadow-[0_8px_24px_rgba(76,51,24,0.08)]">
+                          <img
+                            src={product.image}
+                            alt={`${product.name} 대표 이미지`}
+                            width={640}
+                            height={400}
+                            loading="lazy"
+                            className="h-40 w-full bg-[#fff7ea] object-contain"
+                          />
+                          <div className="flex min-h-[190px] flex-col p-4">
+                            <h3 className="text-lg font-black text-[#1a1a1a]">{product.name}</h3>
+                            <p className="mt-1 line-clamp-2 text-sm text-gray-600">{product.description}</p>
+                            <p className="mt-2 text-sm font-black text-[#7e3652]">{product.price}</p>
+                            <a
+                              href={product.href}
+                              className="mt-auto flex min-h-11 items-center justify-center rounded-xl bg-[#1a1a1a] px-3 text-sm font-black text-white transition-colors hover:bg-[#7e3652] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#7e3652]"
+                              aria-label={`${product.name} 주문 페이지로 이동`}
+                            >
+                              {product.name} 주문하기 →
+                            </a>
+                          </div>
+                        </article>
+                      ))}
+                    </div>
+                  </section>
 
                   <div className="mb-3">
                     <div className="section-badge">🍪 쿠키 고르기</div>
