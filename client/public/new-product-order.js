@@ -23,11 +23,11 @@
       note: '1개씩 개별 포장해 준비합니다.',
     },
     cookieCrew: {
-      name: '쿠키크루', unit: '개', pricingPending: true,
+      name: '쿠키크루', unit: '개', pricingPending: true, minimumQuantity: 12,
       image: '/public/cookie-crew-assets/cookie-crew-hero-main.webp',
       imageAlt: '쿠키크루 캐릭터 쿠키',
       tagline: '마음에 드는 쿠키크루를 종류별로 골라주세요.',
-      description: '쿠키 4종을 원하는 수량만큼 선택할 수 있어요.',
+      description: '쿠키 4종을 원하는 수량만큼 선택할 수 있어요. 종류 합계 최소 12개부터 주문 가능합니다.',
       note: '마그넷은 현재 주문 항목에 포함되지 않습니다.',
       crew: [
         ['captain', '쿠키기장', '/public/cookie-crew-assets/cookie-crew-pilot-hero.webp'],
@@ -95,6 +95,7 @@
         ${facts}
         <article class="nm-order-card">
           <h2>${product.crew ? '쿠키크루 종류별 수량' : '몇 개 준비할까요?'}</h2>
+          ${product.crew ? '<p id="nm-order-minimum" class="nm-order-minimum" role="status" aria-live="polite"></p>' : ''}
           ${controls}
           <p class="nm-order-hint">${product.note}</p>
           <p id="nm-order-selection-error" class="nm-order-alert" role="alert" hidden></p>
@@ -191,6 +192,12 @@
       product.crew.forEach(([key]) => {
         root.querySelector(`[data-crew-count="${key}"]`).textContent = state.crewQuantities[key];
       });
+      const remaining = Math.max(0, product.minimumQuantity - selectedQuantity());
+      const minimum = byId('nm-order-minimum');
+      minimum.textContent = remaining
+        ? `최소 주문 12개 · 현재 ${selectedQuantity()}개 선택 · ${remaining}개 더 선택해 주세요.`
+        : `최소 주문 12개 충족 · 현재 ${selectedQuantity()}개 선택`;
+      minimum.classList.toggle('is-met', remaining === 0);
     } else byId('nm-order-count').textContent = state.quantity;
     const lines = byId('nm-order-selected-lines');
     lines.replaceChildren();
@@ -207,8 +214,8 @@
     showMessage('nm-order-selection-error', '');
   }
   function validateSelection() {
-    if (selectedQuantity() > 0) return true;
-    showMessage('nm-order-selection-error', '쿠키크루 상품을 한 개 이상 선택해 주세요.');
+    if (!product.crew || selectedQuantity() >= product.minimumQuantity) return true;
+    showMessage('nm-order-selection-error', `쿠키크루는 종류 합계 최소 12개부터 주문할 수 있어요. ${product.minimumQuantity - selectedQuantity()}개 더 선택해 주세요.`);
     if (state.step !== 1) setStep(1, { skipValidation: true });
     root.querySelector('[data-crew="captain"][data-delta="1"]').focus();
     return false;

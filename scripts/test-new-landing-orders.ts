@@ -77,10 +77,10 @@ try {
   assert.equal(butterQuote.totalAmount, 7500);
   assert.equal(butterQuote.rows[0].price, 2500);
 
-  response = await post({ source: 'cookieCrew', crewQuantities: { captain: 2, blue: 1, orange: 3, green: 4 } });
+  response = await post({ source: 'cookieCrew', crewQuantities: { captain: 3, blue: 2, orange: 3, green: 4 } });
   assert.equal(response.status, 200);
   assert.equal(response.result.pricingPending, true);
-  assert.deepEqual(saved[2].orderItems.slice(0, 4).map((item: any) => [item.name, item.quantity]), [['쿠키기장', 2], ['쿠키블루', 1], ['쿠키오렌지', 3], ['쿠키그린', 4]]);
+  assert.deepEqual(saved[2].orderItems.slice(0, 4).map((item: any) => [item.name, item.quantity]), [['쿠키기장', 3], ['쿠키블루', 2], ['쿠키오렌지', 3], ['쿠키그린', 4]]);
   assert.equal(saved[2].orderItems.at(-1).options.pricingPending, true);
   const email = (new EmailService() as any).generateLandingAdminEmailHTML({ order: saved[2], sourceLabel: '쿠키크루' });
   assert(email.includes('가격 상담 필요'));
@@ -88,7 +88,7 @@ try {
   assert(email.includes('쿠키기장') && email.includes('쿠키블루'));
   const crewSheetRow = (googleSheetsService as any).orderToRowData(saved[2]);
   assert.equal(crewSheetRow[23], '가격 상담 필요');
-  assert(crewSheetRow[26].includes('쿠키기장 2개'));
+  assert(crewSheetRow[26].includes('쿠키기장 3개'));
   let appendedColumns = 0;
   (googleSheetsService as any).sheets = { spreadsheets: {
     get: async () => ({ data: { sheets: [{ properties: { sheetId: 0, title: '주문목록', gridProperties: { columnCount: 26 } } }] } }),
@@ -130,6 +130,7 @@ try {
 
   for (const invalid of [
     { source: 'cookieCrew', crewQuantities: { captain: 0, blue: 0, orange: 0, green: 0 } },
+    { source: 'cookieCrew', crewQuantities: { captain: 3, blue: 2, orange: 3, green: 3 } },
     { source: 'cookieCrew', crewQuantities: { magnet: 1 } },
     { source: 'cookieFlight', quantity: 0 },
     { source: 'airplaneButter', quantity: 1.5 },
@@ -137,9 +138,12 @@ try {
   ]) {
     response = await post(invalid);
     assert.equal(response.status, 400);
+    if ('crewQuantities' in invalid && 'green' in invalid.crewQuantities) {
+      assert.match(response.result.message, /최소 12개/);
+    }
   }
   assert.equal(saved.length, 6);
-  console.log('Landing order API, Excel/Sheets/email data, and existing products: 6 valid and 5 invalid cases passed.');
+  console.log('Landing order API, Excel/Sheets/email data, and existing products: 6 valid and 6 invalid cases passed.');
 } finally {
   await new Promise<void>((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));
 }

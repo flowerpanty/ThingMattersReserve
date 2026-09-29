@@ -52,6 +52,8 @@ body { margin: 0; background: #fffaf1; }
 .nm-order-crew-row img { width: 62px; height: 62px; flex: 0 0 auto; border-radius: 12px; object-fit: cover; background: var(--nm-order-pale); }
 .nm-order-crew-row .nm-order-quantity-name { flex: 1; }
 .nm-order-hint { margin: 14px 0 0; color: var(--nm-order-muted); font-size: 13px; line-height: 1.65; }
+.nm-order-minimum { margin: 0 0 15px; padding: 11px 13px; border-radius: 11px; background: #fff1f3; color: #933d55; font-size: 13px; font-weight: 800; line-height: 1.5; }
+.nm-order-minimum.is-met { background: #ebf7f0; color: #287352; }
 .nm-order-selection-card { background: var(--nm-order-pale); }
 .nm-order-selected-lines { display: flex; flex-wrap: wrap; gap: 7px; margin-bottom: 14px; }
 .nm-order-selected-lines span { padding: 7px 10px; border-radius: 999px; background: #fff; font-size: 13px; font-weight: 800; }

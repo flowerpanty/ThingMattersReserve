@@ -458,8 +458,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }] : [];
     });
 
-    if (!orderItems.length) {
-      throw new Error('쿠키크루 상품을 한 개 이상 선택해주세요.');
+    const totalQuantity = orderItems.reduce((sum, item) => sum + item.quantity, 0);
+    if (totalQuantity < 12) {
+      throw new Error(`쿠키크루는 종류 합계 최소 12개부터 주문할 수 있습니다. ${12 - totalQuantity}개 더 선택해주세요.`);
     }
     return { orderItems, totalPrice: 0 };
   };
