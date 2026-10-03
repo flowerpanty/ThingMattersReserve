@@ -1148,6 +1148,7 @@
       100% { transform: scale(1); }
     }
   </style>
+  <link rel="stylesheet" href="/order-confirmation.css">
 </head>
 <body>
   <header class="siteHeader">
@@ -1326,12 +1327,16 @@
           <div class="totalBar"><span>총 합계</span><strong id="quoteTotal">0원</strong></div>
         </article>
         <article class="quoteCard">
-          <h3>📄 견적서 받기</h3>
-          <p class="lead">버튼을 누르면 견적서 이미지가 생성되고 카카오톡 상담으로 이어집니다.</p>
+          <div id="orderConfirmationWarning"></div>
+          <h3>📄 견적서 받고 주문 상담하기</h3>
+          <p class="lead">버튼을 누르면 주문 요청을 저장하고 견적서 이미지 공유 또는 다운로드 후 카카오톡 상담으로 이어집니다.</p>
           <div class="stack" style="margin-top:14px;">
-            <button class="btn blue full" id="quoteButton" type="button">견적서 받기</button>
+            <p class="order-confirm-note">카카오톡 상담 완료 후 주문이 최종 확정됩니다.</p>
+            <p id="orderConfirmationError" class="order-confirm-error" role="alert" hidden></p>
+            <button class="btn blue full order-confirm-cta" id="quoteButton" type="button">견적서 받고 카카오톡에서 주문 확정하기 →</button>
             <button class="btn ghost full" id="copyButton" type="button">선택 내용 복사</button>
-            <a class="btn yellow full" href="https://pf.kakao.com/_QdCaK/chat">카카오톡 상담하기</a>
+            <button class="btn yellow full" id="kakaoButton" type="button">카카오톡 상담하기</button>
+            <div id="orderConfirmationStatusMount"></div>
           </div>
         </article>
       </div>
@@ -1381,6 +1386,8 @@
   <div class="toast" id="toast" role="status" aria-live="polite">선택 내용이 복사됐어요.</div>
 
   <script src="order-core.js"></script>
+  <script src="/order-confirmation.js"></script>
+  <script src="/landing-quote.js"></script>
   <script>
     const kakaoUrl = "https://pf.kakao.com/_QdCaK/chat";
     const cookieUnitPrice = 4500;
@@ -1532,8 +1539,8 @@
       }
     }
 
-    async function submitLandingOrder() {
-      return window.NMOrderCore.postLandingOrder({
+    function landingOrderPayload() {
+      return {
         source: "cookie7",
         customerName: state.customerName,
         customerPhone: state.customerPhone,
@@ -1544,7 +1551,7 @@
         request: state.request,
         items: landingCookieItems(),
         sticker: state.sticker
-      });
+      };
     }
 
     function selectedPackage() {
@@ -1752,15 +1759,18 @@
         <div class="quoteLine"><span>스티커 제작</span><b>${state.sticker ? won(stickerPrice) : "선택 안 함"}</b></div>
       `;
       $("quoteTotal").textContent = won(subtotal());
+      confirmationFlow.refresh();
     }
 
     function renderFloating() {
+      document.body.classList.toggle("order-confirm-quote-active", state.step === 5);
+      $("nextButton").classList.toggle("order-confirm-cta", state.step === 5);
       const labels = {
         1: ["패키지", selectedPackage().name],
         2: ["맛 선택", "장바구니 담기"],
         3: ["추가옵션", "옵션 선택"],
         4: ["주문 정보", "주문 정보 입력"],
-        5: ["견적서", "최종 확인"]
+        5: ["견적서", "견적서"]
       };
       $("stepLabel").textContent = labels[state.step][0];
       $("stepTitle").textContent = labels[state.step][1];
@@ -1779,7 +1789,7 @@
         2: "이 구성으로 다음 →",
         3: "주문 정보 입력하기 →",
         4: "견적 내용 확인하기 →",
-        5: "견적서 받기 →"
+        5: window.NMOrderConfirmation.ctaLabel(false)
       };
       $("nextButton").textContent = nextLabels[state.step];
       $("floatingProgress").style.width = `${Math.round((state.step / 5) * 100)}%`;
@@ -1944,6 +1954,7 @@
     }
 
     function setStep(step, options = {}) {
+      if (state.submitting) return;
       const next = Math.max(1, Math.min(5, step));
       if (!options.skipValidation && next > state.step && !validateStep(state.step)) return;
       state.step = next;
@@ -1954,6 +1965,7 @@
         step: state.step,
         step_label: $("stepLabel")?.textContent || ""
       });
+      if (state.step === 5) window.NMOrderConfirmation.safeTrack("quote_preview", { product: "cookie7", total_price: subtotal() });
       window.scrollTo({ top: 0, behavior: "smooth" });
     }
 
@@ -2029,7 +2041,7 @@ ${lines}
       return rows;
     }
 
-    function receiveQuote() {
+    function validateQuote() {
       if (
         state.step !== 4 &&
         (!state.customerName.trim() ||
@@ -2039,23 +2051,23 @@ ${lines}
       ) {
         setStep(4, { skipValidation: true });
         requestAnimationFrame(() => validateStep(4));
-        return;
+        return false;
       }
-      if (!validateStep(4)) return;
+      if (!validateStep(4)) return false;
       if (!state.items.length && flavorTotal() < 1) {
         showToast("견적서에 넣을 맛을 선택해 주세요.");
         state.step = 2;
         render();
-        return;
+        return false;
       }
-      window.NMOrderCore?.track("quote_download", {
-        product: "cookies",
-        total_cookies: totalCookies(),
-        total_price: subtotal()
-      });
+      return true;
+    }
+
+    async function createLegacyQuoteImage() {
+      if (document.fonts?.ready) await document.fonts.ready;
       const canvas = document.createElement("canvas");
       const width = 1080;
-      const height = 1320;
+      const height = 1400;
       canvas.width = width;
       canvas.height = height;
       const ctx = canvas.getContext("2d");
@@ -2121,44 +2133,17 @@ ${lines}
       rect(20, 1204, 1040, 80);
       text("주문 문의: 카카오톡 @nothingmatters 또는 010-2866-7976", 540, 1244, 24, 500, "#111", "center");
 
-      canvas.toBlob(async (blob) => {
-        if (!blob) {
-          showToast("견적서 이미지를 만들지 못했어요.");
-          return;
-        }
-        try {
-          await submitLandingOrder();
-          window.NMOrderCore?.track("submit_success", {
-            product: "cookies",
-            total_cookies: totalCookies(),
-            total_price: subtotal()
-          });
-        } catch (error) {
-          window.NMOrderCore?.track("submit_error", {
-            product: "cookies",
-            message: error.message || "submit failed"
-          });
-          showToast(error.message || "주문 저장에 실패했어요.");
-          return;
-        }
-        const fileName = `nothingmatters-cookie-quote-${Date.now()}.png`;
-        const file = new File([blob], fileName, { type: "image/png" });
-        if (navigator.canShare && navigator.canShare({ files: [file] }) && navigator.share) {
-          navigator.share({ title: "nothingmatters 견적서", text: "수제꾸덕쿠키 견적서입니다.", files: [file] }).finally(() => {
-            location.href = kakaoUrl;
-          });
-        } else {
-          const url = URL.createObjectURL(blob);
-          const a = document.createElement("a");
-          a.href = url;
-          a.download = fileName;
-          document.body.appendChild(a);
-          a.click();
-          a.remove();
-          URL.revokeObjectURL(url);
-          setTimeout(() => { location.href = kakaoUrl; }, 500);
-        }
-      }, "image/png");
+      rect(20, 1284, 1040, 84, "#fff7df");
+      text("※ 본 견적은 주문 접수용이며", 540, 1310, 22, 700, "#ad3418", "center");
+      text("카카오톡 상담 완료 후 주문이 최종 확정됩니다.", 540, 1342, 22, 700, "#ad3418", "center");
+      return new Promise((resolve, reject) => canvas.toBlob((blob) => {
+        if (blob) resolve(blob);
+        else reject(new Error("견적서 이미지를 만들지 못했어요. 다시 시도해 주세요."));
+      }, "image/png"));
+    }
+
+    function receiveQuote(directConsult = false) {
+      return confirmationFlow.receive(directConsult);
     }
 
     function showToast(message) {
@@ -2242,7 +2227,9 @@ ${lines}
       $("ribbonButton").addEventListener("click", () => { state.ribbon = !state.ribbon; render(); });
       $("stickerButton").addEventListener("click", () => { state.sticker = !state.sticker; render(); });
       $("copyButton").addEventListener("click", copyOrder);
-      $("quoteButton").addEventListener("click", receiveQuote);
+      $("quoteButton").addEventListener("click", () => receiveQuote());
+      $("kakaoButton").addEventListener("click", () => receiveQuote(true));
+      $("orderConfirmationStatus").querySelector("[data-confirm-kakao]").addEventListener("click", () => receiveQuote(true));
       pushOrderStep = window.NMOrderCore?.setupStepHistory({
         getStep: () => state.step,
         setStep
@@ -2255,6 +2242,13 @@ ${lines}
       });
     }
 
+    $("orderConfirmationWarning").innerHTML = window.NMOrderConfirmation.warningMarkup();
+    $("orderConfirmationStatusMount").innerHTML = window.NMOrderConfirmation.statusMarkup("orderConfirmationStatus");
+    const confirmationFlow = window.NMOrderConfirmation.createLegacyFlow({
+      state, source: "cookie7", fileSlug: "cookie",
+      getPayload: landingOrderPayload, getTotal: () => subtotal(),
+      createImage: createLegacyQuoteImage, validate: validateQuote, onError: showToast,
+    });
     init();
   </script>
 </body>

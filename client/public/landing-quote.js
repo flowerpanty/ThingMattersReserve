@@ -62,6 +62,7 @@
     paper.append(element('h3', '요청사항'), element('p', data.request || '없음', 'nm-quote-request'));
     const footer = element('footer', undefined, 'nm-quote-footer');
     footer.append(element('p', data.pricingPending ? consultationNotice : account), element('p', contact));
+    footer.append(element('p', data.pricingPending ? window.NMOrderConfirmation.consultNotice : window.NMOrderConfirmation.quoteNotice));
     paper.append(footer);
     container.append(paper);
   }
@@ -157,6 +158,7 @@
     y += 24;
     block(data.pricingPending ? consultationNotice : account, { size: 26, weight: 700, fill: data.pricingPending ? '#f7f8fa' : '#fff3bf', center: true });
     block(contact, { size: 24, center: true });
+    block(data.pricingPending ? window.NMOrderConfirmation.consultNotice : window.NMOrderConfirmation.quoteNotice, { size: 22, weight: 700, color: '#ad3418', center: true });
     if (y > 32000) throw new Error('요청사항이 너무 깁니다. 내용을 줄인 뒤 다시 시도해 주세요.');
     canvas.width = width;
     canvas.height = Math.ceil(y + inset);
@@ -215,6 +217,7 @@
     let busy = false;
     const safeTrack = (event, params) => { try { options.track?.(event, params); } catch (_) { /* Analytics is optional. */ } };
     return {
+      getSaved(payload) { return saved.get(JSON.stringify(payload)); },
       async receive(payload, draft, directConsult = false) {
         if (busy) return null;
         busy = true;

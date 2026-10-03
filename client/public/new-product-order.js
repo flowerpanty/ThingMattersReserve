@@ -2,7 +2,8 @@
   const root = document.getElementById('nm-order-flow');
   const core = window.NMOrderCore;
   const quote = window.NMQuote;
-  if (!root || !core || !quote) return;
+  const confirmation = window.NMOrderConfirmation;
+  if (!root || !core || !quote || !confirmation) return;
 
   const products = {
     cookieFlight: {
@@ -72,7 +73,7 @@
   const won = (value) => `${value.toLocaleString('ko-KR')}원`;
   const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const stepNames = ['상품 선택', '주문 정보', '견적서'];
-  const submitLabel = product.pricingPending ? '상담 요청서 받기' : '견적서 받기';
+  const submitLabel = confirmation.ctaLabel(product.pricingPending);
   const track = (event, params) => { try { core.track(event, { product: source, ...params }); } catch (_) { /* Analytics is optional. */ } };
   const counter = (key, label, count) => `
     <div class="nm-order-counter" role="group" aria-label="${label} 수량">
@@ -163,11 +164,14 @@
       <section class="nm-order-page" data-order-step="3" aria-labelledby="nm-step-three-title" hidden>
         <div class="nm-order-page-head"><p>STEP 03 · 견적서</p><h1 id="nm-step-three-title">${product.pricingPending ? '상담 요청서를 확인해 주세요' : '견적서를 확인해 주세요'}</h1></div>
         <div class="nm-order-card nm-order-quote-card"><h2>${product.pricingPending ? '상담 요청서 미리보기' : '견적서 미리보기'}</h2><div id="nm-order-quote-preview"></div></div>
+        ${confirmation.warningMarkup(product.pricingPending)}
         <p class="nm-order-hint">${product.pricingPending ? '상담 요청서를 받으면 주문을 저장하고 이미지 공유 또는 다운로드 후 카카오톡 상담으로 이어집니다.' : '견적서를 받으면 주문을 저장하고 이미지 공유 또는 다운로드 후 카카오톡 상담으로 이어집니다.'}</p>
         <p id="nm-order-quote-status" class="nm-order-quote-status" role="status" aria-live="polite" hidden></p>
         <p id="nm-order-submit-error" class="nm-order-alert" role="alert" hidden></p>
-        <div class="nm-order-actions"><button type="button" class="nm-order-secondary" data-prev>← 이전</button><button type="button" class="nm-order-primary" id="nm-order-submit">${submitLabel}</button></div>
+        <p class="order-confirm-note">카카오톡 상담 완료 후 주문이 최종 확정됩니다.</p>
+        <div class="nm-order-actions"><button type="button" class="nm-order-secondary" data-prev>← 이전</button><button type="button" class="nm-order-primary order-confirm-cta" id="nm-order-submit">${submitLabel}</button></div>
         <div class="nm-order-quote-tools"><button type="button" class="nm-order-secondary" id="nm-order-copy">선택 내용 복사</button><button type="button" class="nm-order-kakao" id="nm-order-kakao">카카오톡 상담하기</button></div>
+        ${confirmation.statusMarkup('nm-order-confirmation-status')}
       </section>
     </main>
     <div class="nm-order-floating" id="nm-order-floating" aria-label="선택 요약">
@@ -329,7 +333,10 @@
   function renderQuotation() {
     const data = currentQuoteData();
     quote.renderPreview(byId('nm-order-quote-preview'), data);
-    showMessage('nm-order-quote-status', state.savedQuotes.has(JSON.stringify(orderPayload())) ? '주문이 저장되었습니다. 같은 문서는 다시 받을 수 있어요.' : '');
+    const isSaved = state.savedQuotes.has(JSON.stringify(orderPayload()));
+    showMessage('nm-order-quote-status', isSaved ? '주문 요청이 접수되었습니다. 같은 문서는 다시 받을 수 있어요.' : '');
+    if (isSaved) confirmation.showSaved(byId('nm-order-confirmation-status'), product.pricingPending);
+    else byId('nm-order-confirmation-status').hidden = true;
     track('quote_preview', { qty: selectedQuantity(), pricing_pending: data.pricingPending, total_price: data.totalPrice });
   }
 
@@ -338,7 +345,7 @@
     createImage: (data) => quote.createImage(data),
     postOrder: (payload) => core.postLandingOrder(payload),
     provideImage: (...args) => quote.provideImage(...args),
-    navigateToKakao: () => quote.navigateToKakao(),
+    navigateToKakao: () => confirmation.navigate(byId('nm-order-confirmation-status')),
     fromSaved,
     track,
     onSaved: (record) => {
@@ -346,7 +353,8 @@
       state.submitted = true;
       state.savedQuotes.set(JSON.stringify(orderPayload()), record);
       quote.renderPreview(byId('nm-order-quote-preview'), record.data);
-      showMessage('nm-order-quote-status', '주문이 저장되었습니다. 같은 문서는 다시 받을 수 있어요.');
+      showMessage('nm-order-quote-status', '주문 요청이 접수되었습니다. 같은 문서는 다시 받을 수 있어요.');
+      confirmation.showSaved(byId('nm-order-confirmation-status'), product.pricingPending);
       byId('nm-floating-detail').textContent = `${quantityText()} · ${record.data.pricingPending ? '가격 상담' : won(record.data.totalPrice)}`;
     },
   });
@@ -361,6 +369,8 @@
       if (state.step === 2 && !validateDetails()) return;
     }
     state.step = target;
+    document.body.classList.toggle('order-confirm-quote-active', target === 3);
+    byId('nm-floating-next').classList.toggle('order-confirm-cta', target === 3);
     if (target === 3) renderQuotation();
     root.querySelectorAll('[data-order-step]').forEach((page) => { page.hidden = Number(page.dataset.orderStep) !== target; });
     root.querySelectorAll('[data-step-link]').forEach((button) => {
@@ -393,6 +403,7 @@
       await quoteFlow.receive(orderPayload(), currentQuoteData(), directConsult);
     } catch (error) {
       showMessage('nm-order-submit-error', error.message || '견적서 처리에 실패했어요. 다시 시도해 주세요.');
+      byId('nm-order-confirmation-status').querySelector('[data-confirm-moving]').hidden = true;
       byId('nm-order-submit-error').scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'center' });
     } finally {
       state.submitting = false;
@@ -442,6 +453,7 @@
   byId('nm-order-submit').addEventListener('click', () => receiveQuote());
   byId('nm-order-kakao').addEventListener('click', () => receiveQuote(true));
   byId('nm-order-copy').addEventListener('click', copyOrder);
+  byId('nm-order-confirmation-status').querySelector('[data-confirm-kakao]').addEventListener('click', () => receiveQuote(true));
   renderSelection();
   pushStep = core.setupStepHistory({ getStep: () => state.step, setStep });
   if (state.step === 1) setStep(1, { fromHistory: true, skipValidation: true, scroll: false });

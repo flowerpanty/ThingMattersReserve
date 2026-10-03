@@ -1194,6 +1194,7 @@
       100% { transform: scale(1); }
     }
   </style>
+  <link rel="stylesheet" href="/order-confirmation.css">
 </head>
 <body>
   <header class="siteHeader">
@@ -1380,12 +1381,16 @@
           <div class="totalBox"><span>총 합계</span><strong id="quoteTotal">15,000원</strong></div>
         </article>
         <article class="quoteCard">
-          <h3>📄 견적서 받기</h3>
-          <p class="lead">버튼을 누르면 견적서 이미지가 생성되고 카카오톡 상담으로 이어집니다.</p>
+          <div id="orderConfirmationWarning"></div>
+          <h3>📄 견적서 받고 주문 상담하기</h3>
+          <p class="lead">버튼을 누르면 주문 요청을 저장하고 견적서 이미지 공유 또는 다운로드 후 카카오톡 상담으로 이어집니다.</p>
           <div class="stack" style="margin-top:14px;">
-            <button class="btn blue full" id="quoteButton" type="button">견적서 받기</button>
+            <p class="order-confirm-note">카카오톡 상담 완료 후 주문이 최종 확정됩니다.</p>
+            <p id="orderConfirmationError" class="order-confirm-error" role="alert" hidden></p>
+            <button class="btn blue full order-confirm-cta" id="quoteButton" type="button">견적서 받고 카카오톡에서 주문 확정하기 →</button>
             <button class="btn ghost full" id="copyButton" type="button">선택 내용 복사</button>
-            <a class="btn yellow full" href="https://pf.kakao.com/_QdCaK/chat">카카오톡 상담하기</a>
+            <button class="btn yellow full" id="kakaoButton" type="button">카카오톡 상담하기</button>
+            <div id="orderConfirmationStatusMount"></div>
           </div>
         </article>
       </div>
@@ -1435,6 +1440,8 @@
   <div class="toast" id="toast" role="status" aria-live="polite">선택 내용이 복사됐어요.</div>
 
   <script src="order-core.js"></script>
+  <script src="/order-confirmation.js"></script>
+  <script src="/landing-quote.js"></script>
   <script>
     const kakaoUrl = "https://pf.kakao.com/_QdCaK/chat";
     const setPrice = 15000;
@@ -1486,8 +1493,8 @@
       if (fallback) fallback.style.display = "grid";
     }
 
-    async function submitLandingOrder() {
-      return window.NMOrderCore.postLandingOrder({
+    function landingOrderPayload() {
+      return {
         source: "lucky",
         customerName: state.customerName,
         customerPhone: state.customerPhone,
@@ -1497,7 +1504,7 @@
         deliveryAddress: state.address,
         request: state.request,
         quantity: state.quantity
-      });
+      };
     }
 
     function savePageState() {
@@ -1556,13 +1563,16 @@
         <div class="quoteLine"><span>수령</span><b>${state.method} · ${state.date || "미입력"} · ${state.time}</b></div>
       `;
       $("quoteTotal").textContent = won(totalPrice());
+      confirmationFlow.refresh();
     }
 
     function renderFloating() {
+      document.body.classList.toggle("order-confirm-quote-active", state.step === 3);
+      $("nextButton").classList.toggle("order-confirm-cta", state.step === 3);
       const labels = {
         1: ["갯수", "세트 수량"],
         2: ["주문 정보", "주문 정보 입력"],
-        3: ["견적서", "최종 확인"]
+        3: ["견적서", "견적서"]
       };
       $("stepLabel").textContent = labels[state.step][0];
       $("stepTitle").textContent = labels[state.step][1];
@@ -1575,7 +1585,7 @@
       const nextLabels = {
         1: "주문 정보 입력하기 →",
         2: "견적 내용 확인하기 →",
-        3: "견적서 받기 →"
+        3: window.NMOrderConfirmation.ctaLabel(false)
       };
       $("nextButton").textContent = state.step === 1 && !isQuantityCardVisible()
         ? "수량 선택하기 ↓"
@@ -1657,6 +1667,7 @@
     }
 
     function setStep(step, options = {}) {
+      if (state.submitting) return;
       const next = Math.max(1, Math.min(3, step));
       if (!options.skipValidation && next > state.step && !validateStep(state.step)) return;
       state.step = next;
@@ -1667,6 +1678,7 @@
         step: state.step,
         step_label: $("stepLabel")?.textContent || ""
       });
+      if (state.step === 3) window.NMOrderConfirmation.safeTrack("quote_preview", { product: "lucky", total_price: totalPrice() });
       window.scrollTo({ top: 0, behavior: "smooth" });
     }
 
@@ -1749,7 +1761,7 @@
       showToast("선택 내용이 복사됐어요.");
     }
 
-    function receiveQuote() {
+    function validateQuote() {
       if (
         state.step !== 2 &&
         (!state.customerName.trim() ||
@@ -1759,17 +1771,17 @@
       ) {
         setStep(2, { skipValidation: true });
         requestAnimationFrame(() => validateStep(2));
-        return;
+        return false;
       }
-      if (!validateStep(2)) return;
-      window.NMOrderCore?.track("quote_download", {
-        product: "lucky",
-        qty: state.quantity,
-        total_price: totalPrice()
-      });
+      if (!validateStep(2)) return false;
+      return true;
+    }
+
+    async function createLegacyQuoteImage() {
+      if (document.fonts?.ready) await document.fonts.ready;
       const canvas = document.createElement("canvas");
       const width = 1080;
-      const height = 1320;
+      const height = 1400;
       canvas.width = width;
       canvas.height = height;
       const ctx = canvas.getContext("2d");
@@ -1836,44 +1848,17 @@
       rect(20, 1204, 1040, 80);
       text("주문 문의: 카카오톡 @nothingmatters 또는 010-2866-7976", 540, 1244, 24, 500, "#111", "center");
 
-      canvas.toBlob(async (blob) => {
-        if (!blob) {
-          showToast("견적서 이미지를 만들지 못했어요.");
-          return;
-        }
-        try {
-          await submitLandingOrder();
-          window.NMOrderCore?.track("submit_success", {
-            product: "lucky",
-            qty: state.quantity,
-            total_price: totalPrice()
-          });
-        } catch (error) {
-          window.NMOrderCore?.track("submit_error", {
-            product: "lucky",
-            message: error.message || "submit failed"
-          });
-          showToast(error.message || "주문 저장에 실패했어요.");
-          return;
-        }
-        const fileName = `nothingmatters-lucky-cookie-quote-${Date.now()}.png`;
-        const file = new File([blob], fileName, { type: "image/png" });
-        if (navigator.canShare && navigator.canShare({ files: [file] }) && navigator.share) {
-          navigator.share({ title: "nothingmatters 견적서", text: "행운쿠키 견적서입니다.", files: [file] }).finally(() => {
-            location.href = kakaoUrl;
-          });
-        } else {
-          const url = URL.createObjectURL(blob);
-          const a = document.createElement("a");
-          a.href = url;
-          a.download = fileName;
-          document.body.appendChild(a);
-          a.click();
-          a.remove();
-          URL.revokeObjectURL(url);
-          setTimeout(() => { location.href = kakaoUrl; }, 500);
-        }
-      }, "image/png");
+      rect(20, 1284, 1040, 84, "#fff7df");
+      text("※ 본 견적은 주문 접수용이며", 540, 1310, 22, 700, "#ad3418", "center");
+      text("카카오톡 상담 완료 후 주문이 최종 확정됩니다.", 540, 1342, 22, 700, "#ad3418", "center");
+      return new Promise((resolve, reject) => canvas.toBlob((blob) => {
+        if (blob) resolve(blob);
+        else reject(new Error("견적서 이미지를 만들지 못했어요. 다시 시도해 주세요."));
+      }, "image/png"));
+    }
+
+    function receiveQuote(directConsult = false) {
+      return confirmationFlow.receive(directConsult);
     }
 
     function showToast(message) {
@@ -1930,7 +1915,9 @@
         if (state.step === 1) renderFloating();
       }, { passive: true });
       $("copyButton").addEventListener("click", copyOrder);
-      $("quoteButton").addEventListener("click", receiveQuote);
+      $("quoteButton").addEventListener("click", () => receiveQuote());
+      $("kakaoButton").addEventListener("click", () => receiveQuote(true));
+      $("orderConfirmationStatus").querySelector("[data-confirm-kakao]").addEventListener("click", () => receiveQuote(true));
       pushOrderStep = window.NMOrderCore?.setupStepHistory({
         getStep: () => state.step,
         setStep
@@ -1943,6 +1930,13 @@
       });
     }
 
+    $("orderConfirmationWarning").innerHTML = window.NMOrderConfirmation.warningMarkup();
+    $("orderConfirmationStatusMount").innerHTML = window.NMOrderConfirmation.statusMarkup("orderConfirmationStatus");
+    const confirmationFlow = window.NMOrderConfirmation.createLegacyFlow({
+      state, source: "lucky", fileSlug: "lucky-cookie",
+      getPayload: landingOrderPayload, getTotal: () => totalPrice(),
+      createImage: createLegacyQuoteImage, validate: validateQuote, onError: showToast,
+    });
     init();
   </script>
 </body>

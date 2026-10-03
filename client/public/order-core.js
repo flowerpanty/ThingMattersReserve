@@ -3,11 +3,13 @@
 
   function track(eventName, params) {
     if (!eventName || typeof window.gtag !== "function") return;
-    window.gtag("event", eventName, {
-      event_category: "order_builder",
-      page_path: window.location.pathname,
-      ...params
-    });
+    try {
+      window.gtag("event", eventName, {
+        event_category: "order_builder",
+        page_path: window.location.pathname,
+        ...params
+      });
+    } catch (_) { /* Analytics must not interrupt validation, saving or sharing. */ }
   }
 
   const operatingSettings = {

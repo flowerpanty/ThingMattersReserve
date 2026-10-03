@@ -28,6 +28,7 @@ const sandbox = {
   },
 };
 vm.createContext(sandbox);
+vm.runInContext(fs.readFileSync('client/public/order-confirmation.js', 'utf8'), sandbox);
 vm.runInContext(fs.readFileSync('client/public/landing-quote.js', 'utf8'), sandbox);
 const quote = sandbox.window.NMQuote;
 const common = {
