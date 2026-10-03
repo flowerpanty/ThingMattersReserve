@@ -123,6 +123,7 @@ function getLandingSourceInfo(order: Pick<Order, 'orderItems'>) {
     cookieFlight: { label: '쿠키플라이트', tone: 'border-sky-200 bg-sky-50 text-sky-700' },
     airplaneButter: { label: '비행기버터쿠키', tone: 'border-amber-200 bg-amber-50 text-amber-800' },
     cookieCrew: { label: '쿠키크루', tone: 'border-fuchsia-200 bg-fuchsia-50 text-fuchsia-700' },
+    terminalCookie: { label: '터미널쿠키', tone: 'border-violet-200 bg-violet-50 text-violet-700' },
   };
 
   return labels[source as string] || null;
@@ -1335,6 +1336,7 @@ export function Dashboard() {
                   <option value="cookieFlight">쿠키플라이트</option>
                   <option value="airplaneButter">비행기버터쿠키</option>
                   <option value="cookieCrew">쿠키크루</option>
+                  <option value="terminalCookie">터미널쿠키</option>
                 </select>
                 <select value={dateFilter} onChange={(event) => setDateFilter(event.target.value)} aria-label="일정 필터" className="h-9 min-w-[112px] rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold">
                   <option value="all">전체 일정</option>

@@ -57,7 +57,7 @@ function buildOrderDataFromOrder(order: Order): OrderData {
 
   for (const item of orderItems) {
     if (!item || item.type === 'meta') continue;
-    if (['cookieFlight', 'airplaneButter', 'cookieCrew'].includes(item.options?.landingSource)) continue;
+    if (['cookieFlight', 'airplaneButter', 'cookieCrew', 'terminalCookie'].includes(item.options?.landingSource)) continue;
 
     const quantity = Number(item.quantity || 0);
     const itemName = typeof item.name === 'string' ? item.name : '';
@@ -532,7 +532,7 @@ function buildQuoteRowsFromSavedItems(order: Order) {
 
 function buildSavedDetailLines(order: Order) {
   return (Array.isArray(order.orderItems) ? order.orderItems : [])
-    .filter((item) => item && item.type !== 'meta' && ['brookie', 'cookieFlight', 'airplaneButter'].includes(item.options?.landingSource))
+    .filter((item) => item && item.type !== 'meta' && ['brookie', 'cookieFlight', 'airplaneButter', 'terminalCookie'].includes(item.options?.landingSource))
     .map((item) => {
       const options = item.options || {};
       const details = [

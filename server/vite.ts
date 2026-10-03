@@ -16,6 +16,7 @@ const landingPages: Record<string, string> = {
   '/cookieflight': 'cookie-flight.html',
   '/airplane-butter-cookie': 'airplane-butter-cookie.html',
   '/cookie-crew': 'cookie-crew.html',
+  '/terminal-cookie': 'terminal-cookie.html',
 }
 
 // ✅ server/index.ts 에서 import 하는 log 함수 다시 export

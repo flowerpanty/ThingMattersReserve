@@ -12,6 +12,7 @@ body { margin: 0; background: #fffaf1; }
 }
 .nm-order-flow[data-source='airplaneButter'] { --nm-order-accent: #267c9d; --nm-order-pale: #e9f7fc; }
 .nm-order-flow[data-source='cookieCrew'] { --nm-order-accent: #a34f78; --nm-order-pale: #fff0f6; }
+.nm-order-flow[data-source='terminalCookie'] { --nm-order-accent: #7659a2; --nm-order-pale: #f4effb; }
 .nm-order-flow *, .nm-order-flow *::before, .nm-order-flow *::after { box-sizing: border-box; }
 .nm-order-flow [hidden] { display: none !important; }
 .nm-order-flow button, .nm-order-flow input, .nm-order-flow select, .nm-order-flow textarea { font: inherit; }
@@ -91,6 +92,31 @@ body { margin: 0; background: #fffaf1; }
 .nm-order-customer-summary dt { color: var(--nm-order-muted); font-weight: 800; }
 .nm-order-customer-summary dd { min-width: 0; margin: 0; overflow-wrap: anywhere; }
 .nm-order-alert { padding: 12px; border-radius: 10px; background: #fff0f1; color: #a12b3f; font-size: 13px; font-weight: 800; }
+.nm-order-quote-status { margin: 0; padding: 12px; border-radius: 10px; background: #ebf7f0; color: #287352; font-size: 13px; font-weight: 700; }
+.nm-order-quote-tools { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.nm-order-kakao { min-height: 52px; padding: 12px; border: 1px solid #e5cd41; border-radius: 13px; background: #fee500; color: #211d18; font-size: 15px; font-weight: 900; }
+.nm-order-quote-card { padding: 18px; }
+.nm-quote-document { overflow: hidden; border: 1px solid #d3d5dd; border-radius: 12px; background: #fff; }
+.nm-quote-title { margin: 0 !important; padding: 20px 14px; background: #5548e8; color: #fff; text-align: center; font-size: clamp(15px, 3vw, 23px) !important; }
+.nm-quote-info { display: grid; grid-template-columns: max-content minmax(0,1fr); gap: 9px 14px; margin: 0; padding: 18px; font-size: 14px; line-height: 1.5; }
+.nm-quote-info dt { color: #64707c; }
+.nm-quote-info dd { min-width: 0; margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+.nm-quote-table { width: 100%; border-collapse: collapse; table-layout: fixed; font-size: 14px; }
+.nm-quote-table caption { padding: 10px; text-align: left; font-weight: 800; }
+.nm-quote-table th, .nm-quote-table td { padding: 12px 8px; border: 1px solid #d3d5dd; vertical-align: top; overflow-wrap: anywhere; }
+.nm-quote-table th { background: #f0f1f5; font-weight: 800; }
+.nm-quote-table th:first-child { width: 37%; }
+.nm-quote-table th:nth-child(2) { width: 13%; }
+.nm-quote-table th:last-child:nth-child(2) { width: 30%; }
+.nm-quote-table td:not(:first-child) { text-align: right; }
+.nm-quote-total { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; padding: 16px; background: #5548e8; color: #fff; font-size: 15px; font-weight: 700; }
+.nm-quote-total strong { font-size: 22px; }
+.nm-quote-document h3 { margin: 0; padding: 14px 16px; border-bottom: 1px solid #d3d5dd; background: #f7f8fa; font-size: 14px; }
+.nm-quote-details { margin: 0; padding: 14px 16px 14px 32px; font-size: 13px; line-height: 1.8; overflow-wrap: anywhere; }
+.nm-quote-request { margin: 0; padding: 14px 16px; font-size: 13px; line-height: 1.8; white-space: pre-wrap; overflow-wrap: anywhere; }
+.nm-quote-consult-price { padding: 0 16px; color: #7659a2; font-size: 16px; font-weight: 800; }
+.nm-quote-footer { padding: 12px 16px; background: #fff3bf; font-size: 12px; line-height: 1.7; overflow-wrap: anywhere; }
+.nm-quote-footer p { margin: 4px 0; }
 .nm-order-success { padding: 80px 20px; text-align: center; }
 .nm-order-success h1 { font-size: clamp(24px, 5vw, 34px); }
 .nm-order-success p { color: var(--nm-order-muted); }
@@ -126,6 +152,11 @@ body { margin: 0; background: #fffaf1; }
   .nm-order-flow { padding-bottom: calc(116px + env(safe-area-inset-bottom)); }
 }
 @media (max-width: 430px) {
+  .nm-order-quote-card { padding: 10px; }
+  .nm-quote-info { padding: 14px 10px; gap: 8px; font-size: 12px; }
+  .nm-quote-table { font-size: 12px; }
+  .nm-quote-table th, .nm-quote-table td { padding: 9px 4px; }
+  .nm-order-quote-tools { grid-template-columns: 1fr; }
   .nm-order-fields { grid-template-columns: 1fr; }
   .nm-order-quantity { padding: 9px; gap: 6px; }
   .nm-order-crew-row img { width: 48px; height: 48px; }

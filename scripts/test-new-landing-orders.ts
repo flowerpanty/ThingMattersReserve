@@ -1,6 +1,9 @@
 import assert from 'node:assert/strict';
 import express from 'express';
 import ExcelJS from 'exceljs';
+import React from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
+import { QuoteImageTemplate } from '../client/src/components/quote-image-template';
 
 // This test never connects to a database or sends notifications.
 process.env.DATABASE_URL = 'postgres://test:test@127.0.0.1:1/test';
@@ -27,7 +30,9 @@ const saved: any[] = [];
 (storage as any).getOrder = async (id: string) => saved.find((order) => order.id === id);
 (EmailService.prototype as any).sendLandingAdminNotification = async () => {};
 (pushNotificationService as any).sendNewOrderNotification = async () => {};
-(kakaoAlimtalkService as any).isEnabled = () => false;
+const kakaoNotifications: any[] = [];
+(kakaoAlimtalkService as any).isEnabled = () => true;
+(kakaoAlimtalkService as any).sendAdminNotification = async (payload: any) => { kakaoNotifications.push(payload); };
 (googleSheetsService as any).isEnabled = () => false;
 
 const app = express();
@@ -59,6 +64,7 @@ try {
   let response = await post({ source: 'cookieFlight', quantity: 2, price: 1, totalPrice: 1 });
   assert.equal(response.status, 200);
   assert.equal(response.result.totalPrice, 32000);
+  assert.deepEqual(response.result.orderItems, saved[0].orderItems.filter((item: any) => item.type !== 'meta'));
   assert.equal(saved[0].orderItems[0].type, 'addon');
   assert.equal(saved[0].orderItems[0].quantity, 2);
   assert.deepEqual(saved[0].orderItems[0].options.flavors, ['클래식버터', '더블초코', '제주말차', '오렌지']);
@@ -66,6 +72,7 @@ try {
   response = await post({ source: 'airplaneButter', quantity: 3, price: 22000 });
   assert.equal(response.status, 200);
   assert.equal(response.result.totalPrice, 7500);
+  assert.equal(response.result.orderItems[0].price, 2500);
   assert.equal(saved[1].orderItems[0].price, 2500);
   assert.notEqual(saved[1].orderItems[0].type, 'airplane');
   assert.equal(buildOrderDataFromOrder(saved[1]).airplaneSandwich, 0);
@@ -80,6 +87,7 @@ try {
   response = await post({ source: 'cookieCrew', crewQuantities: { captain: 3, blue: 2, orange: 3, green: 4 } });
   assert.equal(response.status, 200);
   assert.equal(response.result.pricingPending, true);
+  assert(response.result.orderItems.every((item: any) => item.options.pricingPending === true));
   assert.deepEqual(saved[2].orderItems.slice(0, 4).map((item: any) => [item.name, item.quantity]), [['쿠키기장', 3], ['쿠키블루', 2], ['쿠키오렌지', 3], ['쿠키그린', 4]]);
   assert.equal(saved[2].orderItems.at(-1).options.pricingPending, true);
   const email = (new EmailService() as any).generateLandingAdminEmailHTML({ order: saved[2], sourceLabel: '쿠키크루' });
@@ -118,6 +126,49 @@ try {
   assert.equal(crewExcelResponse.status, 409);
   assert.match((await crewExcelResponse.json()).message, /가격 상담 후/);
 
+  response = await post({ source: 'terminalCookie', quantity: 2, price: 1, totalPrice: 1, pricingPending: true });
+  assert.equal(response.status, 200);
+  assert.equal(response.result.totalPrice, 48000);
+  assert.equal(response.result.orderItems[0].price, 24000);
+  assert.equal(response.result.pricingPending, false);
+  const terminal = saved[3];
+  assert.equal(terminal.orderItems[0].type, 'addon');
+  assert.equal(terminal.orderItems[0].name, 'TERMINAL 카라멜 샌드쿠키');
+  assert.equal(terminal.orderItems[0].quantity, 2);
+  assert.equal(terminal.orderItems[0].price, 24000);
+  assert.deepEqual(terminal.orderItems[0].options.flavors, ['피스타치오', '패션프루츠코코넛', '제주말차레몬', '흑임자', '커피 밀크 초콜릿', '무화과피칸']);
+  assert.equal(terminal.orderItems.at(-1).options.pricingPending, false);
+  assert.equal(buildOrderDataFromOrder(terminal).airplaneSandwich, 0);
+  assert.deepEqual(buildOrderDataFromOrder(terminal).regularCookies, {});
+  const terminalEmail = (new EmailService() as any).generateLandingAdminEmailHTML({ order: terminal, sourceLabel: '터미널쿠키' });
+  assert(terminalEmail.includes('48,000원') && terminalEmail.includes('맛 구성: 피스타치오'));
+  assert(!terminalEmail.includes('가격 상담 필요'));
+  const terminalSheetRow = (googleSheetsService as any).orderToRowData(terminal);
+  assert.equal(terminalSheetRow[23], 48000);
+  assert(terminalSheetRow[26].includes('맛 구성: 피스타치오'));
+  const terminalQuote = (googleSheetsService as any).buildQuoteRows(terminal);
+  assert.equal(terminalQuote.totalAmount, 48000);
+  assert.equal(terminalQuote.rows[0].price, 24000);
+  assert.equal(kakaoNotifications.at(-1).pricingPending, false);
+  assert.equal(kakaoNotifications.at(-1).totalPrice, 48000);
+  const terminalQuoteImage = renderToStaticMarkup(React.createElement(QuoteImageTemplate, { order: terminal }));
+  assert(terminalQuoteImage.includes('48,000원') && terminalQuoteImage.includes('피스타치오'));
+  assert(!terminalQuoteImage.includes('가격 상담 필요'));
+  const terminalExcelResponse = await fetch(`http://127.0.0.1:${address.port}/api/orders/${terminal.id}/quote-excel`);
+  assert.equal(terminalExcelResponse.status, 200);
+  const terminalWorkbook = new ExcelJS.Workbook();
+  await terminalWorkbook.xlsx.load(Buffer.from(await terminalExcelResponse.arrayBuffer()));
+  const terminalSheet = terminalWorkbook.worksheets[0];
+  assert.equal(terminalSheet.getCell('A6').value, 'TERMINAL 카라멜 샌드쿠키');
+  assert.equal(terminalSheet.getCell('B6').value, '2');
+  assert.equal(terminalSheet.getCell('C6').value, 24000);
+  assert.equal(terminalSheet.getCell('D6').value, 48000);
+  assert.equal(terminalSheet.getCell('D8').value, 48000);
+  assert(String(terminalSheet.getCell('A10').value).includes('피스타치오'));
+  response = await post({ source: 'terminalCookie', quantity: 1 });
+  assert.equal(response.status, 200);
+  assert.equal(response.result.totalPrice, 24000);
+
   for (const existing of [
     { source: 'brookie', combos: [{ character: 'bear', paper: 'navy', qty: 12 }] },
     { source: 'cookie7', packageId: 'one-box', flavorQty: { 'double-choco': 1 } },
@@ -128,12 +179,21 @@ try {
     assert(response.result.totalPrice > 0);
   }
 
+  response = await post({ source: 'airplaneButter', quantity: 10, price: 1, totalPrice: 1 });
+  assert.equal(response.status, 200);
+  assert.equal(response.result.totalPrice, 25000);
+  assert.equal(response.result.orderItems[0].quantity, 10);
+
   for (const invalid of [
     { source: 'cookieCrew', crewQuantities: { captain: 0, blue: 0, orange: 0, green: 0 } },
     { source: 'cookieCrew', crewQuantities: { captain: 3, blue: 2, orange: 3, green: 3 } },
     { source: 'cookieCrew', crewQuantities: { magnet: 1 } },
     { source: 'cookieFlight', quantity: 0 },
     { source: 'airplaneButter', quantity: 1.5 },
+    { source: 'terminalCookie', quantity: 0 },
+    { source: 'terminalCookie', quantity: 1.5 },
+    { source: 'terminalCookie', quantity: 1, preferredFlavors: ['초코'] },
+    { source: 'terminalCookie', quantity: 1, preferredFlavors: ['피스타치오', '피스타치오'] },
     { source: 'unknown', quantity: 1 },
   ]) {
     response = await post(invalid);
@@ -142,8 +202,8 @@ try {
       assert.match(response.result.message, /최소 12개/);
     }
   }
-  assert.equal(saved.length, 6);
-  console.log('Landing order API, Excel/Sheets/email data, and existing products: 6 valid and 6 invalid cases passed.');
+  assert.equal(saved.length, 9);
+  console.log('Landing order API, saved quote items, Excel/Sheets/email/Kakao data, and existing products: 9 valid and 10 invalid cases passed.');
 } finally {
   await new Promise<void>((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));
 }

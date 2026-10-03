@@ -36,7 +36,7 @@ export function buildOrderDataFromOrder(order: Order): OrderData {
 
     // These landing products carry their own saved names and prices. Never infer a
     // legacy catalog product from a shared word such as "비행기".
-    if (['cookieFlight', 'airplaneButter', 'cookieCrew'].includes(item.options?.landingSource)) {
+    if (['cookieFlight', 'airplaneButter', 'cookieCrew', 'terminalCookie'].includes(item.options?.landingSource)) {
       continue;
     }
 

@@ -1,7 +1,8 @@
 (function () {
   const root = document.getElementById('nm-order-flow');
   const core = window.NMOrderCore;
-  if (!root || !core) return;
+  const quote = window.NMQuote;
+  if (!root || !core || !quote) return;
 
   const products = {
     cookieFlight: {
@@ -12,6 +13,8 @@
       description: '4가지 맛을 담은 4개입 선물 박스',
       facts: [['CLASSIC', '클래식버터'], ['CHOCO', '더블초코'], ['MATCHA', '제주말차'], ['ORANGE', '오렌지']],
       note: '4가지 맛이 1 BOX의 기본 구성입니다. 맛은 선택 옵션이 아닙니다.',
+      quoteFileSlug: 'cookie-flight',
+      quoteOptions: { unitLabel: 'BOX', packageName: '4개입 1세트', flavors: ['클래식버터', '더블초코', '제주말차', '오렌지'] },
     },
     airplaneButter: {
       name: '비행기 버터쿠키', unit: '개', unitPrice: 2500,
@@ -21,6 +24,8 @@
       description: '가볍게 건네기 좋은 비행기 모양 버터쿠키',
       facts: [['PRODUCT', '비행기 버터쿠키'], ['TYPE', '단품 · 개별포장'], ['PRICE', '1개 2,500원']],
       note: '1개씩 개별 포장해 준비합니다.',
+      quoteFileSlug: 'airplane-butter-cookie',
+      quoteOptions: { unitLabel: '개', individuallyWrapped: true },
     },
     cookieCrew: {
       name: '쿠키크루', unit: '개', pricingPending: true, minimumQuantity: 12,
@@ -29,12 +34,25 @@
       tagline: '마음에 드는 쿠키크루를 종류별로 골라주세요.',
       description: '쿠키 4종을 원하는 수량만큼 선택할 수 있어요. 종류 합계 최소 12개부터 주문 가능합니다.',
       note: '마그넷은 현재 주문 항목에 포함되지 않습니다.',
+      quoteFileSlug: 'cookie-crew',
       crew: [
         ['captain', '쿠키기장', '/public/cookie-crew-assets/cookie-crew-pilot-hero.webp'],
         ['blue', '쿠키블루', '/public/cookie-crew-assets/cookie-crew-color-crew-02.webp'],
         ['orange', '쿠키오렌지', '/public/cookie-crew-assets/cookie-crew-color-crew-01.webp'],
         ['green', '쿠키그린', '/public/cookie-crew-assets/cookie-crew-color-crew-03.webp'],
       ],
+    },
+    terminalCookie: {
+      name: '터미널쿠키', unit: '', unitPrice: 24000,
+      image: '/public/terminal-cookie-assets/terminal-hero-package.webp',
+      imageAlt: 'TERMINAL 카라멜 샌드쿠키 선물 패키지',
+      tagline: '천천히 끓인 카라멜을 샌드한 여섯 가지 맛',
+      description: '맛 구성은 고정입니다. 주문 수량만 선택해 주세요.',
+      facts: [['FLAVORS', '6가지 맛 고정'], ['PACKAGE', '선물 패키지'], ['PRICE', '24,000원']],
+      note: '피스타치오 · 패션프루츠코코넛 · 제주말차레몬 · 흑임자 · 커피 밀크 초콜릿 · 무화과피칸',
+      quoteName: 'TERMINAL 카라멜 샌드쿠키',
+      quoteFileSlug: 'terminal-cookie',
+      quoteOptions: { unitLabel: '', flavors: ['피스타치오', '패션프루츠코코넛', '제주말차레몬', '흑임자', '커피 밀크 초콜릿', '무화과피칸'] },
     },
   };
   const source = root.dataset.source;
@@ -47,17 +65,20 @@
     crewQuantities: { captain: 0, blue: 0, orange: 0, green: 0 },
     submitting: false,
     submitted: false,
+    orderId: null,
+    savedQuotes: new Map(),
   };
   const byId = (id) => document.getElementById(id);
   const won = (value) => `${value.toLocaleString('ko-KR')}원`;
   const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const stepNames = ['상품 선택', '주문 정보', '주문 확인'];
-  const submitLabel = product.pricingPending ? '가격 상담 요청 보내기' : '주문 요청 보내기';
+  const stepNames = ['상품 선택', '주문 정보', '견적서'];
+  const submitLabel = product.pricingPending ? '상담 요청서 받기' : '견적서 받기';
+  const track = (event, params) => { try { core.track(event, { product: source, ...params }); } catch (_) { /* Analytics is optional. */ } };
   const counter = (key, label, count) => `
     <div class="nm-order-counter" role="group" aria-label="${label} 수량">
-      <button type="button" data-delta="-1" ${key ? `data-crew="${key}"` : ''} aria-label="${label} 한 개 줄이기">−</button>
+      <button type="button" data-delta="-1" ${key ? `data-crew="${key}"` : ''} aria-label="${label} ${product.unit === '' ? '수량' : '한 개'} 줄이기">−</button>
       <output ${key ? `data-crew-count="${key}"` : 'id="nm-order-count"'} aria-live="polite">${count}</output>
-      <button type="button" data-delta="1" ${key ? `data-crew="${key}"` : ''} aria-label="${label} 한 개 늘리기">+</button>
+      <button type="button" data-delta="1" ${key ? `data-crew="${key}"` : ''} aria-label="${label} ${product.unit === '' ? '수량' : '한 개'} 늘리기">+</button>
     </div>`;
   const controls = product.crew
     ? `<div class="nm-order-crew-list">${product.crew.map(([key, label, image]) => `
@@ -94,7 +115,7 @@
         <div class="nm-order-page-head"><p>STEP 01 · 상품 선택</p><h1 id="nm-step-one-title">${product.name}</h1><p>${product.tagline}</p><p>${product.description}</p></div>
         ${facts}
         <article class="nm-order-card">
-          <h2>${product.crew ? '쿠키크루 종류별 수량' : '몇 개 준비할까요?'}</h2>
+          <h2>${product.crew ? '쿠키크루 종류별 수량' : product.unit === '' ? '주문 수량' : '몇 개 준비할까요?'}</h2>
           ${product.crew ? '<p id="nm-order-minimum" class="nm-order-minimum" role="status" aria-live="polite"></p>' : ''}
           ${controls}
           <p class="nm-order-hint">${product.note}</p>
@@ -105,7 +126,7 @@
           <div id="nm-order-selected-lines" class="nm-order-selected-lines" aria-live="polite"></div>
           <dl class="nm-order-price-list">
             <dt>선택 수량</dt><dd id="nm-order-selected-quantity"></dd>
-            ${product.pricingPending ? '' : `<dt>${product.unitPrice === 16000 ? '1 BOX 가격' : '1개 가격'}</dt><dd>${won(product.unitPrice)}</dd>`}
+            ${product.pricingPending ? '' : `<dt>${product.unit === 'BOX' ? '1 BOX 가격' : product.unit === '' ? '단가' : '1개 가격'}</dt><dd>${won(product.unitPrice)}</dd>`}
             <dt>${product.pricingPending ? '가격' : '예상 총액'}</dt><dd class="nm-order-highlight" id="nm-order-selection-total"></dd>
           </dl>
           <button class="nm-order-primary" type="button" data-next>주문 정보 입력하기 →</button>
@@ -137,17 +158,17 @@
           <label id="nm-address-row" class="nm-order-address" hidden><span>퀵 배송 주소 <b>*</b></span><input id="nm-deliveryAddress" type="text" autocomplete="street-address" placeholder="주소를 입력해 주세요" /><small class="fieldError" id="nm-deliveryAddressError" hidden></small></label>
         </div>
         <div class="nm-order-card"><label class="nm-order-request"><span>요청사항 (선택)</span><textarea id="nm-request" rows="3" placeholder="필요한 내용을 적어주세요"></textarea></label></div>
-        <div class="nm-order-actions"><button type="button" class="nm-order-secondary" data-prev>← 이전</button><button type="button" class="nm-order-primary" data-next>주문 확인하기 →</button></div>
+        <div class="nm-order-actions"><button type="button" class="nm-order-secondary" data-prev>← 이전</button><button type="button" class="nm-order-primary" data-next>${product.pricingPending ? '상담 요청서 확인하기' : '견적서 확인하기'} →</button></div>
       </section>
       <section class="nm-order-page" data-order-step="3" aria-labelledby="nm-step-three-title" hidden>
-        <div class="nm-order-page-head"><p>STEP 03 · 주문 확인</p><h1 id="nm-step-three-title">주문 내용을 확인해 주세요</h1></div>
-        <div class="nm-order-card"><h2>선택한 상품</h2><ul id="nm-order-summary-items" class="nm-order-summary-items"></ul><dl class="nm-order-price-list"><dt>${product.pricingPending ? '가격' : '상품 합계'}</dt><dd class="nm-order-highlight" id="nm-order-confirm-total"></dd></dl></div>
-        <div class="nm-order-card"><h2>주문자 · 수령 정보</h2><dl id="nm-order-customer-summary" class="nm-order-customer-summary"></dl></div>
-        <p class="nm-order-hint">${product.pricingPending ? '가격은 상담 후 안내해 드립니다.' : '주문 접수 후 관리자가 내용을 확인합니다.'}</p>
+        <div class="nm-order-page-head"><p>STEP 03 · 견적서</p><h1 id="nm-step-three-title">${product.pricingPending ? '상담 요청서를 확인해 주세요' : '견적서를 확인해 주세요'}</h1></div>
+        <div class="nm-order-card nm-order-quote-card"><h2>${product.pricingPending ? '상담 요청서 미리보기' : '견적서 미리보기'}</h2><div id="nm-order-quote-preview"></div></div>
+        <p class="nm-order-hint">${product.pricingPending ? '상담 요청서를 받으면 주문을 저장하고 이미지 공유 또는 다운로드 후 카카오톡 상담으로 이어집니다.' : '견적서를 받으면 주문을 저장하고 이미지 공유 또는 다운로드 후 카카오톡 상담으로 이어집니다.'}</p>
+        <p id="nm-order-quote-status" class="nm-order-quote-status" role="status" aria-live="polite" hidden></p>
         <p id="nm-order-submit-error" class="nm-order-alert" role="alert" hidden></p>
         <div class="nm-order-actions"><button type="button" class="nm-order-secondary" data-prev>← 이전</button><button type="button" class="nm-order-primary" id="nm-order-submit">${submitLabel}</button></div>
+        <div class="nm-order-quote-tools"><button type="button" class="nm-order-secondary" id="nm-order-copy">선택 내용 복사</button><button type="button" class="nm-order-kakao" id="nm-order-kakao">카카오톡 상담하기</button></div>
       </section>
-      <div id="nm-order-success" class="nm-order-success" hidden aria-live="polite"><h1>${product.pricingPending ? '가격 상담 요청이 접수됐어요.' : '주문 요청이 접수됐어요.'}</h1><p>관리자가 내용을 확인한 뒤 연락드리겠습니다.</p><a href="/order">다른 상품 보기 →</a></div>
     </main>
     <div class="nm-order-floating" id="nm-order-floating" aria-label="선택 요약">
       <div class="nm-order-floating-progress"><span id="nm-floating-progress"></span></div>
@@ -180,6 +201,7 @@
     return product.pricingPending ? '가격 상담 필요' : won(selectedQuantity() * product.unitPrice);
   }
   function quantityText() {
+    if (product.unit === '') return `수량 ${selectedQuantity()}`;
     return product.unit === 'BOX' ? `${selectedQuantity()} BOX` : `${selectedQuantity()}개`;
   }
   function showMessage(id, message) {
@@ -249,41 +271,89 @@
       request: byId('nm-request').value.trim(),
     };
   }
-  function appendSummaryTerm(list, label, value) {
-    const term = document.createElement('dt');
-    term.textContent = label;
-    const detail = document.createElement('dd');
-    detail.textContent = value;
-    list.append(term, detail);
+  function orderPayload() {
+    return {
+      source,
+      ...customerValues(),
+      ...(product.crew ? { crewQuantities: { ...state.crewQuantities }, pricingPending: true } : { quantity: state.quantity }),
+    };
   }
-  function renderConfirmation() {
-    const items = byId('nm-order-summary-items');
-    items.replaceChildren();
-    const selected = product.crew
-      ? [...selectedLines(), `총 수량 · ${quantityText()}`]
-      : [`${product.name} · ${quantityText()}`, product.tagline, `단가 · ${won(product.unitPrice)}`];
-    selected.forEach((line) => {
-      const item = document.createElement('li');
-      item.textContent = line;
-      items.append(item);
+  function quoteDataFromItems(items, customer, pricingPending, totalPrice) {
+    const details = items.flatMap((item) => {
+      const options = item.options || {};
+      return [
+        options.packageName ? `${item.name} · ${options.packageName}` : '',
+        Array.isArray(options.flavors) ? `${item.name} · 맛 구성: ${options.flavors.join(' / ')}` : '',
+        options.individuallyWrapped ? `${item.name} · 개별 포장` : '',
+      ].filter(Boolean);
     });
-    byId('nm-order-confirm-total').textContent = priceText();
-    const customer = customerValues();
-    const summary = byId('nm-order-customer-summary');
-    summary.replaceChildren();
-    appendSummaryTerm(summary, '주문자', customer.customerName);
-    appendSummaryTerm(summary, '전화번호', customer.customerPhone);
-    if (customer.customerEmail) appendSummaryTerm(summary, '이메일', customer.customerEmail);
-    appendSummaryTerm(summary, '수령일', customer.deliveryDate);
-    appendSummaryTerm(summary, '시간', customer.pickupTime);
-    appendSummaryTerm(summary, '수령방법', customer.deliveryMethod === 'quick' ? '퀵 배송' : '매장 픽업');
-    if (customer.deliveryAddress) appendSummaryTerm(summary, '주소', customer.deliveryAddress);
-    if (customer.request) appendSummaryTerm(summary, '요청사항', customer.request);
+    return {
+      ...customer,
+      documentTitle: pricingPending ? 'nothingmatters 주문 상담 요청서' : 'nothingmatters 견적서',
+      items: items.map((item) => ({
+        name: item.name,
+        quantity: item.quantity,
+        unitLabel: item.options?.unitLabel ?? '개',
+        ...(pricingPending ? { priceText: '상담 후 안내' } : { unitPrice: item.price, amount: item.quantity * item.price }),
+      })),
+      details,
+      totalPrice: pricingPending ? null : totalPrice,
+      pricingPending,
+    };
   }
+  function draftQuoteData() {
+    const items = product.crew
+      ? product.crew.filter(([key]) => state.crewQuantities[key] > 0).map(([key, name]) => ({ name, quantity: state.crewQuantities[key], price: 0, options: { unitLabel: '개' } }))
+      : [{ name: product.quoteName || product.name, quantity: state.quantity, price: product.unitPrice, options: product.quoteOptions }];
+    return quoteDataFromItems(items, customerValues(), !!product.pricingPending, product.pricingPending ? 0 : selectedQuantity() * product.unitPrice);
+  }
+  function fromSaved(result, draft) {
+    if (!Array.isArray(result.orderItems)) {
+      if (result.totalPrice !== (draft.totalPrice ?? 0) || !!result.pricingPending !== draft.pricingPending) {
+        throw new Error('저장된 견적 금액을 확인할 수 없습니다. 페이지를 새로고침해 주세요.');
+      }
+      return draft;
+    }
+    const items = result.orderItems.filter((item) => item?.type !== 'meta' && item?.options?.landingSource === source);
+    if (!items.length || items.some((item) => typeof item.name !== 'string' || !Number.isSafeInteger(item.quantity) || item.quantity < 1 || !Number.isSafeInteger(item.price) || item.price < 0)) {
+      throw new Error('저장된 견적 항목을 확인할 수 없습니다.');
+    }
+    if (items.reduce((sum, item) => sum + item.quantity * item.price, 0) !== result.totalPrice) throw new Error('저장된 항목과 견적 금액이 일치하지 않습니다.');
+    const customer = { ...draft };
+    ['documentTitle', 'items', 'details', 'totalPrice', 'pricingPending'].forEach((key) => delete customer[key]);
+    return quoteDataFromItems(items, customer, !!result.pricingPending, result.totalPrice);
+  }
+  function currentQuoteData() {
+    return state.savedQuotes.get(JSON.stringify(orderPayload()))?.data || draftQuoteData();
+  }
+  function renderQuotation() {
+    const data = currentQuoteData();
+    quote.renderPreview(byId('nm-order-quote-preview'), data);
+    showMessage('nm-order-quote-status', state.savedQuotes.has(JSON.stringify(orderPayload())) ? '주문이 저장되었습니다. 같은 문서는 다시 받을 수 있어요.' : '');
+    track('quote_preview', { qty: selectedQuantity(), pricing_pending: data.pricingPending, total_price: data.totalPrice });
+  }
+
+  const quoteFlow = quote.createFlow({
+    fileSlug: product.quoteFileSlug,
+    createImage: (data) => quote.createImage(data),
+    postOrder: (payload) => core.postLandingOrder(payload),
+    provideImage: (...args) => quote.provideImage(...args),
+    navigateToKakao: () => quote.navigateToKakao(),
+    fromSaved,
+    track,
+    onSaved: (record) => {
+      state.orderId = record.result.orderId;
+      state.submitted = true;
+      state.savedQuotes.set(JSON.stringify(orderPayload()), record);
+      quote.renderPreview(byId('nm-order-quote-preview'), record.data);
+      showMessage('nm-order-quote-status', '주문이 저장되었습니다. 같은 문서는 다시 받을 수 있어요.');
+      byId('nm-floating-detail').textContent = `${quantityText()} · ${record.data.pricingPending ? '가격 상담' : won(record.data.totalPrice)}`;
+    },
+  });
 
   let pushStep = () => {};
   function setStep(next, options = {}) {
-    if (state.submitted) return;
+    if (state.submitting) return;
     const previous = state.step;
     const target = Math.max(1, Math.min(3, options.fromHistory ? next : Math.min(next, previous + 1)));
     if (!options.skipValidation && target > state.step) {
@@ -291,7 +361,7 @@
       if (state.step === 2 && !validateDetails()) return;
     }
     state.step = target;
-    if (target === 3) renderConfirmation();
+    if (target === 3) renderQuotation();
     root.querySelectorAll('[data-order-step]').forEach((page) => { page.hidden = Number(page.dataset.orderStep) !== target; });
     root.querySelectorAll('[data-step-link]').forEach((button) => {
       const step = Number(button.dataset.stepLink);
@@ -308,41 +378,42 @@
     byId('nm-floating-back').hidden = target === 1;
     byId('nm-floating-next').textContent = target === 3 ? submitLabel : '다음 →';
     if (!options.fromHistory && target !== previous) pushStep(target);
-    core.track('order_step_view', { product: source, step: target });
+    track('order_step_view', { step: target });
     if (options.scroll !== false) window.scrollTo({ top: 0, behavior: reduceMotion ? 'auto' : 'smooth' });
   }
-  async function submitOrder() {
-    if (state.submitting || state.submitted || !validateSelection() || !validateDetails()) return;
+  async function receiveQuote(directConsult = false) {
+    if (state.submitting || !validateSelection() || !validateDetails()) return;
     state.submitting = true;
-    const buttons = [byId('nm-order-submit'), byId('nm-floating-next')];
-    buttons.forEach((button) => { button.disabled = true; button.textContent = '접수 중...'; });
+    const controls = Array.from(root.querySelectorAll('button, input, select, textarea'));
+    controls.forEach((control) => { control.disabled = true; });
+    byId('nm-order-submit').textContent = '처리 중...';
+    byId('nm-floating-next').textContent = '처리 중...';
     showMessage('nm-order-submit-error', '');
     try {
-      const payload = {
-        source,
-        ...customerValues(),
-        ...(product.crew ? { crewQuantities: { ...state.crewQuantities }, pricingPending: true } : { quantity: state.quantity }),
-      };
-      await core.postLandingOrder(payload);
-      state.submitted = true;
-      core.track('submit_success', { product: source, qty: selectedQuantity() });
-      root.querySelectorAll('[data-order-step]').forEach((page) => { page.hidden = true; });
-      byId('nm-order-success').hidden = false;
-      byId('nm-order-floating').hidden = true;
-      window.scrollTo({ top: 0, behavior: reduceMotion ? 'auto' : 'smooth' });
+      await quoteFlow.receive(orderPayload(), currentQuoteData(), directConsult);
     } catch (error) {
-      showMessage('nm-order-submit-error', error.message || '주문 저장에 실패했어요. 다시 시도해 주세요.');
-      core.track('submit_error', { product: source, message: error.message || 'submit failed' });
-      state.submitting = false;
-      buttons.forEach((button) => { button.disabled = false; button.textContent = submitLabel; });
+      showMessage('nm-order-submit-error', error.message || '견적서 처리에 실패했어요. 다시 시도해 주세요.');
       byId('nm-order-submit-error').scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'center' });
+    } finally {
+      state.submitting = false;
+      controls.forEach((control) => { control.disabled = false; });
+      byId('nm-order-submit').textContent = submitLabel;
+      byId('nm-floating-next').textContent = state.step === 3 ? submitLabel : '다음 →';
     }
   }
+  async function copyOrder() {
+    if (state.submitting || !validateSelection() || !validateDetails()) return;
+    try {
+      await quote.copyText(currentQuoteData());
+      showMessage('nm-order-quote-status', '선택 내용이 복사됐어요.');
+    } catch (error) { showMessage('nm-order-submit-error', error.message || '복사하지 못했어요. 다시 시도해 주세요.'); }
+  }
   function nextStep() {
-    if (state.step === 3) submitOrder();
+    if (state.step === 3) receiveQuote();
     else setStep(state.step + 1);
   }
   root.addEventListener('click', (event) => {
+    if (state.submitting) { event.preventDefault(); return; }
     const qtyButton = event.target.closest('[data-delta]');
     if (qtyButton) {
       const delta = Number(qtyButton.dataset.delta);
@@ -350,7 +421,7 @@
       if (crewType) state.crewQuantities[crewType] = Math.min(10000, Math.max(0, state.crewQuantities[crewType] + delta));
       else state.quantity = Math.min(10000, Math.max(1, state.quantity + delta));
       renderSelection();
-      core.track('option_select', { product: source, qty: selectedQuantity() });
+      track('option_select', { qty: selectedQuantity() });
       return;
     }
     const method = event.target.closest('[data-method]');
@@ -368,9 +439,11 @@
   });
   byId('nm-floating-back').addEventListener('click', () => setStep(state.step - 1));
   byId('nm-floating-next').addEventListener('click', nextStep);
-  byId('nm-order-submit').addEventListener('click', submitOrder);
+  byId('nm-order-submit').addEventListener('click', () => receiveQuote());
+  byId('nm-order-kakao').addEventListener('click', () => receiveQuote(true));
+  byId('nm-order-copy').addEventListener('click', copyOrder);
   renderSelection();
   pushStep = core.setupStepHistory({ getStep: () => state.step, setStep });
   if (state.step === 1) setStep(1, { fromHistory: true, skipValidation: true, scroll: false });
-  core.track('order_start', { product: source });
+  track('order_start', {});
 })();

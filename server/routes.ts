@@ -47,6 +47,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     cookieFlight: '쿠키플라이트',
     airplaneButter: '비행기버터쿠키',
     cookieCrew: '쿠키크루',
+    terminalCookie: '터미널쿠키',
   };
 
   const priceCalculationSchema = z.object({
@@ -465,6 +466,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
     return { orderItems, totalPrice: 0 };
   };
 
+  const terminalFlavors = ['피스타치오', '패션프루츠코코넛', '제주말차레몬', '흑임자', '커피 밀크 초콜릿', '무화과피칸'];
+  const buildTerminalCookieLandingItems = (body: any) => {
+    const quantity = requireLandingQuantity(body.quantity);
+    if (['preferredFlavors', 'flavors', 'flavor', 'options'].some((key) => body[key] !== undefined)) {
+      throw new Error('터미널쿠키 맛 구성은 고정입니다. 수량만 선택해주세요.');
+    }
+    return {
+      orderItems: [{
+        type: 'addon',
+        name: 'TERMINAL 카라멜 샌드쿠키',
+        quantity,
+        price: cookiePrices.terminalCookie,
+        options: {
+          landingSource: 'terminalCookie',
+          unitLabel: '',
+          flavors: terminalFlavors,
+        },
+      }],
+      totalPrice: quantity * cookiePrices.terminalCookie,
+    };
+  };
+
   const landingBuilders: Record<string, (body: any) => { orderItems: any[]; totalPrice: number }> = {
     brookie: buildBrookieLandingItems,
     cookie7: buildCookie7LandingItems,
@@ -472,6 +495,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     cookieFlight: buildCookieFlightLandingItems,
     airplaneButter: buildAirplaneButterLandingItems,
     cookieCrew: buildCookieCrewLandingItems,
+    terminalCookie: buildTerminalCookieLandingItems,
   };
 
   const validateOrderBusinessRules = (orderData: any) => {
@@ -810,6 +834,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         orderId: order.id,
         totalPrice: built.totalPrice,
         pricingPending,
+        orderItems: built.orderItems,
       });
     } catch (error) {
       console.error('Landing order error:', error);
@@ -862,7 +887,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const landingSource = (Array.isArray(order.orderItems) ? order.orderItems as any[] : [])
         .find((item) => item?.type === 'meta')?.options?.landingSource;
-      const buffer = landingSource === 'cookieFlight' || landingSource === 'airplaneButter'
+      const buffer = landingSource === 'cookieFlight' || landingSource === 'airplaneButter' || landingSource === 'terminalCookie'
         ? await excelGenerator.generateQuoteFromStoredItems(order, landingSource)
         : await excelGenerator.generateQuote(orderDataSchema.parse(buildOrderDataFromOrder(order)));
       const fileName = `견적서_${order.customerName}_${new Date().toISOString().split('T')[0]}.xlsx`;

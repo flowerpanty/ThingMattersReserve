@@ -432,7 +432,7 @@ export class EmailService {
             <strong>${this.escapeHTML(item.name)}</strong>
             ${optionDetails ? `<div style="margin-top: 6px; color: #666; font-size: 12px; line-height: 1.5;">${optionDetails}</div>` : ''}
           </td>
-          <td style="padding: 12px; border-bottom: 1px solid #eee; color: #222; font-size: 14px; white-space: nowrap;">${Number(item.quantity || 0).toLocaleString('ko-KR')}${this.escapeHTML(item.options?.unitLabel || '개')}</td>
+          <td style="padding: 12px; border-bottom: 1px solid #eee; color: #222; font-size: 14px; white-space: nowrap;">${Number(item.quantity || 0).toLocaleString('ko-KR')}${this.escapeHTML(item.options?.unitLabel ?? '개')}</td>
           <td style="padding: 12px; border-bottom: 1px solid #eee; color: #222; font-size: 14px; white-space: nowrap;">${pricingPending ? '가격 상담 필요' : this.formatWon(lineTotal)}</td>
         </tr>
       `;

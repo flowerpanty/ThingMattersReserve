@@ -2,7 +2,7 @@ import ExcelJS from 'exceljs';
 import { type Order, type OrderData, cookiePrices, cookieTypes, drinkTypes } from '@shared/schema';
 
 export class ExcelGenerator {
-  async generateQuoteFromStoredItems(order: Order, landingSource: 'cookieFlight' | 'airplaneButter'): Promise<Buffer> {
+  async generateQuoteFromStoredItems(order: Order, landingSource: 'cookieFlight' | 'airplaneButter' | 'terminalCookie'): Promise<Buffer> {
     const items = (Array.isArray(order.orderItems) ? order.orderItems as any[] : [])
       .filter((item) => item?.type !== 'meta' && item?.options?.landingSource === landingSource);
     if (!items.length || items.some((item) =>
@@ -56,7 +56,7 @@ export class ExcelGenerator {
     let rowNumber = 6;
     for (const item of items) {
       const row = sheet.getRow(rowNumber++);
-      row.values = [item.name, `${item.quantity}${item.options?.unitLabel || '개'}`, item.price, item.quantity * item.price];
+      row.values = [item.name, `${item.quantity}${item.options?.unitLabel ?? '개'}`, item.price, item.quantity * item.price];
       row.height = 32;
       row.eachCell((cell) => { cell.border = border; cell.alignment = { vertical: 'middle', wrapText: true }; });
       row.getCell(3).numFmt = money;

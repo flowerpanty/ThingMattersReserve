@@ -43,6 +43,13 @@ const dedicatedOrderProducts = [
     image: "/public/cookie-crew-assets/cookie-crew-hero-main.webp",
     href: "/cookie-crew",
   },
+  {
+    name: "터미널쿠키",
+    description: "여섯 가지 맛의 TERMINAL 카라멜 샌드쿠키",
+    price: `${formatWon(cookiePrices.terminalCookie)} · 수량만 선택`,
+    image: "/public/terminal-cookie-assets/terminal-hero-package.webp",
+    href: "/terminal-cookie",
+  },
 ] as const;
 
 function StepIndicator({ currentStep }: { currentStep: number }) {
@@ -343,7 +350,7 @@ export default function OrderForm() {
                         각 상품의 주문 페이지에서 수량과 수령 정보를 입력할 수 있어요.
                       </p>
                     </div>
-                    <div className="grid gap-3 sm:grid-cols-3">
+                    <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
                       {dedicatedOrderProducts.map((product) => (
                         <article key={product.href} className="min-w-0 overflow-hidden rounded-2xl border border-[#ead8bd] bg-white shadow-[0_8px_24px_rgba(76,51,24,0.08)]">
                           <img

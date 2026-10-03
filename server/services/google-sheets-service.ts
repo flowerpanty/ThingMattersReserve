@@ -179,7 +179,7 @@ export class GoogleSheetsService {
 
     private buildSavedDetailLines(order: Order): string[] {
         return (Array.isArray(order.orderItems) ? (order.orderItems as any[]) : [])
-            .filter((item) => item && item.type !== 'meta' && ['brookie', 'cookieFlight', 'airplaneButter'].includes(item.options?.landingSource))
+            .filter((item) => item && item.type !== 'meta' && ['brookie', 'cookieFlight', 'airplaneButter', 'terminalCookie'].includes(item.options?.landingSource))
             .map((item) => {
                 const options = item.options || {};
                 const details = [
@@ -1256,8 +1256,8 @@ export class GoogleSheetsService {
         const paymentConfirmed = order.paymentConfirmed ? 'Y' : 'N';
 
         const landingDetails = (Array.isArray(order.orderItems) ? order.orderItems as any[] : [])
-            .filter((item) => item?.type !== 'meta' && ['cookieFlight', 'airplaneButter', 'cookieCrew'].includes(item?.options?.landingSource))
-            .map((item) => `${item.name} ${item.quantity}${item.options?.unitLabel || '개'}`)
+            .filter((item) => item?.type !== 'meta' && ['cookieFlight', 'airplaneButter', 'cookieCrew', 'terminalCookie'].includes(item?.options?.landingSource))
+            .map((item) => `${item.name} ${item.quantity}${item.options?.unitLabel ?? '개'}${item.options?.landingSource === 'terminalCookie' ? ` · 맛 구성: ${item.options.flavors.join(', ')}` : ''}`)
             .join(', ');
 
         // 행 데이터 생성 (컬럼 순서에 맞게)

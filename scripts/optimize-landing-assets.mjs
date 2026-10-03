@@ -5,7 +5,7 @@ import sharp from "sharp";
 const projectRoot = process.cwd();
 const publicRoot = path.join(projectRoot, "client", "public");
 const assetRoot = path.join(publicRoot, "public");
-const htmlFiles = ["brookie.html", "cookies.html", "lucky.html", "cookie-flight.html", "airplane-butter-cookie.html", "cookie-crew.html", "order.html"].map((name) =>
+const htmlFiles = ["brookie.html", "cookies.html", "lucky.html", "cookie-flight.html", "airplane-butter-cookie.html", "cookie-crew.html", "terminal-cookie.html", "order.html"].map((name) =>
   path.join(publicRoot, name),
 );
 

@@ -55,6 +55,7 @@ function getLandingSourceInfo(order: Pick<Order, 'orderItems'>) {
         cookieFlight: { label: '쿠키플라이트', tone: 'border-sky-200 bg-sky-50 text-sky-700' },
         airplaneButter: { label: '비행기버터쿠키', tone: 'border-amber-200 bg-amber-50 text-amber-800' },
         cookieCrew: { label: '쿠키크루', tone: 'border-fuchsia-200 bg-fuchsia-50 text-fuchsia-700' },
+        terminalCookie: { label: '터미널쿠키', tone: 'border-violet-200 bg-violet-50 text-violet-700' },
     };
 
     return labels[source as string] || null;
@@ -420,7 +421,7 @@ export function OrderDetailModal({ order, isOpen, onClose, onDelete }: OrderDeta
 
             order.orderItems.forEach(item => {
                 if (item.type === 'meta') return;
-                if (['cookieFlight', 'airplaneButter', 'cookieCrew'].includes(item.options?.landingSource)) {
+                if (['cookieFlight', 'airplaneButter', 'cookieCrew', 'terminalCookie'].includes(item.options?.landingSource)) {
                     summary.others.push(item);
                     return;
                 }
@@ -733,6 +734,9 @@ export function OrderDetailModal({ order, isOpen, onClose, onDelete }: OrderDeta
                 {item.options.landingSource === 'airplaneButter' && item.options.individuallyWrapped && (
                     <div>🎁 개별 포장</div>
                 )}
+                {item.options.landingSource === 'terminalCookie' && Array.isArray(item.options.flavors) && (
+                    <div>🍪 고정 맛 구성: {item.options.flavors.join(', ')}</div>
+                )}
 
                 {/* 스콘 옵션 */}
                 {item.options.flavor && (
@@ -845,7 +849,7 @@ export function OrderDetailModal({ order, isOpen, onClose, onDelete }: OrderDeta
                                             <div className="flex items-center gap-2">
                                                 <span className="font-medium">{item.name}</span>
                                                 <Badge variant="outline" className="text-xs">
-                                                    {item.quantity}{item.options?.unitLabel || '개'}
+                                                    {item.quantity}{item.options?.unitLabel ?? '개'}
                                                 </Badge>
                                             </div>
                                             {renderOptionDetails(item)}
@@ -884,7 +888,7 @@ export function OrderDetailModal({ order, isOpen, onClose, onDelete }: OrderDeta
                                         allItems.push(
                                             <div key={`${index}-main`} className="flex items-center justify-between text-sm">
                                                 <span className="text-muted-foreground">
-                                                    {item.name} × {item.quantity}{item.options?.unitLabel || '개'}
+                                                    {item.name} × {item.quantity}{item.options?.unitLabel ?? '개'}
                                                 </span>
                                                 <span>{pricingPending ? '가격 상담 필요' : formatCurrency(item.price * item.quantity)}</span>
                                             </div>
@@ -913,7 +917,7 @@ export function OrderDetailModal({ order, isOpen, onClose, onDelete }: OrderDeta
                                         items.push(
                                             <div key={`${index}-other-main`} className="flex items-center justify-between text-sm">
                                                 <span className="text-muted-foreground">
-                                                    {item.name} × {item.quantity}{item.options?.unitLabel || '개'}
+                                                    {item.name} × {item.quantity}{item.options?.unitLabel ?? '개'}
                                                 </span>
                                                 <span>{pricingPending ? '가격 상담 필요' : formatCurrency(item.price * item.quantity)}</span>
                                             </div>
