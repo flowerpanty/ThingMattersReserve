@@ -53,6 +53,13 @@ function registerLandingRoutes(app: Express, publicDir: string) {
       if (!fs.existsSync(filePath)) {
         return next()
       }
+      // Enable only after the main-domain order page has been deployed and verified.
+      // Keep API routes and the remaining Railway pages available.
+      if (route === '/order' && process.env.ORDER_PAGE_REDIRECT_ENABLED === '1') {
+        const query = _req.originalUrl.includes('?') ? _req.originalUrl.slice(_req.originalUrl.indexOf('?')) : ''
+        res.setHeader('Cache-Control', 'no-store')
+        return res.redirect(301, `https://nothingmatters.co.kr/order${query}`)
+      }
       res.sendFile(filePath)
     })
   })
