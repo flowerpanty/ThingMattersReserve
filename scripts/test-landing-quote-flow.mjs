@@ -168,9 +168,11 @@ assert.equal(downloads.length, 0);
 sandbox.navigator.share = async () => { throw Object.assign(new Error('Cancelled'), { name: 'AbortError' }); };
 assert.equal(await quote.provideImage(blob, 'test.png', data), 'share_cancelled');
 assert.equal(downloads.length, 0);
+assert.equal(await quote.provideImage(blob, 'test.png', data, { downloadOnCancel: true }), 'download');
+assert.deepEqual(downloads, ['test.png']);
 sandbox.navigator.share = async () => { throw Object.assign(new Error('Unavailable'), { name: 'NotAllowedError' }); };
 assert.equal(await quote.provideImage(blob, 'test.png', data), 'download');
-assert.deepEqual(downloads, ['test.png']);
+assert.deepEqual(downloads, ['test.png', 'test.png']);
 assert(delays.includes(400));
 
 painted.length = 0;

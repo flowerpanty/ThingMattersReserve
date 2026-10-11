@@ -1,8 +1,10 @@
 import ExcelJS from 'exceljs';
 import { type Order, type OrderData, cookiePrices, cookieTypes, drinkTypes } from '@shared/schema';
+import { brookieItemDetails, storedBrookieQuote } from './landing-email-quote';
 
 export class ExcelGenerator {
-  async generateQuoteFromStoredItems(order: Order, landingSource: 'cookieFlight' | 'airplaneButter' | 'terminalCookie'): Promise<Buffer> {
+  async generateQuoteFromStoredItems(order: Order, landingSource: 'cookieFlight' | 'airplaneButter' | 'terminalCookie' | 'brookie'): Promise<Buffer> {
+    if (landingSource === 'brookie') storedBrookieQuote(order);
     const items = (Array.isArray(order.orderItems) ? order.orderItems as any[] : [])
       .filter((item) => item?.type !== 'meta' && item?.options?.landingSource === landingSource);
     if (!items.length || items.some((item) =>
@@ -79,6 +81,7 @@ export class ExcelGenerator {
     for (const item of items) {
       const options = item.options || {};
       const details = [
+        ...(landingSource === 'brookie' ? brookieItemDetails(item) : []),
         options.packageName && `포장: ${options.packageName}`,
         Array.isArray(options.flavors) && `맛 구성: ${options.flavors.join(', ')}`,
         options.individuallyWrapped && '개별 포장',
@@ -88,7 +91,22 @@ export class ExcelGenerator {
       sheet.mergeCells(`A${rowNumber}:D${rowNumber}`);
       sheet.getCell(rowNumber, 1).value = `${item.name} · ${details.join(' · ')}`;
       sheet.getCell(rowNumber, 1).alignment = { wrapText: true, vertical: 'middle' };
-      sheet.getRow(rowNumber).height = 44;
+      sheet.getRow(rowNumber).height = Math.max(44, Math.ceil(String(sheet.getCell(rowNumber, 1).value).length / 48) * 18);
+    }
+
+    if (landingSource === 'brookie') {
+      for (const text of [
+        metadata.customerEmail && `이메일: ${metadata.customerEmail}`,
+        '입금 계좌: 83050104204736 국민은행 (낫띵메터스)',
+        '주문 문의: 카카오톡 @nothingmatters 또는 010-2866-7976',
+        '※ 본 견적은 주문 접수용이며 카카오톡 상담 완료 후 주문이 최종 확정됩니다.',
+      ].filter(Boolean)) {
+        rowNumber += 2;
+        sheet.mergeCells(`A${rowNumber}:D${rowNumber}`);
+        sheet.getCell(rowNumber, 1).value = String(text);
+        sheet.getCell(rowNumber, 1).alignment = { wrapText: true, vertical: 'middle' };
+        sheet.getRow(rowNumber).height = 38;
+      }
     }
 
     sheet.pageSetup = { paperSize: 9, orientation: 'portrait', fitToPage: true, fitToWidth: 1, fitToHeight: 0 };

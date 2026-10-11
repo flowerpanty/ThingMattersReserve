@@ -10,6 +10,7 @@ import { kakaoAlimtalkService } from "./services/kakao-alimtalk-service";
 import { googleSheetsService } from "./services/google-sheets-service";
 import { buildOrderDataFromOrder } from "./services/order-data-utils";
 import { z } from "zod";
+import { createEmailQuoteAccess, hasEmailQuoteAccess, maskQuoteEmail, storedBrookieQuote } from './services/landing-email-quote';
 
 declare module "express-session" {
   interface SessionData {
@@ -146,9 +147,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   const getLandingCustomer = (body: any) => {
     const customerName = asText(body.customerName);
-    const customerEmail = asText(body.customerEmail || body.customerContact);
-    const customerPhone = asText(body.customerPhone);
-    const customerContact = customerEmail || customerPhone;
+    const legacyContact = asText(body.customerContact);
+    const customerEmail = asText(body.customerEmail) || (legacyContact.includes('@') ? legacyContact : '');
+    const customerPhone = asText(body.customerPhone) || (customerEmail ? '' : legacyContact);
+    const customerContact = customerPhone || customerEmail;
     const deliveryDate = asText(body.deliveryDate || body.date);
 
     if (!customerName) {
@@ -159,6 +161,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
     if (!deliveryDate) {
       throw new Error('수령 희망일을 선택해주세요.');
+    }
+    if (customerEmail && !z.string().max(254).email().safeParse(customerEmail).success) {
+      throw new Error('올바른 이메일 주소를 입력해주세요.');
     }
 
     return {
@@ -761,6 +766,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const customer = getLandingCustomer(body);
       const built = builder(body);
       const pricingPending = source === 'cookieCrew';
+      const emailAccess = source === 'brookie' && customer.customerEmail ? createEmailQuoteAccess() : null;
 
       if (!built.orderItems.length || (!pricingPending && built.totalPrice <= 0)) {
         return res.status(400).json({ message: "주문할 상품을 선택해주세요." });
@@ -784,6 +790,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             deliveryAddress: customer.deliveryAddress,
             request: customer.request,
             serverCalculatedTotal: built.totalPrice,
+            emailQuoteTokenHash: emailAccess?.emailQuoteTokenHash,
+            emailQuoteExpiresAt: emailAccess?.emailQuoteExpiresAt,
           },
         },
       ];
@@ -828,6 +836,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           .catch((error) => console.error('❌ 랜딩 주문 Google Sheets 저장 실패:', error));
       }
 
+      res.setHeader('Cache-Control', 'no-store');
       res.json({
         success: true,
         message: "주문이 관리자 대시보드에 저장되었습니다.",
@@ -835,6 +844,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         totalPrice: built.totalPrice,
         pricingPending,
         orderItems: built.orderItems,
+        ...(emailAccess ? { emailQuoteToken: emailAccess.token } : {}),
       });
     } catch (error) {
       console.error('Landing order error:', error);
@@ -842,6 +852,53 @@ export async function registerRoutes(app: Express): Promise<Server> {
         success: false,
         message: error instanceof Error ? error.message : "주문 저장 중 오류가 발생했습니다.",
       });
+    }
+  });
+
+  // A creation-only capability plus the saved recipient authorizes this public
+  // action. It never accepts quote items, totals or another recipient from the client.
+  const emailQuoteRequests = new Map<string, { count: number; expiresAt: number }>();
+  const emailQuoteSends = new Map<string, { expiresAt: number; promise: Promise<void> }>();
+  app.post('/api/orders/:id/email-quote', async (req, res) => {
+    res.setHeader('Cache-Control', 'no-store');
+    const now = Date.now();
+    emailQuoteRequests.forEach((value, key) => { if (value.expiresAt <= now) emailQuoteRequests.delete(key); });
+    emailQuoteSends.forEach((value, key) => { if (value.expiresAt <= now) emailQuoteSends.delete(key); });
+    const key = req.ip || 'unknown';
+    const rate = emailQuoteRequests.get(key) || { count: 0, expiresAt: now + 60 * 60 * 1000 };
+    rate.count++;
+    emailQuoteRequests.set(key, rate);
+    if (rate.count > 20) {
+      res.setHeader('Retry-After', Math.ceil((rate.expiresAt - now) / 1000));
+      return res.status(429).json({ message: '이메일 요청이 너무 많습니다. 잠시 후 다시 시도해주세요.' });
+    }
+    const body = z.object({ email: z.string().trim().max(254).email() }).safeParse(req.body);
+    if (!body.success) return res.status(400).json({ message: '올바른 이메일 주소를 입력해주세요.' });
+    try {
+      const order = await storage.getOrder(req.params.id);
+      const metadata = (Array.isArray(order?.orderItems) ? order.orderItems as any[] : [])
+        .find((item) => item?.type === 'meta')?.options || {};
+      const token = (req.get('Authorization') || '').replace(/^Bearer /, '');
+      if (!order || metadata.landingSource !== 'brookie' || metadata.customerEmail !== body.data.email || !hasEmailQuoteAccess(metadata, token)) {
+        return res.status(403).json({ message: '이 주문의 이메일 견적 요청을 확인할 수 없습니다. 견적 화면에서 다시 요청해주세요.' });
+      }
+      storedBrookieQuote(order);
+      let send = emailQuoteSends.get(order.id);
+      if (!send) {
+        const promise = (async () => {
+          const buffer = await excelGenerator.generateQuoteFromStoredItems(order, 'brookie');
+          await new EmailService().sendBrookieQuote(order, body.data.email, buffer);
+        })();
+        send = { expiresAt: metadata.emailQuoteExpiresAt, promise };
+        emailQuoteSends.set(order.id, send);
+        promise.catch(() => { if (emailQuoteSends.get(order.id)?.promise === promise) emailQuoteSends.delete(order.id); });
+      }
+      await send.promise;
+      return res.json({ success: true, maskedEmail: maskQuoteEmail(body.data.email) });
+    } catch (_) {
+      // Do not expose provider errors, addresses, or access tokens.
+      console.error('[email-quote] Stored quote generation or delivery failed.');
+      return res.status(503).json({ message: '주문 요청은 저장됐지만 이메일 견적 전송에 실패했어요.' });
     }
   });
 
@@ -887,7 +944,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const landingSource = (Array.isArray(order.orderItems) ? order.orderItems as any[] : [])
         .find((item) => item?.type === 'meta')?.options?.landingSource;
-      const buffer = landingSource === 'cookieFlight' || landingSource === 'airplaneButter' || landingSource === 'terminalCookie'
+      const buffer = landingSource === 'cookieFlight' || landingSource === 'airplaneButter' || landingSource === 'terminalCookie' || landingSource === 'brookie'
         ? await excelGenerator.generateQuoteFromStoredItems(order, landingSource)
         : await excelGenerator.generateQuote(orderDataSchema.parse(buildOrderDataFromOrder(order)));
       const fileName = `견적서_${order.customerName}_${new Date().toISOString().split('T')[0]}.xlsx`;

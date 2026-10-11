@@ -2,6 +2,7 @@
 import formData from 'form-data';
 import Mailgun from 'mailgun.js';
 import { type Order, type OrderData, type OrderItem, cookiePrices, isPricingPendingOrder } from '@shared/schema';
+import { brookieItemDetails, storedBrookieQuote } from './landing-email-quote';
 
 const ADMIN_EMAIL_RECIPIENTS = ['flowerpanty@gmail.com', 'betterbetters@kakao.com'];
 
@@ -531,6 +532,48 @@ export class EmailService {
     });
 
     console.log('✅ 랜딩 주문 관리자 이메일 전송 완료');
+  }
+
+  generateBrookieCustomerEmailHTML(order: Order): string {
+    const { items, metadata, quantity, total } = storedBrookieQuote(order);
+    const escape = (value: unknown) => this.escapeHTML(value);
+    const rows = items.map((item) => `<tr>
+      <td style="padding:12px;border-bottom:1px solid #eee"><strong>${escape(item.name)}</strong><div style="font-size:13px;line-height:1.6">${brookieItemDetails(item).map(escape).join('<br>')}</div></td>
+      <td style="padding:12px;border-bottom:1px solid #eee">${item.quantity}개<br>단가 ${this.formatWon(item.price)}<br>${this.formatWon(item.quantity * item.price)}</td>
+    </tr>`).join('');
+    return `<!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"></head>
+      <body style="margin:0;background:#f7f7f7;font-family:'Apple SD Gothic Neo','Malgun Gothic',sans-serif;color:#222">
+        <div style="max-width:600px;margin:0 auto;padding:24px 16px;background:#fff;line-height:1.7">
+          <h1 style="font-size:24px">nothingmatters 브루키 견적서</h1>
+          <p>안녕하세요, ${escape(order.customerName)}님.<br>요청하신 브루키 견적서를 보내드립니다.</p>
+          <p>상품 총 수량: <strong>${quantity}개</strong><br>총 견적 금액: <strong>${this.formatWon(total)}</strong><br>
+            수령 희망일: ${escape(order.deliveryDate)} ${escape(order.pickupTime)}<br>수령 방법: ${this.formatDeliveryMethod(order.deliveryMethod)}
+            ${metadata.deliveryAddress ? `<br>배송 주소: ${escape(metadata.deliveryAddress)}` : ''}</p>
+          <table style="width:100%;border-collapse:collapse;table-layout:fixed"><thead><tr><th style="width:65%;text-align:left">주요 조합 / 옵션</th><th style="text-align:left">수량 / 금액</th></tr></thead><tbody>${rows}</tbody></table>
+          <p>첨부된 견적서를 확인해 주세요.</p>
+          <div style="padding:16px;background:#fff7df;border:2px solid #e7ad48;border-radius:12px">
+            <strong>⚠️ 이 견적서는 주문 접수용입니다.</strong>
+            <p>카카오톡 상담에서 수량, 제작 내용, 수령 일정 등을 최종 확인해야 주문이 확정됩니다.</p>
+            <strong style="color:#ad3418">카카오톡 상담을 완료하지 않으면 주문이 최종 완료되지 않습니다.</strong>
+          </div>
+          <p><a href="https://pf.kakao.com/_QdCaK/chat" style="display:block;padding:14px;background:#fee500;color:#211d18;text-align:center;text-decoration:none;font-weight:bold;border-radius:10px">카카오톡에서 주문 상담하기</a></p>
+          <p>입금 계좌: 83050104204736 국민은행 (낫띵메터스)<br>주문 문의: 카카오톡 @nothingmatters 또는 010-2866-7976</p>
+        </div>
+      </body></html>`;
+  }
+
+  async sendBrookieQuote(order: Order, email: string, quoteBuffer: Buffer): Promise<void> {
+    if (!this.mg) throw new Error('이메일 서비스를 사용할 수 없습니다.');
+    const domain = process.env.MAILGUN_DOMAIN || 'sandbox-mailgun.mailgun.org';
+    // Use the Korean business date for the attachment, independent of host TZ.
+    const date = new Intl.DateTimeFormat('sv-SE', { timeZone: 'Asia/Seoul' }).format(new Date());
+    await this.mg.messages.create(domain, {
+      from: `nothingmatters <mailgun@${domain}>`,
+      to: [email],
+      subject: `[nothingmatters] ${order.customerName.replace(/[\r\n]/g, ' ')}님의 브루키 견적서`,
+      html: this.generateBrookieCustomerEmailHTML(order),
+      attachment: { data: quoteBuffer, filename: `nothingmatters-brookie-quote-${date}.xlsx` },
+    });
   }
 
   async sendQuote(orderData: OrderData, quoteBuffer: Buffer): Promise<void> {
