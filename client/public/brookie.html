@@ -4226,7 +4226,7 @@ ${custom ? `${custom}\n` : ""}
         if (!mobile.matches || activeStep !== 1 || !(target instanceof HTMLElement) ||
             !target.closest('.builderHero') || !target.matches('input, button:focus-visible')) return;
         requestAnimationFrame(() => {
-          if (target.isConnected) target.scrollIntoView({ block: 'nearest', behavior: 'instant' });
+          if (target.isConnected && document.activeElement === target) target.scrollIntoView({ block: 'nearest', behavior: 'instant' });
         });
       });
       sync();
