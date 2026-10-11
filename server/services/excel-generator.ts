@@ -1,26 +1,14 @@
 import ExcelJS from 'exceljs';
 import { type Order, type OrderData, cookiePrices, cookieTypes, drinkTypes } from '@shared/schema';
-import { brookieItemDetails, storedBrookieQuote } from './landing-email-quote';
+import { landingItemDetails, storedLandingQuote, type EmailQuoteSource } from './landing-email-quote';
 
 export class ExcelGenerator {
-  async generateQuoteFromStoredItems(order: Order, landingSource: 'cookieFlight' | 'airplaneButter' | 'terminalCookie' | 'brookie'): Promise<Buffer> {
-    if (landingSource === 'brookie') storedBrookieQuote(order);
-    const items = (Array.isArray(order.orderItems) ? order.orderItems as any[] : [])
-      .filter((item) => item?.type !== 'meta' && item?.options?.landingSource === landingSource);
-    if (!items.length || items.some((item) =>
-      !Number.isSafeInteger(item.quantity) || item.quantity < 1 ||
-      !Number.isSafeInteger(item.price) || item.price < 1 ||
-      typeof item.name !== 'string' || !item.name.trim())) {
-      throw new Error('저장된 주문 항목의 수량 또는 가격을 확인할 수 없습니다.');
-    }
-
-    const calculatedTotal = items.reduce((sum, item) => sum + item.quantity * item.price, 0);
-    if (!Number.isSafeInteger(calculatedTotal) || calculatedTotal !== order.totalPrice) {
-      throw new Error('저장된 주문 항목과 총 금액이 일치하지 않습니다.');
-    }
+  async generateQuoteFromStoredItems(order: Order, landingSource: EmailQuoteSource): Promise<Buffer> {
+    const { items, metadata, total: calculatedTotal, pricingPending } = storedLandingQuote(order, landingSource);
+    const documentTitle = pricingPending ? 'nothingmatters 주문 상담 요청서' : 'nothingmatters 견적서';
 
     const workbook = new ExcelJS.Workbook();
-    const sheet = workbook.addWorksheet('nothingmatters 견적서');
+    const sheet = workbook.addWorksheet(documentTitle);
     sheet.columns = [
       { width: 36 }, { width: 14 }, { width: 16 }, { width: 18 },
     ];
@@ -31,7 +19,7 @@ export class ExcelGenerator {
     const money = '#,##0"원"';
 
     sheet.mergeCells('A1:D1');
-    sheet.getCell('A1').value = 'nothingmatters 견적서';
+    sheet.getCell('A1').value = documentTitle;
     sheet.getCell('A1').font = { bold: true, size: 16, color: { argb: 'FFFFFFFF' } };
     sheet.getCell('A1').fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF4F46E5' } };
     sheet.getCell('A1').alignment = { horizontal: 'center', vertical: 'middle' };
@@ -41,7 +29,6 @@ export class ExcelGenerator {
     sheet.getCell('A2').value = `고객명: ${order.customerName} | 연락처: ${order.customerContact}`;
     sheet.mergeCells('A3:D3');
     const method = order.deliveryMethod === 'quick' ? '퀵 배송' : '매장 픽업';
-    const metadata = (order.orderItems as any[]).find((item) => item?.type === 'meta')?.options || {};
     sheet.getCell('A3').value = `수령 방법: ${method} | 수령 희망일: ${order.deliveryDate}${order.pickupTime ? ` | 시간: ${order.pickupTime}` : ''}${metadata.deliveryAddress ? ` | 주소: ${metadata.deliveryAddress}` : ''}`;
     sheet.getRow(3).height = metadata.deliveryAddress ? 44 : 28;
     sheet.getCell('A3').alignment = { wrapText: true, vertical: 'middle' };
@@ -58,7 +45,7 @@ export class ExcelGenerator {
     let rowNumber = 6;
     for (const item of items) {
       const row = sheet.getRow(rowNumber++);
-      row.values = [item.name, `${item.quantity}${item.options?.unitLabel ?? '개'}`, item.price, item.quantity * item.price];
+      row.values = [item.name, `${item.quantity}${item.options?.unitLabel ?? '개'}`, pricingPending ? '상담 후 안내' : item.price, pricingPending ? '상담 후 안내' : item.quantity * item.price];
       row.height = 32;
       row.eachCell((cell) => { cell.border = border; cell.alignment = { vertical: 'middle', wrapText: true }; });
       row.getCell(3).numFmt = money;
@@ -67,8 +54,8 @@ export class ExcelGenerator {
 
     rowNumber++;
     sheet.mergeCells(`A${rowNumber}:C${rowNumber}`);
-    sheet.getCell(rowNumber, 1).value = '총 합계';
-    sheet.getCell(rowNumber, 4).value = calculatedTotal;
+    sheet.getCell(rowNumber, 1).value = pricingPending ? '가격' : '총 합계';
+    sheet.getCell(rowNumber, 4).value = pricingPending ? '상담 후 안내' : calculatedTotal;
     sheet.getCell(rowNumber, 4).numFmt = money;
     sheet.getRow(rowNumber).height = 35;
     for (let column = 1; column <= 4; column++) {
@@ -79,13 +66,7 @@ export class ExcelGenerator {
     }
 
     for (const item of items) {
-      const options = item.options || {};
-      const details = [
-        ...(landingSource === 'brookie' ? brookieItemDetails(item) : []),
-        options.packageName && `포장: ${options.packageName}`,
-        Array.isArray(options.flavors) && `맛 구성: ${options.flavors.join(', ')}`,
-        options.individuallyWrapped && '개별 포장',
-      ].filter(Boolean);
+      const details = landingItemDetails(item);
       if (!details.length) continue;
       rowNumber += 2;
       sheet.mergeCells(`A${rowNumber}:D${rowNumber}`);
@@ -94,10 +75,10 @@ export class ExcelGenerator {
       sheet.getRow(rowNumber).height = Math.max(44, Math.ceil(String(sheet.getCell(rowNumber, 1).value).length / 48) * 18);
     }
 
-    if (landingSource === 'brookie') {
+    {
       for (const text of [
         metadata.customerEmail && `이메일: ${metadata.customerEmail}`,
-        '입금 계좌: 83050104204736 국민은행 (낫띵메터스)',
+        !pricingPending && '입금 계좌: 83050104204736 국민은행 (낫띵메터스)',
         '주문 문의: 카카오톡 @nothingmatters 또는 010-2866-7976',
         '※ 본 견적은 주문 접수용이며 카카오톡 상담 완료 후 주문이 최종 확정됩니다.',
       ].filter(Boolean)) {

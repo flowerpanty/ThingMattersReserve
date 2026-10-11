@@ -1,6 +1,53 @@
 import { createHash, randomBytes, timingSafeEqual } from 'node:crypto';
 import type { Order, OrderItem } from '@shared/schema';
 
+export const emailQuoteSources = ['brookie', 'cookie7', 'lucky', 'cookieFlight', 'airplaneButter', 'terminalCookie', 'cookieCrew'] as const;
+export type EmailQuoteSource = typeof emailQuoteSources[number];
+export function isEmailQuoteSource(value: unknown): value is EmailQuoteSource {
+  return emailQuoteSources.includes(value as EmailQuoteSource);
+}
+
+export function landingItemDetails(item: OrderItem): string[] {
+  const options = item.options || {};
+  const flavors = Array.isArray(options.flavors) ? options.flavors.map((flavor: any) =>
+    typeof flavor === 'string' ? flavor : `${flavor.name || flavor.id || ''} ${flavor.quantity ?? flavor.qty ?? ''}개`).join(', ') : '';
+  return [
+    ...(options.landingSource === 'brookie' ? brookieItemDetails(item) : []),
+    options.packageName && `포장: ${options.packageName}`,
+    (options.flavorText || flavors) && `맛 구성: ${options.flavorText || flavors}`,
+    options.drink && `음료: ${options.drink}`,
+    options.ribbon && '리본 추가',
+    options.individuallyWrapped && '개별 포장',
+  ].filter(Boolean).map(String);
+}
+
+// Documents use only server-built, persisted items, including packaging/add-ons.
+export function storedLandingQuote(order: Order, expectedSource?: EmailQuoteSource) {
+  const all = Array.isArray(order.orderItems) ? order.orderItems as OrderItem[] : [];
+  const metadata = all.find(item => item?.type === 'meta')?.options || {};
+  const source = metadata.landingSource;
+  if (!isEmailQuoteSource(source) || (expectedSource && source !== expectedSource)) throw new Error('저장된 견적의 상품을 확인할 수 없습니다.');
+  if (source === 'brookie') return { ...storedBrookieQuote(order), source, pricingPending: false };
+  const pricingPending = source === 'cookieCrew';
+  const allowedTypes: Record<EmailQuoteSource, string[]> = {
+    brookie: ['brownie', 'addon'], cookie7: ['regular', 'packaging', 'addon'], lucky: ['fortune'],
+    cookieFlight: ['addon'], airplaneButter: ['addon'], terminalCookie: ['addon'], cookieCrew: ['addon'],
+  };
+  const items = all.filter(item => item?.type !== 'meta');
+  if (!!metadata.pricingPending !== pricingPending || !items.length || items.some(item =>
+    item.options?.landingSource !== source || !allowedTypes[source].includes(item.type) ||
+    !Number.isSafeInteger(item.quantity) || item.quantity < 1 || !Number.isSafeInteger(item.price) ||
+    (pricingPending ? item.price !== 0 : item.price < 1) || typeof item.name !== 'string' || !item.name.trim())) {
+    throw new Error('저장된 주문 항목의 수량 또는 가격을 확인할 수 없습니다.');
+  }
+  const total = items.reduce((sum, item) => sum + item.quantity * item.price, 0);
+  const quantity = items.filter(item => source !== 'cookie7' || item.type === 'regular').reduce((sum, item) => sum + item.quantity, 0);
+  if (!Number.isSafeInteger(total) || total !== order.totalPrice || quantity < (pricingPending ? 12 : 1)) {
+    throw new Error('저장된 주문 항목과 총 금액 또는 수량이 일치하지 않습니다.');
+  }
+  return { items, metadata, source, pricingPending, total, quantity };
+}
+
 export function createEmailQuoteAccess() {
   const token = randomBytes(32).toString('hex');
   return {

@@ -10,7 +10,7 @@ import { kakaoAlimtalkService } from "./services/kakao-alimtalk-service";
 import { googleSheetsService } from "./services/google-sheets-service";
 import { buildOrderDataFromOrder } from "./services/order-data-utils";
 import { z } from "zod";
-import { createEmailQuoteAccess, hasEmailQuoteAccess, maskQuoteEmail, storedBrookieQuote } from './services/landing-email-quote';
+import { createEmailQuoteAccess, hasEmailQuoteAccess, maskQuoteEmail, storedLandingQuote, isEmailQuoteSource } from './services/landing-email-quote';
 
 declare module "express-session" {
   interface SessionData {
@@ -766,7 +766,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const customer = getLandingCustomer(body);
       const built = builder(body);
       const pricingPending = source === 'cookieCrew';
-      const emailAccess = source === 'brookie' && customer.customerEmail ? createEmailQuoteAccess() : null;
+      const emailAccess = isEmailQuoteSource(source) && customer.customerEmail ? createEmailQuoteAccess() : null;
 
       if (!built.orderItems.length || (!pricingPending && built.totalPrice <= 0)) {
         return res.status(400).json({ message: "주문할 상품을 선택해주세요." });
@@ -885,14 +885,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const order = await storage.getOrder(req.params.id);
       const metadata = (Array.isArray(order?.orderItems) ? order.orderItems as any[] : [])
         .find((item) => item?.type === 'meta')?.options || {};
-      if (!order || metadata.landingSource !== 'brookie' || metadata.customerEmail !== body.data.email || !hasEmailQuoteAccess(metadata, token)) {
-        stage = !order ? 'order_lookup' : metadata.landingSource !== 'brookie' ? 'source_validation'
+      if (!order || !isEmailQuoteSource(metadata.landingSource) || metadata.customerEmail !== body.data.email || !hasEmailQuoteAccess(metadata, token)) {
+        stage = !order ? 'order_lookup' : !isEmailQuoteSource(metadata.landingSource) ? 'source_validation'
           : !metadata.customerEmail ? 'saved_email_missing' : metadata.customerEmail !== body.data.email ? 'recipient_validation' : 'token_validation';
         diagnostic(new Error('Saved quote access validation failed.'));
         return res.status(403).json({ message: '이 주문의 이메일 견적 요청을 확인할 수 없습니다. 견적 화면에서 다시 요청해주세요.' });
       }
       stage = 'stored_items_validation';
-      storedBrookieQuote(order);
+      storedLandingQuote(order);
       let send = emailQuoteSends.get(order.id);
       if (!send) {
         stage = 'configuration';
@@ -902,9 +902,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
         const progress = { stage: 'excel_generation' };
         const promise = (async () => {
-          const buffer = await excelGenerator.generateQuoteFromStoredItems(order, 'brookie');
+          const buffer = await excelGenerator.generateQuoteFromStoredItems(order, metadata.landingSource);
           progress.stage = 'mailgun_delivery';
-          await emailService.sendBrookieQuote(order, body.data.email, buffer);
+          if (metadata.landingSource === 'brookie') await emailService.sendBrookieQuote(order, body.data.email, buffer);
+          else await emailService.sendLandingQuote(order, body.data.email, buffer);
         })();
         send = { expiresAt: metadata.emailQuoteExpiresAt, promise, progress };
         emailQuoteSends.set(order.id, send);

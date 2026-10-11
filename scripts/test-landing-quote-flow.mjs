@@ -179,3 +179,26 @@ painted.length = 0;
 await quote.createImage({ ...data, request: ('긴 요청사항을 잘리지 않게 표시합니다.\n').repeat(50) });
 assert.equal(painted.filter((line) => line.includes('긴 요청사항')).length, 50);
 console.log('Failure/retry, concurrent clicks, direct consultation, saved-price reconciliation, share/fallback, and wrapped PNG text: PASS');
+
+vm.runInContext(fs.readFileSync('client/public/order-email-quote.js', 'utf8'), sandbox);
+for (const source of ['brookie','cookie7','lucky','cookieFlight','airplaneButter','terminalCookie','cookieCrew']) {
+  for (const email of ['', 'customer@example.com']) {
+    let posts=0, attempts=0, fail=true;
+    const events=[];
+    const payload={source,customerEmail:email};
+    const data={...common, customerEmail:email, totalPrice:32000, pricingPending:source==='cookieCrew'};
+    const flow=sandbox.window.NMEmailQuote.create({
+      postOrder:async()=>{posts++;return {orderId:'same-order',emailQuoteToken:'local-token'};},
+      createImage:async()=>new Blob(['PNG']),fromSaved:()=>data,
+      provideImage:async()=>events.push('PNG'),navigateToKakao:()=>events.push('Kakao'),
+      onEmail:state=>events.push(state),
+      postEmail:async(id,recipient,token)=>{attempts++;assert.equal(id,'same-order');assert.equal(recipient,email);assert.equal(token,'local-token');if(fail)throw new Error('Mock provider failure');return {success:true,maskedEmail:'cu***@example.com'};},
+    });
+    await flow.receive(payload,data);
+    assert.equal(posts,1);assert.equal(attempts,email?1:0);assert(events.includes('PNG')&&events.includes('Kakao'));
+    fail=false;await flow.retryEmail(payload);
+    assert.equal(posts,1);assert.equal(attempts,email?2:0);
+    await flow.receive(payload,data);assert.equal(attempts,email?2:0);
+  }
+  console.log(`${source}: shared client empty email, failure keeps PNG/Kakao, same-order retry, no duplicate sends PASS`);
+}
