@@ -4129,14 +4129,14 @@ ${custom ? `${custom}\n` : ""}
       }, 2000);
     }
 
-    function showEmailStatus(status, maskedEmail = '') {
+    function showEmailStatus(status, maskedEmail = '', detail = '') {
       const container = $('brookieEmailStatus');
       container.hidden = false;
       container.classList.toggle('is-error', status === 'failed');
       $('brookieEmailMessage').textContent = status === 'sent'
         ? `✅ 견적서를 이메일로 보냈어요. ${maskedEmail} · 이제 카카오톡에서 최종 주문 내용을 확인해 주세요.`
         : status === 'sending' ? '저장된 주문의 견적서를 이메일로 보내는 중입니다.'
-        : '주문 요청은 저장됐지만 이메일 견적 전송에 실패했어요. 화면에서 견적서를 저장한 뒤 카카오톡 상담을 계속할 수 있습니다.';
+        : `주문 요청은 저장됐지만 이메일 견적을 보내지 못했어요. ${detail || '화면에서 견적서를 저장한 뒤 카카오톡 상담을 계속할 수 있습니다.'}`;
       $('brookieEmailRetry').hidden = status !== 'failed';
     }
 
@@ -4169,7 +4169,14 @@ ${custom ? `${custom}\n` : ""}
             body: JSON.stringify({ email }), signal: controller.signal,
           });
           const result = await response.json();
-          if (!response.ok || !result.success) throw new Error('이메일 견적 전송 실패');
+          if (!response.ok || !result.success) {
+            const error = new Error('이메일 견적 전송 실패');
+            // Only a known safe configuration message may reach the customer UI.
+            if (response.status === 503 && result.message === '현재 이메일 견적 서비스를 사용할 수 없습니다. 화면에서 견적서를 저장한 뒤 카카오톡 상담을 이용해주세요.') {
+              error.userMessage = result.message;
+            }
+            throw error;
+          }
           return result;
         } finally { clearTimeout(timeout); }
       },

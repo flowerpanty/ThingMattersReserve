@@ -858,7 +858,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // A creation-only capability plus the saved recipient authorizes this public
   // action. It never accepts quote items, totals or another recipient from the client.
   const emailQuoteRequests = new Map<string, { count: number; expiresAt: number }>();
-  const emailQuoteSends = new Map<string, { expiresAt: number; promise: Promise<void> }>();
+  const emailQuoteSends = new Map<string, { expiresAt: number; promise: Promise<void>; progress: { stage: string } }>();
   app.post('/api/orders/:id/email-quote', async (req, res) => {
     res.setHeader('Cache-Control', 'no-store');
     const now = Date.now();
@@ -874,31 +874,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
     const body = z.object({ email: z.string().trim().max(254).email() }).safeParse(req.body);
     if (!body.success) return res.status(400).json({ message: '올바른 이메일 주소를 입력해주세요.' });
+    const emailService = new EmailService();
+    const token = (req.get('Authorization') || '').replace(/^Bearer /, '');
+    let stage = 'order_lookup';
+    const diagnostic = (error: unknown) => console.error('[email-quote] Request failed', {
+      stage, ...emailService.diagnostic(error, [token]),
+      recipientDomain: body.data.email.split('@')[1],
+    });
     try {
       const order = await storage.getOrder(req.params.id);
       const metadata = (Array.isArray(order?.orderItems) ? order.orderItems as any[] : [])
         .find((item) => item?.type === 'meta')?.options || {};
-      const token = (req.get('Authorization') || '').replace(/^Bearer /, '');
       if (!order || metadata.landingSource !== 'brookie' || metadata.customerEmail !== body.data.email || !hasEmailQuoteAccess(metadata, token)) {
+        stage = !order ? 'order_lookup' : metadata.landingSource !== 'brookie' ? 'source_validation'
+          : !metadata.customerEmail ? 'saved_email_missing' : metadata.customerEmail !== body.data.email ? 'recipient_validation' : 'token_validation';
+        diagnostic(new Error('Saved quote access validation failed.'));
         return res.status(403).json({ message: '이 주문의 이메일 견적 요청을 확인할 수 없습니다. 견적 화면에서 다시 요청해주세요.' });
       }
+      stage = 'stored_items_validation';
       storedBrookieQuote(order);
       let send = emailQuoteSends.get(order.id);
       if (!send) {
+        stage = 'configuration';
+        if (!emailService.isConfigured()) {
+          diagnostic(new Error('Mailgun configuration unavailable.'));
+          return res.status(503).json({ message: '현재 이메일 견적 서비스를 사용할 수 없습니다. 화면에서 견적서를 저장한 뒤 카카오톡 상담을 이용해주세요.' });
+        }
+        const progress = { stage: 'excel_generation' };
         const promise = (async () => {
           const buffer = await excelGenerator.generateQuoteFromStoredItems(order, 'brookie');
-          await new EmailService().sendBrookieQuote(order, body.data.email, buffer);
+          progress.stage = 'mailgun_delivery';
+          await emailService.sendBrookieQuote(order, body.data.email, buffer);
         })();
-        send = { expiresAt: metadata.emailQuoteExpiresAt, promise };
+        send = { expiresAt: metadata.emailQuoteExpiresAt, promise, progress };
         emailQuoteSends.set(order.id, send);
         promise.catch(() => { if (emailQuoteSends.get(order.id)?.promise === promise) emailQuoteSends.delete(order.id); });
       }
-      await send.promise;
+      try { await send.promise; } catch (error) { stage = send.progress.stage; throw error; }
       return res.json({ success: true, maskedEmail: maskQuoteEmail(body.data.email) });
-    } catch (_) {
-      // Do not expose provider errors, addresses, or access tokens.
-      console.error('[email-quote] Stored quote generation or delivery failed.');
-      return res.status(503).json({ message: '주문 요청은 저장됐지만 이메일 견적 전송에 실패했어요.' });
+    } catch (error) {
+      diagnostic(error);
+      return res.status(503).json({ message: '주문 요청은 저장됐지만 이메일 견적을 보내지 못했어요.' });
     }
   });
 

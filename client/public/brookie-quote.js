@@ -12,8 +12,8 @@
         record.emailSent = true;
         record.maskedEmail = result.maskedEmail;
         options.onEmail('sent', result.maskedEmail);
-      } catch (_) {
-        options.onEmail('failed');
+      } catch (error) {
+        options.onEmail('failed', '', error.userMessage || '');
       } finally { sending = false; }
     }
     const flow = window.NMQuote.createFlow({ ...options, beforeProvide: sendEmail });

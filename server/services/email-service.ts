@@ -9,18 +9,46 @@ const ADMIN_EMAIL_RECIPIENTS = ['flowerpanty@gmail.com', 'betterbetters@kakao.co
 export class EmailService {
   private mg: any = null;
 
-  constructor() {
-    const apiKey = process.env.MAILGUN_API_KEY;
-    const domain = process.env.MAILGUN_DOMAIN || 'sandbox-mailgun.mailgun.org';
+  private readonly domain = process.env.MAILGUN_DOMAIN?.trim() || '';
+  private readonly apiKey = process.env.MAILGUN_API_KEY?.trim() || '';
+  private readonly sender = process.env.MAILGUN_FROM?.trim() || `nothingmatters <mailgun@${this.domain}>`;
 
-    if (apiKey) {
+  constructor() {
+    if (this.isConfigured()) {
       const mailgun = new Mailgun(formData);
-      this.mg = mailgun.client({ username: 'api', key: apiKey });
-      console.log('📧 이메일 서비스 초기화 (Mailgun)');
-      console.log('도메인:', domain);
-    } else {
-      console.log('⚠️ MAILGUN_API_KEY가 설정되지 않았습니다.');
+      this.mg = mailgun.client({ username: 'api', key: this.apiKey });
     }
+  }
+
+  isConfigured(): boolean {
+    const senderEmail = this.sender.match(/<([^<>]+)>$/)?.[1] || this.sender;
+    return Boolean(this.apiKey && this.domain &&
+      /^[a-z0-9](?:[a-z0-9.-]*[a-z0-9])?\.[a-z]{2,}$/i.test(this.domain) &&
+      !/[\r\n]/.test(this.sender) && /^[^\s@<>]+@[^\s@<>]+$/.test(senderEmail) &&
+      senderEmail.split('@')[1]?.toLowerCase() === this.domain.toLowerCase() &&
+      !(process.env.NODE_ENV === 'production' && /^sandbox/i.test(this.domain)));
+  }
+
+  diagnostic(error: unknown, secrets: string[] = []) {
+    const failure = error as { name?: unknown; status?: unknown; message?: unknown; details?: unknown } | null;
+    const sanitize = (value: unknown) => {
+      let text = typeof value === 'string' ? value : '';
+      for (const secret of [this.apiKey, ...secrets].filter(Boolean)) text = text.split(secret).join('[REDACTED]');
+      return text.replace(/(?:Bearer|Basic)\s+[^\s"',}]+/gi, '[REDACTED]')
+        .replace(/key-[a-z0-9_-]+/gi, '[REDACTED]')
+        .replace(/\b[a-f0-9]{32,}\b/gi, '[REDACTED]')
+        .replace(/[^\s<>"']+@[^\s<>"']+/g, '[EMAIL]')
+        .replace(/[\r\n\x00-\x1f]/g, ' ').slice(0, 500);
+    };
+    return {
+      name: sanitize(failure?.name),
+      status: typeof failure?.status === 'number' ? failure.status : undefined,
+      message: sanitize(failure?.message),
+      providerMessage: sanitize(failure?.details),
+      mailgunConfigured: Boolean(this.apiKey), domainConfigured: Boolean(this.domain),
+      senderConfigured: Boolean(process.env.MAILGUN_FROM?.trim()),
+      sandboxDomain: /^sandbox/i.test(this.domain),
+    };
   }
 
   private escapeHTML(value: unknown): string {
@@ -521,11 +549,11 @@ export class EmailService {
       throw new Error('Mailgun이 초기화되지 않았습니다. MAILGUN_API_KEY를 확인하세요.');
     }
 
-    const domain = process.env.MAILGUN_DOMAIN || 'sandbox-mailgun.mailgun.org';
+    const domain = this.domain;
     const html = this.generateLandingAdminEmailHTML(params);
 
     await this.mg.messages.create(domain, {
-      from: `띵매러 <mailgun@${domain}>`,
+      from: this.sender,
       to: ADMIN_EMAIL_RECIPIENTS,
       subject: `[새 랜딩 주문] ${params.sourceLabel} - ${params.order.customerName}님 (${isPricingPendingOrder(params.order) ? '가격 상담 필요' : this.formatWon(params.order.totalPrice)})`,
       html,
@@ -563,17 +591,21 @@ export class EmailService {
   }
 
   async sendBrookieQuote(order: Order, email: string, quoteBuffer: Buffer): Promise<void> {
-    if (!this.mg) throw new Error('이메일 서비스를 사용할 수 없습니다.');
-    const domain = process.env.MAILGUN_DOMAIN || 'sandbox-mailgun.mailgun.org';
+    if (!this.isConfigured() || !this.mg) throw new Error('Mailgun configuration unavailable.');
+    const domain = this.domain;
     // Use the Korean business date for the attachment, independent of host TZ.
     const date = new Intl.DateTimeFormat('sv-SE', { timeZone: 'Asia/Seoul' }).format(new Date());
-    await this.mg.messages.create(domain, {
-      from: `nothingmatters <mailgun@${domain}>`,
+    const accepted = await this.mg.messages.create(domain, {
+      from: this.sender,
       to: [email],
       subject: `[nothingmatters] ${order.customerName.replace(/[\r\n]/g, ' ')}님의 브루키 견적서`,
       html: this.generateBrookieCustomerEmailHTML(order),
       attachment: { data: quoteBuffer, filename: `nothingmatters-brookie-quote-${date}.xlsx` },
     });
+    if (accepted?.status !== 200 || typeof accepted.id !== 'string' || !accepted.id.trim() ||
+        typeof accepted.message !== 'string' || !/^Queued\b/i.test(accepted.message)) {
+      throw Object.assign(new Error('Mailgun did not accept the message.'), { status: accepted?.status });
+    }
   }
 
   async sendQuote(orderData: OrderData, quoteBuffer: Buffer): Promise<void> {
@@ -581,7 +613,7 @@ export class EmailService {
       throw new Error('Mailgun이 초기화되지 않았습니다. MAILGUN_API_KEY를 확인하세요.');
     }
 
-    const domain = process.env.MAILGUN_DOMAIN || 'sandbox-mailgun.mailgun.org';
+    const domain = this.domain;
     console.log('📧 Mailgun으로 이메일 전송...');
 
     const customerHTML = this.generateCustomerEmailHTML(orderData);
@@ -591,7 +623,7 @@ export class EmailService {
     try {
       // 고객에게 이메일 전송
       await this.mg.messages.create(domain, {
-        from: `띵매러 <mailgun@${domain}>`,
+        from: this.sender,
         to: [orderData.customerContact],
         subject: `🍪 [띵매러] ${orderData.customerName}님의 주문 견적서`,
         html: customerHTML,
@@ -605,7 +637,7 @@ export class EmailService {
 
       // 관리자에게 전송
       await this.mg.messages.create(domain, {
-        from: `띵매러 <mailgun@${domain}>`,
+        from: this.sender,
         to: ADMIN_EMAIL_RECIPIENTS,
         subject: `🚨 🍪 [새 주문] ${orderData.customerName} 님의 새로운 쿠키 주문이 도착했습니다! 🍪 🚨`,
         html: adminHTML,
@@ -617,10 +649,7 @@ export class EmailService {
 
       console.log('✅ 관리자 이메일 전송 완료');
     } catch (error: any) {
-      console.error('❌ Mailgun 이메일 전송 실패:', error);
-      if (error.message) {
-        console.error('에러 메시지:', error.message);
-      }
+      console.error('[email] Mail delivery failed', this.diagnostic(error));
       throw error;
     }
   }

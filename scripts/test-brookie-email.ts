@@ -5,7 +5,10 @@ import ExcelJS from 'exceljs';
 
 // Isolated integration test: no real database, notifications, or email delivery.
 process.env.DATABASE_URL = 'postgres://test:test@127.0.0.1:1/test';
-delete process.env.MAILGUN_API_KEY;
+process.env.NODE_ENV = 'production';
+process.env.MAILGUN_API_KEY = 'isolated-test-key';
+process.env.MAILGUN_DOMAIN = 'quotes.example.com';
+process.env.MAILGUN_FROM = 'nothingmatters <quotes@quotes.example.com>';
 delete process.env.GOOGLE_SHEETS_SPREADSHEET_ID;
 delete process.env.KAKAO_ALIMTALK_API_KEY;
 const [{ registerRoutes }, { storage }, { EmailService }, { pushNotificationService }, { kakaoAlimtalkService }, { googleSheetsService }, access] = await Promise.all([
@@ -16,6 +19,8 @@ const [{ registerRoutes }, { storage }, { EmailService }, { pushNotificationServ
 const saved: any[] = [];
 const sent: any[] = [];
 let failEmail = false;
+let rejectResponse = false;
+let providerCalls = 0;
 const failedAddresses = new Set<string>();
 (storage as any).createOrder = async (order: any) => {
   if (order.customerName === '저장 실패 테스트') throw new Error('저장 실패 테스트');
@@ -28,12 +33,15 @@ EmailService.prototype.sendLandingAdminNotification = async () => {};
 const realSend = EmailService.prototype.sendBrookieQuote;
 EmailService.prototype.sendBrookieQuote = async function (order, email, buffer) {
   (this as any).mg = { messages: { create: async (_domain: string, message: any) => {
+    providerCalls++;
+    if (rejectResponse) return { status: 200, message: 'Not queued' };
     if (failEmail || (email === 'retry@example.com' && !failedAddresses.has(email))) {
       failedAddresses.add(email);
-      throw new Error('Mock provider failure');
+      throw Object.assign(new Error('Mock provider failure'), { status: 403, details: 'Domain not verified' });
     }
     sent.push(message);
     if (process.argv.includes('--serve-ui')) await writeFile('/tmp/brookie-customer-email.html', message.html);
+    return { status: 200, id: '<isolated-message@quotes.example.com>', message: 'Queued. Thank you.' };
   } } };
   await realSend.call(this, order, email, buffer);
 };
@@ -43,6 +51,7 @@ EmailService.prototype.sendBrookieQuote = async function (order, email, buffer) 
 
 const app = express();
 app.use(express.json());
+app.use((req, _res, next) => { if (req.get('X-Test-IP')) Object.defineProperty(req, 'ip', { value: req.get('X-Test-IP') }); next(); });
 app.use((req, _res, next) => { (req as any).session = { adminAuthenticated: req.get('X-Test-Admin') === 'true' }; next(); });
 const server = await registerRoutes(app);
 const serveUI = process.argv.includes('--serve-ui');
@@ -83,11 +92,13 @@ if (serveUI) {
     { character: 'bear', paper: 'navy', qty: 6 },
     { character: 'birthday_bear', paper: 'custom', qty: 6, heartTextEnabled: true, heartText: 'LOVE', customPaperLine1: '첫번째 줄', customPaperLine2: '둘째 <img src=x>' },
   ];
+  let faultCases = false;
   const post = async (path: string, body: any, token?: string) => {
-    const response = await fetch(base + path, { method: 'POST', headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) }, body: JSON.stringify(body) });
+    const response = await fetch(base + path, { method: 'POST', headers: { 'Content-Type': 'application/json', ...(faultCases ? { 'X-Test-IP': 'configuration-tests' } : {}), ...(token ? { Authorization: `Bearer ${token}` } : {}) }, body: JSON.stringify(body) });
     return { status: response.status, body: await response.json() };
   };
   try {
+    const { ExcelGenerator } = await import('../server/services/excel-generator');
     const created = await post('/api/landing-orders', { ...common, combos, topper: true, topperKind: 'square', sticker: true, totalPrice: 1 });
     assert.equal(created.status, 200);
     assert.equal(created.body.totalPrice, 132200);
@@ -99,6 +110,64 @@ if (serveUI) {
     assert(access.hasEmailQuoteAccess(meta, created.body.emailQuoteToken));
     assert(!access.hasEmailQuoteAccess(meta, created.body.emailQuoteToken, meta.emailQuoteExpiresAt));
     const path = `/api/orders/${created.body.orderId}/email-quote`;
+    // Missing configuration must fail before Excel/provider; never send real mail.
+    faultCases = true;
+    const initialCalls = providerCalls;
+    for (const variable of ['MAILGUN_API_KEY', 'MAILGUN_DOMAIN']) {
+      const previous = process.env[variable];
+      delete process.env[variable];
+      assert.equal(new EmailService().isConfigured(), false);
+      const unavailable = await post(path, { email: common.customerEmail }, created.body.emailQuoteToken);
+      assert.equal(unavailable.status, 503);
+      assert.match(unavailable.body.message, /현재 이메일 견적 서비스를 사용할 수 없습니다/);
+      process.env[variable] = previous;
+    }
+    process.env.MAILGUN_DOMAIN = 'sandbox123.mailgun.org';
+    delete process.env.MAILGUN_FROM;
+    assert.equal(new EmailService().isConfigured(), false);
+    assert.equal((await post(path, { email: common.customerEmail }, created.body.emailQuoteToken)).status, 503);
+    process.env.MAILGUN_DOMAIN = 'quotes.example.com';
+    process.env.MAILGUN_FROM = 'quotes@wrong.example.com';
+    assert.equal((await post(path, { email: common.customerEmail }, created.body.emailQuoteToken)).status, 503);
+    delete process.env.MAILGUN_FROM;
+    assert.equal(new EmailService().isConfigured(), true);
+    process.env.MAILGUN_FROM = 'nothingmatters <quotes@quotes.example.com>';
+    assert.equal(providerCalls, initialCalls);
+    const realExcel = ExcelGenerator.prototype.generateQuoteFromStoredItems;
+    const originalError = console.error;
+    const failures: any[] = [];
+    console.error = (...args: any[]) => { failures.push(args); };
+    try {
+      ExcelGenerator.prototype.generateQuoteFromStoredItems = async () => {
+        await new Promise(resolve => setTimeout(resolve, 20));
+        throw new Error('Isolated Excel failure');
+      };
+      const failedExcel = await Promise.all([
+        post(path, { email: common.customerEmail }, created.body.emailQuoteToken),
+        post(path, { email: common.customerEmail }, created.body.emailQuoteToken),
+      ]);
+      assert(failedExcel.every(result => result.status === 503));
+      assert.equal(failures.length, 2);
+      assert(failures.every(args => args[1]?.stage === 'excel_generation'));
+    } finally {
+      ExcelGenerator.prototype.generateQuoteFromStoredItems = realExcel;
+      console.error = originalError;
+    }
+    assert.equal(providerCalls, initialCalls);
+    const savedEmail = meta.customerEmail;
+    delete meta.customerEmail;
+    assert.equal((await post(path, { email: common.customerEmail }, created.body.emailQuoteToken)).status, 403);
+    meta.customerEmail = savedEmail;
+    rejectResponse = true;
+    assert.equal((await post(path, { email: common.customerEmail }, created.body.emailQuoteToken)).status, 503);
+    rejectResponse = false;
+    const diagnostic = new EmailService().diagnostic({ name: 'ProviderError', status: 401,
+      message: 'isolated-test-key Bearer secret-header ' + created.body.emailQuoteToken + ' kim@example.com', details: 'Domain not verified' }, [created.body.emailQuoteToken]);
+    const log = JSON.stringify(diagnostic);
+    for (const secret of ['isolated-test-key', 'secret-header', created.body.emailQuoteToken, 'kim@example.com']) assert(!log.includes(secret));
+    assert.equal(diagnostic.status, 401);
+    assert.equal(diagnostic.providerMessage, 'Domain not verified');
+    faultCases = false;
     for (const [email, token, status] of [
       ['not-email', created.body.emailQuoteToken, 400],
       ['other@example.com', created.body.emailQuoteToken, 403],
@@ -118,6 +187,7 @@ if (serveUI) {
     assert.equal((await post(`/api/orders/${otherSource.body.orderId}/email-quote`, { email: common.customerEmail }, created.body.emailQuoteToken)).status, 403);
     assert.equal(results[0].body.maskedEmail, 'ki***@example.com');
     const message = sent[0];
+    assert.equal(message.from, process.env.MAILGUN_FROM);
     assert.deepEqual(message.to, [common.customerEmail]);
     assert.match(message.subject, /^\[nothingmatters\].*브루키 견적서$/);
     assert.match(message.attachment.filename, /^nothingmatters-brookie-quote-\d{4}-\d{2}-\d{2}\.xlsx$/);
@@ -156,6 +226,6 @@ if (serveUI) {
     assert.equal((await post('/api/orders/unknown/email-quote', { email: common.customerEmail }, created.body.emailQuoteToken)).status, 403);
     while ((await post(path, { email: common.customerEmail }, created.body.emailQuoteToken)).status === 200) {}
     assert.equal((await post(path, { email: common.customerEmail }, created.body.emailQuoteToken)).status, 429);
-    console.log('Brookie saved-item Excel/HTML/Mailgun adapter, details, phone contact, optional/invalid email, access token, expiry, duplicate sends, failure/retry and rate limit: PASS');
+    console.log('Brookie saved-item Excel/HTML/Mailgun adapter, details, phone contact, optional/invalid email, access token, expiry, duplicate sends, missing key/domain, production sandbox guard, sender validation, safe diagnostics, rejection/non-accepted response, failure/retry and rate limit: PASS');
   } finally { await new Promise<void>(resolve => server.close(() => resolve())); }
 }

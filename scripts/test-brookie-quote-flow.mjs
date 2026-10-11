@@ -40,7 +40,7 @@ const sandbox = {
     assert(url.includes(`/api/orders/saved-${saves}/email-quote`));
     assert.match(init.headers.Authorization, /^Bearer token-/);
     assert.equal(JSON.parse(init.body).email, 'kim@example.com');
-    return { ok: !emailFail, json: async () => ({ success: !emailFail, maskedEmail: 'ki***@example.com' }) };
+    return { ok: !emailFail, status: emailFail ? 503 : 200, json: async () => ({ success: !emailFail, maskedEmail: 'ki***@example.com', message: emailFail ? '현재 이메일 견적 서비스를 사용할 수 없습니다. 화면에서 견적서를 저장한 뒤 카카오톡 상담을 이용해주세요.' : undefined }) };
   },
 };
 vm.createContext(sandbox);
@@ -77,7 +77,8 @@ events.length = 0;
 emailFail = true;
 await vm.runInContext('receiveQuote()', sandbox);
 assert.deepEqual(events, ['save', 'email', 'png', 'kakao']);
-assert.match(node('brookieEmailMessage').textContent, /주문 요청은 저장됐지만/);
+assert.match(node('brookieEmailMessage').textContent, /주문 요청은 저장됐지만 이메일 견적을 보내지 못했어요/);
+assert.match(node('brookieEmailMessage').textContent, /현재 이메일 견적 서비스를 사용할 수 없습니다/);
 assert.equal(node('brookieEmailRetry').hidden, false);
 assert.equal(saves, 2);
 emailFail = false;
