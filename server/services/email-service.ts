@@ -78,6 +78,9 @@ export class EmailService {
       options.characterName && `캐릭터: ${options.characterName}`,
       options.paperName && `포장 종이: ${options.paperName}`,
       options.heartMessage && `하트 문구: ${options.heartMessage}`,
+      options.designType && `디자인: ${options.designType}형`,
+      options.speechBubbleName && `말풍선 이름: ${options.speechBubbleName}`,
+      options.bottomMessage && `하단 문구: ${options.bottomMessage}`,
       (options.customPaperLine1 || options.customPaperLine2) && `커스텀 종이: ${[options.customPaperLine1, options.customPaperLine2].filter(Boolean).join(' / ')}`,
       options.topperKind && `토퍼 종류: ${options.topperKind}`,
       Array.isArray(options.flavors) && options.flavors.length && `맛 구성: ${options.flavors.join(', ')}`,
@@ -569,7 +572,7 @@ export class EmailService {
   generateLandingCustomerEmailHTML(order: Order): string {
     const { items, metadata, quantity, total, pricingPending, source } = storedLandingQuote(order);
     const title = pricingPending ? 'nothingmatters 주문 상담 요청서' : 'nothingmatters 견적서';
-    const labels = { brookie: '브루키', cookie7: '꾸덕쿠키', lucky: 'Lucky', cookieFlight: '쿠키 플라이트', airplaneButter: '비행기 버터쿠키', terminalCookie: '터미널쿠키', cookieCrew: '쿠키크루' };
+    const labels = { brookie: '브루키', cookie7: '꾸덕쿠키', lucky: 'Lucky', anniversary: '축하쿠키', cookieFlight: '쿠키 플라이트', airplaneButter: '비행기 버터쿠키', terminalCookie: '터미널쿠키', cookieCrew: '쿠키크루' };
     const escape = (value: unknown) => this.escapeHTML(value);
     const unit = source === 'lucky' ? '세트' : items[0].options?.unitLabel ?? '개';
     const rows = items.map((item) => `<tr>

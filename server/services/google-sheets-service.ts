@@ -1,6 +1,7 @@
 import { google } from 'googleapis';
 import { type Order, cookiePrices, isPricingPendingOrder } from '@shared/schema';
 import { buildOrderDataFromOrder } from './order-data-utils';
+import { landingItemDetails } from './landing-email-quote';
 
 interface GoogleSheetsConfig {
     spreadsheetId: string;
@@ -179,9 +180,10 @@ export class GoogleSheetsService {
 
     private buildSavedDetailLines(order: Order): string[] {
         return (Array.isArray(order.orderItems) ? (order.orderItems as any[]) : [])
-            .filter((item) => item && item.type !== 'meta' && ['brookie', 'cookieFlight', 'airplaneButter', 'terminalCookie'].includes(item.options?.landingSource))
+            .filter((item) => item && item.type !== 'meta' && ['brookie', 'anniversary', 'cookieFlight', 'airplaneButter', 'terminalCookie'].includes(item.options?.landingSource))
             .map((item) => {
                 const options = item.options || {};
+                if (options.landingSource === 'anniversary') return `• ${item.name}: ${landingItemDetails(item).join(', ')}`;
                 const details = [
                     options.characterName ? `캐릭터 ${options.characterName}` : '',
                     options.paperName ? `종이 ${options.paperName}` : '',
@@ -1256,8 +1258,8 @@ export class GoogleSheetsService {
         const paymentConfirmed = order.paymentConfirmed ? 'Y' : 'N';
 
         const landingDetails = (Array.isArray(order.orderItems) ? order.orderItems as any[] : [])
-            .filter((item) => item?.type !== 'meta' && ['cookieFlight', 'airplaneButter', 'cookieCrew', 'terminalCookie'].includes(item?.options?.landingSource))
-            .map((item) => `${item.name} ${item.quantity}${item.options?.unitLabel ?? '개'}${item.options?.landingSource === 'terminalCookie' ? ` · 맛 구성: ${item.options.flavors.join(', ')}` : ''}`)
+            .filter((item) => item?.type !== 'meta' && ['anniversary', 'cookieFlight', 'airplaneButter', 'cookieCrew', 'terminalCookie'].includes(item?.options?.landingSource))
+            .map((item) => `${item.name} ${item.quantity}${item.options?.unitLabel ?? '개'}${item.options?.landingSource === 'anniversary' ? ` · ${landingItemDetails(item).join(' · ')}` : ''}${item.options?.landingSource === 'terminalCookie' ? ` · 맛 구성: ${item.options.flavors.join(', ')}` : ''}`)
             .join(', ');
 
         // 행 데이터 생성 (컬럼 순서에 맞게)

@@ -1,7 +1,7 @@
 import { createHash, randomBytes, timingSafeEqual } from 'node:crypto';
 import type { Order, OrderItem } from '@shared/schema';
 
-export const emailQuoteSources = ['brookie', 'cookie7', 'lucky', 'cookieFlight', 'airplaneButter', 'terminalCookie', 'cookieCrew'] as const;
+export const emailQuoteSources = ['brookie', 'cookie7', 'lucky', 'anniversary', 'cookieFlight', 'airplaneButter', 'terminalCookie', 'cookieCrew'] as const;
 export type EmailQuoteSource = typeof emailQuoteSources[number];
 export function isEmailQuoteSource(value: unknown): value is EmailQuoteSource {
   return emailQuoteSources.includes(value as EmailQuoteSource);
@@ -13,6 +13,12 @@ export function landingItemDetails(item: OrderItem): string[] {
     typeof flavor === 'string' ? flavor : `${flavor.name || flavor.id || ''} ${flavor.quantity ?? flavor.qty ?? ''}개`).join(', ') : '';
   return [
     ...(options.landingSource === 'brookie' ? brookieItemDetails(item) : []),
+    ...(options.landingSource === 'anniversary' ? [
+      `디자인: ${options.designType}형`,
+      options.speechBubbleName && `말풍선 이름: ${options.speechBubbleName}`,
+      options.heartMessage && `하트 안 문구: ${options.heartMessage}`,
+      `하단 문구: ${options.bottomMessage}`,
+    ] : []),
     options.packageName && `포장: ${options.packageName}`,
     (options.flavorText || flavors) && `맛 구성: ${options.flavorText || flavors}`,
     options.drink && `음료: ${options.drink}`,
@@ -31,6 +37,7 @@ export function storedLandingQuote(order: Order, expectedSource?: EmailQuoteSour
   const pricingPending = source === 'cookieCrew';
   const allowedTypes: Record<EmailQuoteSource, string[]> = {
     brookie: ['brownie', 'addon'], cookie7: ['regular', 'packaging', 'addon'], lucky: ['fortune'],
+    anniversary: ['addon'],
     cookieFlight: ['addon'], airplaneButter: ['addon'], terminalCookie: ['addon'], cookieCrew: ['addon'],
   };
   const items = all.filter(item => item?.type !== 'meta');

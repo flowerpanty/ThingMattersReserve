@@ -11,6 +11,7 @@ import { googleSheetsService } from "./services/google-sheets-service";
 import { buildOrderDataFromOrder } from "./services/order-data-utils";
 import { z } from "zod";
 import { createEmailQuoteAccess, hasEmailQuoteAccess, maskQuoteEmail, storedLandingQuote, isEmailQuoteSource } from './services/landing-email-quote';
+import { buildAnniversaryLandingItems } from './services/anniversary-cookie-order';
 
 declare module "express-session" {
   interface SessionData {
@@ -45,6 +46,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     brookie: '브루키',
     cookie7: '수제꾸덕쿠키',
     lucky: '행운쿠키',
+    anniversary: '축하쿠키',
     cookieFlight: '쿠키플라이트',
     airplaneButter: '비행기버터쿠키',
     cookieCrew: '쿠키크루',
@@ -497,6 +499,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     brookie: buildBrookieLandingItems,
     cookie7: buildCookie7LandingItems,
     lucky: buildLuckyLandingItems,
+    anniversary: buildAnniversaryLandingItems,
     cookieFlight: buildCookieFlightLandingItems,
     airplaneButter: buildAirplaneButterLandingItems,
     cookieCrew: buildCookieCrewLandingItems,
@@ -961,7 +964,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const landingSource = (Array.isArray(order.orderItems) ? order.orderItems as any[] : [])
         .find((item) => item?.type === 'meta')?.options?.landingSource;
-      const buffer = landingSource === 'cookieFlight' || landingSource === 'airplaneButter' || landingSource === 'terminalCookie' || landingSource === 'brookie'
+      const buffer = landingSource === 'anniversary' || landingSource === 'cookieFlight' || landingSource === 'airplaneButter' || landingSource === 'terminalCookie' || landingSource === 'brookie'
         ? await excelGenerator.generateQuoteFromStoredItems(order, landingSource)
         : await excelGenerator.generateQuote(orderDataSchema.parse(buildOrderDataFromOrder(order)));
       const fileName = `견적서_${order.customerName}_${new Date().toISOString().split('T')[0]}.xlsx`;

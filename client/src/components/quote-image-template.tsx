@@ -57,7 +57,7 @@ function buildOrderDataFromOrder(order: Order): OrderData {
 
   for (const item of orderItems) {
     if (!item || item.type === 'meta') continue;
-    if (['cookieFlight', 'airplaneButter', 'cookieCrew', 'terminalCookie'].includes(item.options?.landingSource)) continue;
+    if (['anniversary', 'cookieFlight', 'airplaneButter', 'cookieCrew', 'terminalCookie'].includes(item.options?.landingSource)) continue;
 
     const quantity = Number(item.quantity || 0);
     const itemName = typeof item.name === 'string' ? item.name : '';
@@ -532,13 +532,16 @@ function buildQuoteRowsFromSavedItems(order: Order) {
 
 function buildSavedDetailLines(order: Order) {
   return (Array.isArray(order.orderItems) ? order.orderItems : [])
-    .filter((item) => item && item.type !== 'meta' && ['brookie', 'cookieFlight', 'airplaneButter', 'terminalCookie'].includes(item.options?.landingSource))
+    .filter((item) => item && item.type !== 'meta' && ['brookie', 'anniversary', 'cookieFlight', 'airplaneButter', 'terminalCookie'].includes(item.options?.landingSource))
     .map((item) => {
       const options = item.options || {};
       const details = [
         options.characterName ? `캐릭터 ${options.characterName}` : '',
         options.paperName ? `종이 ${options.paperName}` : '',
         options.heartMessage ? `하트 문구 ${options.heartMessage}` : '',
+        options.designType ? `디자인 ${options.designType}형` : '',
+        options.speechBubbleName ? `말풍선 이름 ${options.speechBubbleName}` : '',
+        options.bottomMessage ? `하단 문구 ${options.bottomMessage}` : '',
         [options.customPaperLine1, options.customPaperLine2].filter(Boolean).join(' / '),
         options.topperKind ? `토퍼 ${options.topperKind}` : '',
         options.packageName ? `포장 ${options.packageName}` : '',

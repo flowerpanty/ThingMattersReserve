@@ -40,6 +40,8 @@ const common = {customerName: '검증 <script>alert(1)</script>', customerPhone:
 const fixtures = [
   {source:'brookie', combos:[{character:'bear', paper:'navy',qty:12}]},
   {source:'cookie7', items:[{packageId:'two-box', flavorQty:{'double-choco':2}, ribbon:true},{packageId:'one-box',flavorQty:{'walnut-choco':1}}], sticker:true},
+  {source:'anniversary', designType:'A', speechBubbleName:'태근 ♥ 유진', bottomMessage:'축하합니다', quantity:2},
+  {source:'anniversary', designType:'B', heartMessage:'소연 / 상우', bottomMessage:'행복한 기념일', quantity:1},
   {source:'lucky', quantity:2}, {source:'cookieFlight',quantity:2}, {source:'airplaneButter',quantity:3}, {source:'terminalCookie',quantity:1},
   {source:'cookieCrew',crewQuantities:{captain:3,blue:3,orange:3,green:3}},
 ];
@@ -97,5 +99,5 @@ try {
     if(source==='cookie7'){assert.equal(saved.data.totalPrice,36100);assert(message.html.includes('더블초코 2개'));assert(message.html.includes('호두초코 1개'));}
     console.log(`${source}: optional/invalid email, stored price, recipient/token/expiry, corrupt-item rejection, provider failure/nonaccepted, same-order retry, concurrent dedup, XLSX/escaped HTML PASS`);
   }
-  assert.equal(messages.length,7);
+  assert.equal(messages.length,fixtures.length);
 } finally {await new Promise<void>(r=>server.close(()=>r()));}

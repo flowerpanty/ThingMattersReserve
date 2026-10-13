@@ -12,6 +12,7 @@ const landingPages: Record<string, string> = {
   '/brookie': 'brookie.html',
   '/cookies': 'cookies.html',
   '/lucky': 'lucky.html',
+  '/anniversary-cookie': 'anniversary-cookie.html',
   '/cookie-flight': 'cookie-flight.html',
   '/cookieflight': 'cookie-flight.html',
   '/airplane-butter-cookie': 'airplane-butter-cookie.html',

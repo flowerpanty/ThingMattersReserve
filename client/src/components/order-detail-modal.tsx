@@ -52,6 +52,7 @@ function getLandingSourceInfo(order: Pick<Order, 'orderItems'>) {
         brookie: { label: '브루키', tone: 'border-orange-200 bg-orange-50 text-orange-700' },
         cookie7: { label: '수제꾸덕쿠키', tone: 'border-blue-200 bg-blue-50 text-blue-700' },
         lucky: { label: '행운쿠키', tone: 'border-emerald-200 bg-emerald-50 text-emerald-700' },
+        anniversary: { label: '축하쿠키', tone: 'border-rose-200 bg-rose-50 text-rose-700' },
         cookieFlight: { label: '쿠키플라이트', tone: 'border-sky-200 bg-sky-50 text-sky-700' },
         airplaneButter: { label: '비행기버터쿠키', tone: 'border-amber-200 bg-amber-50 text-amber-800' },
         cookieCrew: { label: '쿠키크루', tone: 'border-fuchsia-200 bg-fuchsia-50 text-fuchsia-700' },
@@ -259,7 +260,16 @@ export function OrderDetailModal({ order, isOpen, onClose, onDelete }: OrderDeta
             const detailedRows: any[] = [];
             let detailOptionText = '';
 
-            if (orderData) {
+            if (metaItem?.options?.landingSource === 'anniversary') {
+                const escape = (value: unknown) => String(value ?? '').replace(/[&<>"']/g, character => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[character]!));
+                const details: string[] = [];
+                order.orderItems.filter(item => item.type !== 'meta').forEach(item => {
+                    detailedRows.push({ name: item.name, quantity: `${item.quantity}세트`, price: item.price, total: item.quantity * item.price });
+                    const options = item.options || {};
+                    details.push(`디자인: ${options.designType}형`, options.speechBubbleName ? `말풍선 이름: ${options.speechBubbleName}` : `하트 안 문구: ${options.heartMessage}`, `하단 문구: ${options.bottomMessage}`);
+                });
+                detailOptionText = details.map(escape).join('<br>');
+            } else if (orderData) {
             // 1. orderData가 있는 경우 (신규 주문) - 완벽한 복원 가능
 
             // 일반 쿠키
@@ -421,7 +431,7 @@ export function OrderDetailModal({ order, isOpen, onClose, onDelete }: OrderDeta
 
             order.orderItems.forEach(item => {
                 if (item.type === 'meta') return;
-                if (['cookieFlight', 'airplaneButter', 'cookieCrew', 'terminalCookie'].includes(item.options?.landingSource)) {
+                if (['anniversary', 'cookieFlight', 'airplaneButter', 'cookieCrew', 'terminalCookie'].includes(item.options?.landingSource)) {
                     summary.others.push(item);
                     return;
                 }
@@ -704,6 +714,13 @@ export function OrderDetailModal({ order, isOpen, onClose, onDelete }: OrderDeta
                 )}
 
                 {/* 랜딩페이지 주문 옵션 */}
+                {item.options.landingSource === 'anniversary' && (
+                    <>
+                        <div>🎉 디자인: {item.options.designType}형</div>
+                        {item.options.speechBubbleName && <div>💬 말풍선 이름: {item.options.speechBubbleName}</div>}
+                        <div className="whitespace-pre-wrap">✍️ 하단 문구: {item.options.bottomMessage}</div>
+                    </>
+                )}
                 {item.options.characterName && (
                     <div>🐻 캐릭터: {item.options.characterName}</div>
                 )}

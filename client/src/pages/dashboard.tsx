@@ -120,6 +120,7 @@ function getLandingSourceInfo(order: Pick<Order, 'orderItems'>) {
     brookie: { label: '브루키', tone: 'border-orange-200 bg-orange-50 text-orange-700' },
     cookie7: { label: '수제꾸덕쿠키', tone: 'border-blue-200 bg-blue-50 text-blue-700' },
     lucky: { label: '행운쿠키', tone: 'border-emerald-200 bg-emerald-50 text-emerald-700' },
+    anniversary: { label: '축하쿠키', tone: 'border-rose-200 bg-rose-50 text-rose-700' },
     cookieFlight: { label: '쿠키플라이트', tone: 'border-sky-200 bg-sky-50 text-sky-700' },
     airplaneButter: { label: '비행기버터쿠키', tone: 'border-amber-200 bg-amber-50 text-amber-800' },
     cookieCrew: { label: '쿠키크루', tone: 'border-fuchsia-200 bg-fuchsia-50 text-fuchsia-700' },
@@ -1333,6 +1334,7 @@ export function Dashboard() {
                   <option value="brookie">브루키</option>
                   <option value="cookie7">꾸덕쿠키</option>
                   <option value="lucky">럭키</option>
+                  <option value="anniversary">축하쿠키</option>
                   <option value="cookieFlight">쿠키플라이트</option>
                   <option value="airplaneButter">비행기버터쿠키</option>
                   <option value="cookieCrew">쿠키크루</option>
