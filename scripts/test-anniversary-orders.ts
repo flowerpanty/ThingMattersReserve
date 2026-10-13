@@ -43,7 +43,7 @@ try {
   for (const fixture of fixtures) {
     const response = await post({ ...fixture, price: 1, totalPrice: 1 });
     assert.equal(response.status, 200);
-    assert.equal(response.body.totalPrice, fixture.quantity * 19000);
+    assert.equal(response.body.totalPrice, fixture.quantity * 20000);
     assert.match(response.body.emailQuoteToken, /^[a-f0-9]{64}$/);
     const order = orders.at(-1), item = order.orderItems[0];
     assert.equal(item.options.designType, fixture.designType);
@@ -61,13 +61,13 @@ try {
     assert.equal(download.status, 200);
     const adminWorkbook = new ExcelJS.Workbook(); await adminWorkbook.xlsx.load(Buffer.from(await download.arrayBuffer()));
     const adminCells = JSON.stringify(adminWorkbook.worksheets[0].getSheetValues());
-    assert(adminCells.includes(required)); assert(adminCells.includes(String(fixture.quantity * 19000)));
+    assert(adminCells.includes(required)); assert(adminCells.includes(String(fixture.quantity * 20000)));
     const workbook = new ExcelJS.Workbook();
     await workbook.xlsx.load(await new ExcelGenerator().generateQuoteFromStoredItems(order, 'anniversary'));
     const cells = JSON.stringify(workbook.worksheets[0].getSheetValues());
     assert(cells.includes(required)); assert(cells.includes(fixture.bottomMessage.replace(/\n/g, '\\n')));
     const sheet = (googleSheetsService as any).buildQuoteRows(order);
-    assert.equal(sheet.totalAmount, fixture.quantity * 19000);
+    assert.equal(sheet.totalAmount, fixture.quantity * 20000);
     assert(sheet.detailLines.join(' ').includes(required));
     assert((googleSheetsService as any).orderToRowData(order)[26].includes(required));
   }
@@ -80,6 +80,6 @@ try {
     { designType: 'A', speechBubbleName: '' },
   ]) assert.equal((await post({ ...valid, ...invalid })).status, 400, JSON.stringify(invalid));
   assert.equal(orders.length, before, 'invalid input must never be stored');
-  for (const heartMessage of ['소연', 'LOVE', '소연 / LOVE', '소연']) assert.equal(buildAnniversaryLandingItems({ ...valid, heartMessage }).orderItems[0].price, 19000);
+  for (const heartMessage of ['소연', 'LOVE', '소연 / LOVE', '소연']) assert.equal(buildAnniversaryLandingItems({ ...valid, heartMessage }).orderItems[0].price, 20000);
   console.log('Anniversary A/B options, heart limits, quantity, server prices, saved fields, email/XLSX/admin/Sheets details PASS');
 } finally { await new Promise<void>(resolve => server.close(() => resolve())); }

@@ -1,6 +1,6 @@
 import type { OrderItem } from '@shared/schema';
 
-export const anniversarySetPrice = 19000;
+export const anniversarySetPrice = 20000;
 
 export function buildAnniversaryLandingItems(body: Record<string, unknown>) {
   const designType = body.designType;
