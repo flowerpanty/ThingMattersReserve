@@ -1,5 +1,6 @@
 import { createHash, randomBytes, timingSafeEqual } from 'node:crypto';
 import type { Order, OrderItem } from '@shared/schema';
+import { storedBrookieAddonDetails } from '@shared/brookie-pricing';
 
 export const emailQuoteSources = ['brookie', 'cookie7', 'lucky', 'anniversary', 'cookieFlight', 'airplaneButter', 'terminalCookie', 'cookieCrew'] as const;
 export type EmailQuoteSource = typeof emailQuoteSources[number];
@@ -82,7 +83,7 @@ export function brookieItemDetails(item: OrderItem): string[] {
     options.characterName && `캐릭터: ${options.characterName}`,
     options.paperName && `포장 종이: ${options.paperName}`,
     item.type === 'brownie' && `하트: ${options.heartMessage || '기본 하트'}`,
-    options.premiumCharacter && '프리미엄 캐릭터 +500원',
+    ...storedBrookieAddonDetails(options),
     (options.customPaper || options.paper === 'custom') && `커스텀 종이 1줄: ${options.customPaperLine1 || '없음'}`,
     (options.customPaper || options.paper === 'custom') && `커스텀 종이 2줄: ${options.customPaperLine2 || '없음'}`,
     options.topperKind && `토퍼 종류: ${topperLabels[options.topperKind] || options.topperKind}`,

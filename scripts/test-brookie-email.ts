@@ -2,6 +2,9 @@ import assert from 'node:assert/strict';
 import { readFile, writeFile } from 'node:fs/promises';
 import express from 'express';
 import ExcelJS from 'exceljs';
+import React from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
+import { QuoteImageTemplate } from '../client/src/components/quote-image-template';
 
 // Isolated integration test: no real database, notifications, or email delivery.
 process.env.DATABASE_URL = 'postgres://test:test@127.0.0.1:1/test';
@@ -101,7 +104,7 @@ if (serveUI) {
     const { ExcelGenerator } = await import('../server/services/excel-generator');
     const created = await post('/api/landing-orders', { ...common, combos, topper: true, topperKind: 'square', sticker: true, totalPrice: 1 });
     assert.equal(created.status, 200);
-    assert.equal(created.body.totalPrice, 132200);
+    assert.equal(created.body.totalPrice, 134600);
     assert.equal(saved[0].customerContact, common.customerPhone);
     const meta = saved[0].orderItems.at(-1).options;
     assert.equal(meta.customerEmail, common.customerEmail);
@@ -191,13 +194,13 @@ if (serveUI) {
     assert.deepEqual(message.to, [common.customerEmail]);
     assert.match(message.subject, /^\[nothingmatters\].*브루키 견적서$/);
     assert.match(message.attachment.filename, /^nothingmatters-brookie-quote-\d{4}-\d{2}-\d{2}\.xlsx$/);
-    assert(message.html.includes('132,200원') && message.html.includes('12개'));
-    for (const detail of ['곰돌이', '생일곰', 'LOVE', '첫번째 줄', '둘째 &lt;img src=x&gt;', '프리미엄 캐릭터', '토퍼 추가', '스티커 제작', '카카오톡 상담을 완료하지 않으면']) assert(message.html.includes(detail), detail);
+    assert(message.html.includes('134,600원') && message.html.includes('12개'));
+    for (const detail of ['곰돌이', '생일곰', 'LOVE', '첫번째 줄', '둘째 &lt;img src=x&gt;', '생일곰 캐릭터 추가 +700원', '하트 문구 추가 +700원', '토퍼 추가', '스티커 제작', '카카오톡 상담을 완료하지 않으면']) assert(message.html.includes(detail), detail);
     assert(!message.html.includes('<script>') && !message.html.includes('<img src=x>'));
     const workbook = new ExcelJS.Workbook();
     await workbook.xlsx.load(message.attachment.data);
     const values = workbook.worksheets[0].getSheetValues().flat().map(String).join('\n');
-    for (const detail of ['LOVE', '첫번째 줄', '둘째 <img src=x>', '프리미엄 캐릭터', '토퍼 추가', '스티커 제작', '132200', '견적은 주문 접수용']) assert(values.includes(detail), detail);
+    for (const detail of ['LOVE', '첫번째 줄', '둘째 <img src=x>', '생일곰 캐릭터 추가 +700원', '하트 문구 추가 +700원', '토퍼 추가', '스티커 제작', '134600', '견적은 주문 접수용']) assert(values.includes(detail), detail);
     const excelPath = `/api/orders/${created.body.orderId}/quote-excel`;
     assert.equal((await fetch(base + excelPath)).status, 401);
     const adminExcel = await fetch(base + excelPath, { headers: { 'X-Test-Admin': 'true' } });
@@ -205,7 +208,7 @@ if (serveUI) {
     const adminWorkbook = new ExcelJS.Workbook();
     await adminWorkbook.xlsx.load(Buffer.from(await adminExcel.arrayBuffer()));
     const adminValues = adminWorkbook.worksheets[0].getSheetValues().flat().map(String).join('\n');
-    assert(adminValues.includes('132200') && adminValues.includes('첫번째 줄') && adminValues.includes('토퍼 추가'));
+    assert(adminValues.includes('134600') && adminValues.includes('첫번째 줄') && adminValues.includes('토퍼 추가'));
     assert.equal((await post(path, { email: common.customerEmail }, created.body.emailQuoteToken)).status, 200);
     assert.equal(sent.length, 1);
     const noEmail = await post('/api/landing-orders', { ...common, customerEmail: '', combos });
@@ -224,6 +227,32 @@ if (serveUI) {
     assert.throws(() => access.storedBrookieQuote(saved.at(-1)), /일치/);
     assert.equal((await post(retryPath, { email: 'failure@example.com' }, retry.body.emailQuoteToken)).status, 503);
     assert.equal((await post('/api/orders/unknown/email-quote', { email: common.customerEmail }, created.body.emailQuoteToken)).status, 403);
+    // Authoritative server prices ignore client-supplied fees. Minimum 12 stays unchanged.
+    for (const [character, heart, paper, unitPrice, characterFee] of [
+      ['bear',false,'navy',7800,0], ['rabbit',false,'navy',7800,0], ['tiger',false,'navy',7800,0],
+      ['birthday_bear',false,'navy',8500,700], ['miss_bear',false,'navy',8500,700], ['horse',false,'navy',8300,500],
+      ['bear',true,'navy',8500,0], ['birthday_bear',true,'navy',9200,700], ['birthday_bear',true,'custom',9900,700],
+    ] as const) {
+      const result = await post('/api/landing-orders', { ...common, customerEmail:'', combos:[{character,paper,qty:12,heartTextEnabled:heart,heartText:heart?'LOVE':'',characterAddonPrice:1,heartAddonPrice:1}], totalPrice:1 });
+      assert.equal(result.status,200);
+      const item = result.body.orderItems[0];
+      assert.equal(item.price,unitPrice); assert.equal(result.body.totalPrice,unitPrice*12);
+      assert.equal(item.options.characterAddonPrice,characterFee); assert.equal(item.options.heartAddonPrice,heart?700:0);
+      assert.equal(item.options.customPaperAddonPrice,paper==='custom'?700:0);
+      const details=access.brookieItemDetails(item).join(' ');
+      if(characterFee) assert(details.includes(`${characterFee}원`));
+      if(heart) assert(details.includes('하트 문구 추가 +700원'));
+      const adminHTML=(new EmailService() as any).generateLandingAdminEmailHTML({order:saved.at(-1),sourceLabel:'브루키'});
+      if(characterFee) assert(adminHTML.includes(`캐릭터 추가 +${characterFee}원`));
+      const imageHTML=renderToStaticMarkup(React.createElement(QuoteImageTemplate,{order:{...saved.at(-1),createdAt:'2026-10-18'}}));
+      if(heart) assert(imageHTML.includes('하트 문구 추가 +700원'));
+      const sheetQuote=(googleSheetsService as any).buildQuoteRows(saved.at(-1));
+      assert.equal(sheetQuote.totalAmount,unitPrice*12);
+      if(characterFee) assert(sheetQuote.detailLines.join(' ').includes(`캐릭터 추가 +${characterFee}원`));
+    }
+    const legacyDetails=access.brookieItemDetails({type:'brownie',name:'기존 생일곰',price:8800,quantity:12,options:{characterName:'생일곰',premiumCharacter:true,heartMessage:'LOVE'}});
+    assert(legacyDetails.includes('생일곰 캐릭터 추가 +500원'));
+    assert(legacyDetails.includes('하트 문구 추가 +500원'));
     while ((await post(path, { email: common.customerEmail }, created.body.emailQuoteToken)).status === 200) {}
     assert.equal((await post(path, { email: common.customerEmail }, created.body.emailQuoteToken)).status, 429);
     console.log('Brookie saved-item Excel/HTML/Mailgun adapter, details, phone contact, optional/invalid email, access token, expiry, duplicate sends, missing key/domain, production sandbox guard, sender validation, safe diagnostics, rejection/non-accepted response, failure/retry and rate limit: PASS');

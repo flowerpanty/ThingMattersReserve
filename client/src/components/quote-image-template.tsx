@@ -1,4 +1,5 @@
 import React from 'react';
+import { storedBrookieAddonDetails } from '@shared/brookie-pricing';
 import { cookiePrices, type OrderData } from '@shared/schema';
 
 interface OrderItem {
@@ -539,6 +540,7 @@ function buildSavedDetailLines(order: Order) {
         options.characterName ? `캐릭터 ${options.characterName}` : '',
         options.paperName ? `종이 ${options.paperName}` : '',
         options.heartMessage ? `하트 문구 ${options.heartMessage}` : '',
+        ...(options.landingSource === 'brookie' ? storedBrookieAddonDetails(options) : []),
         options.designType ? `디자인 ${options.designType}형` : '',
         options.speechBubbleName ? `말풍선 이름 ${options.speechBubbleName}` : '',
         options.bottomMessage ? `하단 문구 ${options.bottomMessage}` : '',

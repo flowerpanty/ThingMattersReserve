@@ -70,6 +70,7 @@ export class EmailService {
 
   private formatLandingOptionDetails(item: OrderItem): string {
     const options = item.options || {};
+    if (options.landingSource === 'brookie') return landingItemDetails(item).map(detail => this.escapeHTML(detail)).join('<br />');
     const details = [
       options.packageName && `포장: ${options.packageName}`,
       options.flavorText && `맛 구성: ${options.flavorText}`,

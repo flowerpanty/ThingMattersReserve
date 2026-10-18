@@ -12,6 +12,7 @@ import { buildOrderDataFromOrder } from "./services/order-data-utils";
 import { z } from "zod";
 import { createEmailQuoteAccess, hasEmailQuoteAccess, maskQuoteEmail, storedLandingQuote, isEmailQuoteSource } from './services/landing-email-quote';
 import { buildAnniversaryLandingItems } from './services/anniversary-cookie-order';
+import { brookieCharacterAddonPrices as characterAddonPrices } from '@shared/brookie-pricing';
 
 declare module "express-session" {
   interface SessionData {
@@ -287,7 +288,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       black: '블랙',
       custom: '커스텀 종이',
     };
-    const premiumCharacters = new Set(['birthday_bear', 'miss_bear', 'horse']);
     const shapeMap: Record<string, string> = {
       bear: 'bear',
       rabbit: 'rabbit',
@@ -315,10 +315,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const paper = asText(combo.paper) || 'navy';
       const heartText = asText(combo.heartText);
       const hasHeartText = !!combo.heartTextEnabled && !!heartText;
-      const unitAddons =
-        (premiumCharacters.has(character) ? 500 : 0) +
-        (hasHeartText ? 500 : 0) +
-        (paper === 'custom' ? 700 : 0);
+      const characterAddon = Object.hasOwn(characterAddonPrices, character) ? characterAddonPrices[character] : 0;
+      const heartAddon = hasHeartText ? 700 : 0;
+      const customPaperAddon = paper === 'custom' ? 700 : 0;
+      const unitAddons = characterAddon + heartAddon + customPaperAddon;
       const unitPrice = cookiePrices.brownie + unitAddons;
 
       orderItems.push({
@@ -336,7 +336,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           heartMessage: hasHeartText ? heartText : undefined,
           customPaperLine1: asText(combo.customPaperLine1),
           customPaperLine2: asText(combo.customPaperLine2),
-          premiumCharacter: premiumCharacters.has(character),
+          premiumCharacter: characterAddon > 0,
+          characterAddonPrice: characterAddon,
+          heartAddonPrice: heartAddon,
+          customPaperAddonPrice: customPaperAddon,
           customPaper: paper === 'custom',
         },
       });

@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Calendar, Mail, Package, MapPin, Clock, DollarSign, Trash2, Image as ImageIcon, FileSpreadsheet } from "lucide-react";
 import { cookiePrices, isPricingPendingOrder } from "@shared/schema";
+import { storedBrookieAddonDetails } from "@shared/brookie-pricing";
 import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
 import { ko } from "date-fns/locale";
@@ -714,6 +715,9 @@ export function OrderDetailModal({ order, isOpen, onClose, onDelete }: OrderDeta
                 )}
 
                 {/* 랜딩페이지 주문 옵션 */}
+                {item.options.landingSource === 'brookie' && storedBrookieAddonDetails(item.options).map(detail => (
+                    <div key={detail}>✚ {detail}</div>
+                ))}
                 {item.options.landingSource === 'anniversary' && (
                     <>
                         <div>🎉 디자인: {item.options.designType}형</div>

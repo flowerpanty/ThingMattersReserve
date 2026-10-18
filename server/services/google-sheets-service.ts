@@ -183,7 +183,7 @@ export class GoogleSheetsService {
             .filter((item) => item && item.type !== 'meta' && ['brookie', 'anniversary', 'cookieFlight', 'airplaneButter', 'terminalCookie'].includes(item.options?.landingSource))
             .map((item) => {
                 const options = item.options || {};
-                if (options.landingSource === 'anniversary') return `• ${item.name}: ${landingItemDetails(item).join(', ')}`;
+                if (['brookie', 'anniversary'].includes(options.landingSource)) return `• ${item.name}: ${landingItemDetails(item).join(', ')}`;
                 const details = [
                     options.characterName ? `캐릭터 ${options.characterName}` : '',
                     options.paperName ? `종이 ${options.paperName}` : '',
