@@ -81,6 +81,10 @@ export function OrderDetailModal({ order, isOpen, onClose, onDelete }: OrderDeta
 
     const landingSource = getLandingSourceInfo(order);
     const pricingPending = isPricingPendingOrder(order);
+    const metadata = order.orderItems.find((item) => item.type === 'meta')?.options;
+    const deliveryAddress = typeof metadata?.deliveryAddress === 'string'
+        ? metadata.deliveryAddress.trim()
+        : '';
 
     const closePreOpenedWindow = (openedWindow?: Window | null) => {
         if (openedWindow && !openedWindow.closed) {
@@ -853,6 +857,13 @@ export function OrderDetailModal({ order, isOpen, onClose, onDelete }: OrderDeta
                                     </div>
                                 </>
                             )}
+                            <Separator />
+                            <div className="flex items-start justify-between gap-4">
+                                <span className="shrink-0 text-sm text-muted-foreground">주소</span>
+                                <span className="min-w-0 whitespace-pre-wrap break-words text-right font-medium">
+                                    {deliveryAddress || '미입력'}
+                                </span>
+                            </div>
                         </div>
                     </div>
 
