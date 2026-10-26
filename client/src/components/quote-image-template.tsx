@@ -1,6 +1,7 @@
 import React from 'react';
 import { storedBrookieAddonDetails } from '@shared/brookie-pricing';
 import { cookiePrices, type OrderData } from '@shared/schema';
+import { isQuickDeliveryFeeItem } from '@shared/quick-delivery-fee';
 
 interface OrderItem {
   type: string;
@@ -533,7 +534,7 @@ function buildQuoteRowsFromSavedItems(order: Order) {
 
 function buildSavedDetailLines(order: Order) {
   return (Array.isArray(order.orderItems) ? order.orderItems : [])
-    .filter((item) => item && item.type !== 'meta' && ['brookie', 'anniversary', 'cookieFlight', 'airplaneButter', 'terminalCookie'].includes(item.options?.landingSource))
+    .filter((item) => item && item.type !== 'meta' && !isQuickDeliveryFeeItem(item) && ['brookie', 'anniversary', 'cookieFlight', 'airplaneButter', 'terminalCookie'].includes(item.options?.landingSource))
     .map((item) => {
       const options = item.options || {};
       const details = [

@@ -2,6 +2,7 @@ import { google } from 'googleapis';
 import { type Order, cookiePrices, isPricingPendingOrder } from '@shared/schema';
 import { buildOrderDataFromOrder } from './order-data-utils';
 import { landingItemDetails } from './landing-email-quote';
+import { isQuickDeliveryFeeItem } from '@shared/quick-delivery-fee';
 
 interface GoogleSheetsConfig {
     spreadsheetId: string;
@@ -180,7 +181,7 @@ export class GoogleSheetsService {
 
     private buildSavedDetailLines(order: Order): string[] {
         return (Array.isArray(order.orderItems) ? (order.orderItems as any[]) : [])
-            .filter((item) => item && item.type !== 'meta' && ['brookie', 'anniversary', 'cookieFlight', 'airplaneButter', 'terminalCookie'].includes(item.options?.landingSource))
+            .filter((item) => item && item.type !== 'meta' && !isQuickDeliveryFeeItem(item) && ['brookie', 'anniversary', 'cookieFlight', 'airplaneButter', 'terminalCookie'].includes(item.options?.landingSource))
             .map((item) => {
                 const options = item.options || {};
                 if (['brookie', 'anniversary'].includes(options.landingSource)) return `• ${item.name}: ${landingItemDetails(item).join(', ')}`;

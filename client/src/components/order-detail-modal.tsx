@@ -5,11 +5,14 @@ import { Separator } from "@/components/ui/separator";
 import { Calendar, Mail, Package, MapPin, Clock, DollarSign, Trash2, Image as ImageIcon, FileSpreadsheet } from "lucide-react";
 import { cookiePrices, isPricingPendingOrder } from "@shared/schema";
 import { storedBrookieAddonDetails } from "@shared/brookie-pricing";
+import { getQuickDeliveryFee, isQuickDeliveryFeeItem, MAX_ORDER_AMOUNT } from "@shared/quick-delivery-fee";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { format } from "date-fns";
 import { ko } from "date-fns/locale";
 import React from "react";
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import html2canvas from 'html2canvas';
 import { QuoteImageTemplate } from './quote-image-template';
 import { apiRequest } from "@/lib/queryClient";
@@ -68,13 +71,18 @@ interface OrderDetailModalProps {
     isOpen: boolean;
     onClose: () => void;
     onDelete?: (orderId: string) => void;
+    onOrderUpdated?: (order: Order) => void;
 }
 
-export function OrderDetailModal({ order, isOpen, onClose, onDelete }: OrderDetailModalProps) {
+export function OrderDetailModal({ order, isOpen, onClose, onDelete, onOrderUpdated }: OrderDetailModalProps) {
     const [isDeleting, setIsDeleting] = useState(false);
     const quoteTemplateRef = useRef<HTMLDivElement>(null);
     const [isDownloadingImage, setIsDownloadingImage] = useState(false);
     const [isCopyingToSheet, setIsCopyingToSheet] = useState(false);
+    const [quickFeeDraft, setQuickFeeDraft] = useState('0');
+    const [isSavingQuickFee, setIsSavingQuickFee] = useState(false);
+    const savedQuickFee = getQuickDeliveryFee(order);
+    useEffect(() => { setQuickFeeDraft(String(savedQuickFee)); }, [order?.id, savedQuickFee, isOpen]);
     const { toast } = useToast();
 
     if (!order) return null;
@@ -82,9 +90,31 @@ export function OrderDetailModal({ order, isOpen, onClose, onDelete }: OrderDeta
     const landingSource = getLandingSourceInfo(order);
     const pricingPending = isPricingPendingOrder(order);
     const metadata = order.orderItems.find((item) => item.type === 'meta')?.options;
-    const deliveryAddress = typeof metadata?.deliveryAddress === 'string'
+    const deliveryAddress: string = typeof metadata?.deliveryAddress === 'string'
         ? metadata.deliveryAddress.trim()
         : '';
+    const draftFee = quickFeeDraft.trim() === '' ? 0 : Number(quickFeeDraft);
+    const draftTotal = order.totalPrice - savedQuickFee + draftFee;
+    const validQuickFee = /^\d*$/.test(quickFeeDraft.trim()) && Number.isSafeInteger(draftFee) && draftFee >= 0 &&
+        Number.isSafeInteger(draftTotal) && draftTotal >= 0 && draftTotal <= MAX_ORDER_AMOUNT;
+    const hasQuickFeeChanges = !validQuickFee || draftFee !== savedQuickFee;
+    const quoteUnavailable = isSavingQuickFee || hasQuickFeeChanges;
+    const displayedItems = order.orderItems.filter(item => item.type !== 'meta' && item.type !== 'packaging' && !isQuickDeliveryFeeItem(item));
+
+    const handleSaveQuickFee = async () => {
+        if (!validQuickFee || !hasQuickFeeChanges || isSavingQuickFee) return;
+        setIsSavingQuickFee(true);
+        try {
+            const response = await apiRequest('PATCH', `/api/orders/${order.id}/quick-delivery-fee`, { fee: draftFee });
+            const updatedOrder: Order = await response.json();
+            onOrderUpdated?.(updatedOrder);
+            toast({ title: '퀵비가 적용되었습니다', description: '총 결제 금액과 새로 만드는 견적서에 반영됩니다.' });
+        } catch {
+            toast({ title: '퀵비를 저장하지 못했습니다', description: '관리자 로그인과 입력 금액을 확인한 뒤 다시 시도해주세요.', variant: 'destructive' });
+        } finally {
+            setIsSavingQuickFee(false);
+        }
+    };
 
     const closePreOpenedWindow = (openedWindow?: Window | null) => {
         if (openedWindow && !openedWindow.closed) {
@@ -265,13 +295,26 @@ export function OrderDetailModal({ order, isOpen, onClose, onDelete }: OrderDeta
             const detailedRows: any[] = [];
             let detailOptionText = '';
 
-            if (metaItem?.options?.landingSource === 'anniversary') {
+            if (metaItem?.options?.landingSource) {
                 const escape = (value: unknown) => String(value ?? '').replace(/[&<>"']/g, character => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[character]!));
                 const details: string[] = [];
                 order.orderItems.filter(item => item.type !== 'meta').forEach(item => {
-                    detailedRows.push({ name: item.name, quantity: `${item.quantity}세트`, price: item.price, total: item.quantity * item.price });
+                    detailedRows.push({ name: item.name, quantity: `${item.quantity}${item.options?.unitLabel ?? (metaItem.options.landingSource === 'anniversary' || metaItem.options.landingSource === 'lucky' ? '세트' : '개')}`, price: item.price, total: item.quantity * item.price });
+                    if (isQuickDeliveryFeeItem(item)) return;
                     const options = item.options || {};
-                    details.push(`디자인: ${options.designType}형`, options.speechBubbleName ? `말풍선 이름: ${options.speechBubbleName}` : `하트 안 문구: ${options.heartMessage}`, `하단 문구: ${options.bottomMessage}`);
+                    details.push(...[
+                        options.designType && `디자인: ${options.designType}형`,
+                        options.characterName && `캐릭터: ${options.characterName}`,
+                        options.paperName && `포장 종이: ${options.paperName}`,
+                        options.speechBubbleName && `말풍선 이름: ${options.speechBubbleName}`,
+                        options.heartMessage && `하트 문구: ${options.heartMessage}`,
+                        options.bottomMessage && `하단 문구: ${options.bottomMessage}`,
+                        options.customPaperLine1 && `커스텀 종이 1줄: ${options.customPaperLine1}`,
+                        options.customPaperLine2 && `커스텀 종이 2줄: ${options.customPaperLine2}`,
+                        options.packageName && `포장: ${options.packageName}`,
+                        options.flavorText && `맛 구성: ${options.flavorText}`,
+                        ...storedBrookieAddonDetails(options),
+                    ].filter(Boolean).map(String));
                 });
                 detailOptionText = details.map(escape).join('<br>');
             } else if (orderData) {
@@ -352,7 +395,8 @@ export function OrderDetailModal({ order, isOpen, onClose, onDelete }: OrderDeta
                 if (heartQty > 0) detailedRows.push({ name: '└ 하트안 문구 추가', quantity: heartQty, price: PRICES.brownieOptions.heartMessage, total: heartQty * PRICES.brownieOptions.heartMessage });
             }
 
-            // 배송비 (총액 차액으로 계산하거나 명시적 추가)
+            if (savedQuickFee > 0) detailedRows.push({ name: '퀵비', quantity: '1건', price: savedQuickFee, total: savedQuickFee });
+            // Preserve any other existing adjustment independently of the quick fee.
             // 여기서는 계산된 합계와 order.totalPrice의 차이를 배송비로 간주
             const currentTotal = detailedRows.reduce((sum, row) => sum + (typeof row.total === 'number' ? row.total : 0), 0);
             const diff = order.totalPrice - currentTotal;
@@ -554,7 +598,7 @@ export function OrderDetailModal({ order, isOpen, onClose, onDelete }: OrderDeta
                 <tr>
                     <td colspan="4" style="border: 1px solid #000; padding: 10px;">
                         수령 방법: ${order.deliveryMethod === 'quick' ? '퀵 배송' : '픽업'} | 수령 희망일: ${order.deliveryDate} ${order.pickupTime ? `| 시간: ${order.pickupTime}` : ''}<br>
-                        ${orderAny.deliveryAddress ? `배송 주소: ${orderAny.deliveryAddress} ${orderAny.deliveryDetailAddress || ''}` : ''}
+                        ${deliveryAddress ? `배송 주소: ${deliveryAddress.replace(/[&<>"']/g, character => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[character]!))}` : ''}
                     </td>
                 </tr>
                 <!-- 테이블 헤더 -->
@@ -864,6 +908,39 @@ export function OrderDetailModal({ order, isOpen, onClose, onDelete }: OrderDeta
                                     {deliveryAddress || '미입력'}
                                 </span>
                             </div>
+                            {order.deliveryMethod === 'quick' && (
+                                <>
+                                    <Separator />
+                                    <div className="space-y-2 pt-1">
+                                        <Label htmlFor="order-quick-delivery-fee">퀵비 (원)</Label>
+                                        <div className="flex items-center gap-2">
+                                            <Input
+                                                id="order-quick-delivery-fee"
+                                                type="text"
+                                                inputMode="numeric"
+                                                value={quickFeeDraft}
+                                                onChange={event => setQuickFeeDraft(event.target.value)}
+                                                aria-invalid={!validQuickFee}
+                                                aria-describedby="order-quick-delivery-fee-help"
+                                                className="min-w-0 flex-1"
+                                                disabled={isSavingQuickFee || isCopyingToSheet || isDownloadingImage}
+                                            />
+                                            <Button
+                                                onClick={handleSaveQuickFee}
+                                                disabled={!validQuickFee || !hasQuickFeeChanges || isSavingQuickFee || isCopyingToSheet || isDownloadingImage}
+                                                className="shrink-0"
+                                            >
+                                                {isSavingQuickFee ? '저장 중...' : '퀵비 적용'}
+                                            </Button>
+                                        </div>
+                                        <p id="order-quick-delivery-fee-help" className={`text-sm ${!validQuickFee ? 'text-destructive' : 'text-muted-foreground'}`} aria-live="polite">
+                                            {!validQuickFee ? '0원 이상의 정수 금액을 입력해주세요.'
+                                                : hasQuickFeeChanges && !pricingPending ? `적용 후 총 결제 금액: ${formatCurrency(draftTotal)}`
+                                                : '퀵비를 적용하면 총 결제 금액과 견적서에 반영됩니다. 0원으로 적용하면 퀵비가 해제됩니다.'}
+                                        </p>
+                                    </div>
+                                </>
+                            )}
                         </div>
                     </div>
 
@@ -871,10 +948,10 @@ export function OrderDetailModal({ order, isOpen, onClose, onDelete }: OrderDeta
                     <div className="space-y-3">
                         <h3 className="font-semibold text-lg flex items-center gap-2">
                             <Package className="w-5 h-5" />
-                            주문 항목 ({order.orderItems.length}개)
+                            주문 항목 ({displayedItems.length}개)
                         </h3>
                         <div className="space-y-2">
-                            {order.orderItems.filter(item => item.type !== 'meta' && item.type !== 'packaging').map((item, index) => (
+                            {displayedItems.map((item, index) => (
                                 <div key={index} className="bg-muted/30 rounded-lg p-4">
                                     <div className="flex items-start justify-between">
                                         <div className="flex-1">
@@ -913,7 +990,7 @@ export function OrderDetailModal({ order, isOpen, onClose, onDelete }: OrderDeta
                                     const allItems: JSX.Element[] = [];
                                     const packagingItems = order.orderItems.filter(item => item.type === 'packaging');
                                     const regularItems = order.orderItems.filter(item => item.type === 'regular');
-                                    const otherItems = order.orderItems.filter(item => item.type !== 'meta' && item.type !== 'packaging' && item.type !== 'regular');
+                                    const otherItems = order.orderItems.filter(item => item.type !== 'meta' && item.type !== 'packaging' && item.type !== 'regular' && !isQuickDeliveryFeeItem(item));
 
                                     // Display all regular cookies first
                                     regularItems.forEach((item, index) => {
@@ -1010,6 +1087,12 @@ export function OrderDetailModal({ order, isOpen, onClose, onDelete }: OrderDeta
 
                                     return allItems;
                                 })()}
+                                {savedQuickFee > 0 && (
+                                    <div className="flex items-center justify-between text-sm">
+                                        <span className="text-muted-foreground">퀵비</span>
+                                        <span>{formatCurrency(savedQuickFee)}</span>
+                                    </div>
+                                )}
                             </div>
 
                             <Separator />
@@ -1045,6 +1128,9 @@ export function OrderDetailModal({ order, isOpen, onClose, onDelete }: OrderDeta
                                 </p>
                             </div>
 
+                            {quoteUnavailable && !pricingPending && (
+                                <p className="text-sm text-muted-foreground">퀵비를 적용한 뒤 견적서를 저장해주세요.</p>
+                            )}
                             {pricingPending ? (
                                 <p className="rounded-xl bg-amber-50 p-3 text-sm font-semibold text-amber-800">가격 상담 후 견적서를 만들 수 있습니다.</p>
                             ) : <div className="grid gap-2 sm:grid-cols-2">
@@ -1052,7 +1138,7 @@ export function OrderDetailModal({ order, isOpen, onClose, onDelete }: OrderDeta
                                     onClick={handleCopyToSheet}
                                     className="h-auto min-h-[64px] justify-start rounded-xl px-4 py-3 text-left"
                                     variant="default"
-                                    disabled={isCopyingToSheet}
+                                    disabled={isCopyingToSheet || quoteUnavailable}
                                 >
                                     <FileSpreadsheet className="w-4 h-4 mr-3 flex-shrink-0" />
                                     <span className="flex flex-col items-start">
@@ -1069,7 +1155,7 @@ export function OrderDetailModal({ order, isOpen, onClose, onDelete }: OrderDeta
                                     onClick={handleDownloadImage}
                                     className="h-auto min-h-[64px] justify-start rounded-xl px-4 py-3 text-left"
                                     variant="outline"
-                                    disabled={isDownloadingImage}
+                                    disabled={isDownloadingImage || quoteUnavailable}
                                 >
                                     <ImageIcon className="w-4 h-4 mr-3 flex-shrink-0" />
                                     <span className="flex flex-col items-start">

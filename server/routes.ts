@@ -13,6 +13,7 @@ import { z } from "zod";
 import { createEmailQuoteAccess, hasEmailQuoteAccess, maskQuoteEmail, storedLandingQuote, isEmailQuoteSource } from './services/landing-email-quote';
 import { buildAnniversaryLandingItems } from './services/anniversary-cookie-order';
 import { brookieCharacterAddonPrices as characterAddonPrices } from '@shared/brookie-pricing';
+import { getQuickDeliveryFee, MAX_ORDER_AMOUNT, QuickDeliveryFeeError } from '@shared/quick-delivery-fee';
 
 declare module "express-session" {
   interface SessionData {
@@ -967,9 +968,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const landingSource = (Array.isArray(order.orderItems) ? order.orderItems as any[] : [])
         .find((item) => item?.type === 'meta')?.options?.landingSource;
-      const buffer = landingSource === 'anniversary' || landingSource === 'cookieFlight' || landingSource === 'airplaneButter' || landingSource === 'terminalCookie' || landingSource === 'brookie'
+      const buffer = isEmailQuoteSource(landingSource)
         ? await excelGenerator.generateQuoteFromStoredItems(order, landingSource)
-        : await excelGenerator.generateQuote(orderDataSchema.parse(buildOrderDataFromOrder(order)));
+        : await excelGenerator.generateQuote(orderDataSchema.parse(buildOrderDataFromOrder(order)), {
+          quickDeliveryFee: getQuickDeliveryFee(order), totalPrice: order.totalPrice,
+        });
       const fileName = `견적서_${order.customerName}_${new Date().toISOString().split('T')[0]}.xlsx`;
 
       res.setHeader(
@@ -1493,6 +1496,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
         message: '결제 방법 업데이트 중 오류가 발생했습니다.',
         error: error instanceof Error ? error.message : String(error)
       });
+    }
+  });
+
+  app.patch('/api/orders/:id/quick-delivery-fee', requireAdmin, async (req, res) => {
+    res.setHeader('Cache-Control', 'no-store');
+    const origin = req.get('Origin');
+    if (req.get('Sec-Fetch-Site') === 'cross-site' || (origin && origin !== `${req.protocol}://${req.get('host')}`)) {
+      return res.status(403).json({ message: '관리자 페이지에서 퀵비를 수정해주세요.' });
+    }
+    const body = z.object({ fee: z.number().int().min(0).max(MAX_ORDER_AMOUNT) }).strict().safeParse(req.body);
+    if (!body.success) return res.status(400).json({ message: '퀵비는 0원 이상의 정수로 입력해주세요.' });
+
+    try {
+      const updatedOrder = await storage.updateQuickDeliveryFee(req.params.id, body.data.fee);
+      if (!updatedOrder) return res.status(404).json({ message: '주문을 찾을 수 없습니다.' });
+      // A later customer request must generate the newly saved quote.
+      emailQuoteSends.delete(updatedOrder.id);
+      return res.json(updatedOrder);
+    } catch (error) {
+      if (error instanceof QuickDeliveryFeeError) return res.status(400).json({ message: error.message });
+      console.error('퀵비 업데이트 실패:', { orderId: req.params.id, name: error instanceof Error ? error.name : 'UnknownError' });
+      return res.status(500).json({ message: '퀵비를 저장하지 못했습니다. 다시 시도해주세요.' });
     }
   });
 

@@ -1,6 +1,7 @@
 import ExcelJS from 'exceljs';
 import { type Order, type OrderData, cookiePrices, cookieTypes, drinkTypes } from '@shared/schema';
 import { landingItemDetails, storedLandingQuote, type EmailQuoteSource } from './landing-email-quote';
+import { isQuickDeliveryFeeItem } from '@shared/quick-delivery-fee';
 
 export class ExcelGenerator {
   async generateQuoteFromStoredItems(order: Order, landingSource: EmailQuoteSource): Promise<Buffer> {
@@ -45,7 +46,8 @@ export class ExcelGenerator {
     let rowNumber = 6;
     for (const item of items) {
       const row = sheet.getRow(rowNumber++);
-      row.values = [item.name, `${item.quantity}${item.options?.unitLabel ?? '개'}`, pricingPending ? '상담 후 안내' : item.price, pricingPending ? '상담 후 안내' : item.quantity * item.price];
+      const pendingItem = pricingPending && !isQuickDeliveryFeeItem(item);
+      row.values = [item.name, `${item.quantity}${item.options?.unitLabel ?? '개'}`, pendingItem ? '상담 후 안내' : item.price, pendingItem ? '상담 후 안내' : item.quantity * item.price];
       row.height = 32;
       row.eachCell((cell) => { cell.border = border; cell.alignment = { vertical: 'middle', wrapText: true }; });
       row.getCell(3).numFmt = money;
@@ -94,7 +96,7 @@ export class ExcelGenerator {
     return Buffer.from(await workbook.xlsx.writeBuffer());
   }
 
-  async generateQuote(orderData: OrderData): Promise<Buffer> {
+  async generateQuote(orderData: OrderData, savedAmounts: { quickDeliveryFee?: number; totalPrice?: number } = {}): Promise<Buffer> {
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet('nothingmatters 견적서');
 
@@ -499,16 +501,28 @@ export class ExcelGenerator {
 
     // 배송비 (퀵배송인 경우)
     if (orderData.deliveryMethod === 'quick') {
-      worksheet.getCell(currentRow, 1).value = '배송비';
+      const fee = savedAmounts.quickDeliveryFee || 0;
+      worksheet.getCell(currentRow, 1).value = fee > 0 ? '퀵비' : '배송비';
       worksheet.getCell(currentRow, 1).style = cellStyle;
-      worksheet.getCell(currentRow, 2).value = '';
+      worksheet.getCell(currentRow, 2).value = fee > 0 ? '1건' : '';
       worksheet.getCell(currentRow, 2).style = cellStyle;
-      worksheet.getCell(currentRow, 3).value = '';
+      worksheet.getCell(currentRow, 3).value = fee > 0 ? fee : '';
       worksheet.getCell(currentRow, 3).style = priceStyle;
-      worksheet.getCell(currentRow, 4).value = '';
+      worksheet.getCell(currentRow, 4).value = fee > 0 ? fee : '';
       worksheet.getCell(currentRow, 4).style = priceStyle;
       worksheet.getRow(currentRow).height = 35;
       currentRow++;
+      totalAmount += fee;
+    }
+
+    if (savedAmounts.totalPrice !== undefined && savedAmounts.totalPrice !== totalAmount) {
+      const difference = savedAmounts.totalPrice - totalAmount;
+      const row = worksheet.getRow(currentRow++);
+      row.values = [difference > 0 ? '추가 금액' : '할인/조정', '', '', difference];
+      row.getCell(1).style = cellStyle;
+      row.getCell(4).style = priceStyle;
+      row.height = 35;
+      totalAmount = savedAmounts.totalPrice;
     }
 
     // 7. 전체 합계

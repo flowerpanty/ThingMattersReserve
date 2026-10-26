@@ -1,6 +1,7 @@
 import { createHash, randomBytes, timingSafeEqual } from 'node:crypto';
 import type { Order, OrderItem } from '@shared/schema';
 import { storedBrookieAddonDetails } from '@shared/brookie-pricing';
+import { isQuickDeliveryFeeItem } from '@shared/quick-delivery-fee';
 
 export const emailQuoteSources = ['brookie', 'cookie7', 'lucky', 'anniversary', 'cookieFlight', 'airplaneButter', 'terminalCookie', 'cookieCrew'] as const;
 export type EmailQuoteSource = typeof emailQuoteSources[number];
@@ -9,6 +10,7 @@ export function isEmailQuoteSource(value: unknown): value is EmailQuoteSource {
 }
 
 export function landingItemDetails(item: OrderItem): string[] {
+  if (isQuickDeliveryFeeItem(item)) return [];
   const options = item.options || {};
   const flavors = Array.isArray(options.flavors) ? options.flavors.map((flavor: any) =>
     typeof flavor === 'string' ? flavor : `${flavor.name || flavor.id || ''} ${flavor.quantity ?? flavor.qty ?? ''}개`).join(', ') : '';
@@ -42,14 +44,16 @@ export function storedLandingQuote(order: Order, expectedSource?: EmailQuoteSour
     cookieFlight: ['addon'], airplaneButter: ['addon'], terminalCookie: ['addon'], cookieCrew: ['addon'],
   };
   const items = all.filter(item => item?.type !== 'meta');
-  if (!!metadata.pricingPending !== pricingPending || !items.length || items.some(item =>
-    item.options?.landingSource !== source || !allowedTypes[source].includes(item.type) ||
+  const products = items.filter(item => !isQuickDeliveryFeeItem(item));
+  const fees = items.filter(isQuickDeliveryFeeItem);
+  if (!!metadata.pricingPending !== pricingPending || !products.length || fees.length > 1 || items.some(item =>
+    item.options?.landingSource !== source || (isQuickDeliveryFeeItem(item) ? item.quantity !== 1 : !allowedTypes[source].includes(item.type)) ||
     !Number.isSafeInteger(item.quantity) || item.quantity < 1 || !Number.isSafeInteger(item.price) ||
-    (pricingPending ? item.price !== 0 : item.price < 1) || typeof item.name !== 'string' || !item.name.trim())) {
+    (pricingPending && !isQuickDeliveryFeeItem(item) ? item.price !== 0 : item.price < 1) || typeof item.name !== 'string' || !item.name.trim())) {
     throw new Error('저장된 주문 항목의 수량 또는 가격을 확인할 수 없습니다.');
   }
   const total = items.reduce((sum, item) => sum + item.quantity * item.price, 0);
-  const quantity = items.filter(item => source !== 'cookie7' || item.type === 'regular').reduce((sum, item) => sum + item.quantity, 0);
+  const quantity = products.filter(item => source !== 'cookie7' || item.type === 'regular').reduce((sum, item) => sum + item.quantity, 0);
   if (!Number.isSafeInteger(total) || total !== order.totalPrice || quantity < (pricingPending ? 12 : 1)) {
     throw new Error('저장된 주문 항목과 총 금액 또는 수량이 일치하지 않습니다.');
   }
@@ -94,8 +98,9 @@ export function storedBrookieQuote(order: Order) {
   const allItems = Array.isArray(order.orderItems) ? order.orderItems as OrderItem[] : [];
   const metadata = allItems.find((item) => item?.type === 'meta')?.options || {};
   const items = allItems.filter((item) => item?.type !== 'meta');
-  if (metadata.landingSource !== 'brookie' || metadata.pricingPending || !items.length || items.some((item) =>
+  if (metadata.landingSource !== 'brookie' || metadata.pricingPending || !items.length || items.filter(isQuickDeliveryFeeItem).length > 1 || items.some((item) =>
     item.options?.landingSource !== 'brookie' || !['brownie', 'addon'].includes(item.type) ||
+    (isQuickDeliveryFeeItem(item) && item.quantity !== 1) ||
     !Number.isSafeInteger(item.quantity) || item.quantity < 1 || !Number.isSafeInteger(item.price) || item.price < 1 ||
     typeof item.name !== 'string' || !item.name.trim())) throw new Error('저장된 브루키 견적을 확인할 수 없습니다.');
   const total = items.reduce((sum, item) => sum + item.quantity * item.price, 0);

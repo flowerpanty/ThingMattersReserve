@@ -1642,6 +1642,12 @@ export function Dashboard() {
           isOpen={isModalOpen}
           onClose={() => setIsModalOpen(false)}
           onDelete={handleDeleteOrder}
+          onOrderUpdated={(updatedOrder) => {
+            setSelectedOrder(current => current?.id === updatedOrder.id ? updatedOrder : current);
+            queryClient.setQueryData(['/api/orders'], (current: Order[] | undefined) =>
+              current?.map(order => order.id === updatedOrder.id ? updatedOrder : order)
+            );
+          }}
         />
       </div>
     </div>

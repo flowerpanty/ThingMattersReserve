@@ -2,6 +2,7 @@ import { type Order, type InsertOrder, orders } from "@shared/schema";
 import { db } from "./db";
 import { eq, desc, inArray } from "drizzle-orm";
 import { randomUUID } from 'crypto';
+import { withQuickDeliveryFee } from '@shared/quick-delivery-fee';
 
 export interface IStorage {
   getAllOrders(): Promise<Order[]>;
@@ -10,6 +11,7 @@ export interface IStorage {
   updateOrderStatus(id: string, status: string): Promise<Order | undefined>;
   updatePaymentStatus(id: string, confirmed: boolean): Promise<Order | undefined>;
   updatePaymentMethod(id: string, method: string | null): Promise<Order | undefined>;
+  updateQuickDeliveryFee(id: string, fee: number): Promise<Order | undefined>;
   deleteOrder(id: string): Promise<boolean>;
   deleteOrders(ids: string[]): Promise<string[]>;
 }
@@ -101,6 +103,17 @@ export class PostgreStorage implements IStorage {
       return result[0];
     }
     return undefined;
+  }
+
+  async updateQuickDeliveryFee(id: string, fee: number): Promise<Order | undefined> {
+    return db.transaction(async (tx) => {
+      // Lock the saved order so simultaneous edits replace the previous fee once.
+      const [current] = await tx.select().from(orders).where(eq(orders.id, id)).for('update');
+      if (!current) return undefined;
+      const updated = withQuickDeliveryFee(current, fee);
+      const [result] = await tx.update(orders).set(updated).where(eq(orders.id, id)).returning();
+      return result;
+    });
   }
 
   async deleteOrder(id: string): Promise<boolean> {

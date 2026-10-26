@@ -3,6 +3,7 @@ import formData from 'form-data';
 import Mailgun from 'mailgun.js';
 import { type Order, type OrderData, type OrderItem, cookiePrices, isPricingPendingOrder } from '@shared/schema';
 import { landingItemDetails, storedLandingQuote } from './landing-email-quote';
+import { isQuickDeliveryFeeItem } from '@shared/quick-delivery-fee';
 
 const ADMIN_EMAIL_RECIPIENTS = ['flowerpanty@gmail.com', 'betterbetters@kakao.com'];
 
@@ -578,7 +579,7 @@ export class EmailService {
     const unit = source === 'lucky' ? '세트' : items[0].options?.unitLabel ?? '개';
     const rows = items.map((item) => `<tr>
       <td style="padding:12px;border-bottom:1px solid #eee"><strong>${escape(item.name)}</strong><div style="font-size:13px;line-height:1.6">${landingItemDetails(item).map(escape).join('<br>')}</div></td>
-      <td style="padding:12px;border-bottom:1px solid #eee">${item.quantity}${escape(item.options?.unitLabel ?? (source === 'lucky' ? '세트' : '개'))}<br>${pricingPending ? '가격: 상담 후 안내' : `단가 ${this.formatWon(item.price)}<br>${this.formatWon(item.quantity * item.price)}`}</td>
+      <td style="padding:12px;border-bottom:1px solid #eee">${item.quantity}${escape(item.options?.unitLabel ?? (source === 'lucky' ? '세트' : '개'))}<br>${pricingPending && !isQuickDeliveryFeeItem(item) ? '가격: 상담 후 안내' : `단가 ${this.formatWon(item.price)}<br>${this.formatWon(item.quantity * item.price)}`}</td>
     </tr>`).join('');
     return `<!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"></head>
       <body style="margin:0;background:#f7f7f7;font-family:'Apple SD Gothic Neo','Malgun Gothic',sans-serif;color:#222">
