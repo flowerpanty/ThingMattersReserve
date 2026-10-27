@@ -8,6 +8,7 @@ import { ChevronDown, ChevronRight } from "lucide-react";
 import { useEffect, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import {
+  cookiePrices,
   cookieTypes,
   drinkTypes,
   formatWon,
@@ -887,7 +888,7 @@ export function ProductSelection({
                               />
                               <div className="flex-1">
                                 <Label htmlFor={`heartMessage-${index}`} className="font-medium mb-1 block cursor-pointer text-xs">
-                                  하트 안 문구 (+500원)
+                                  하트 안 문구 (+{formatWon(cookiePrices.brownieOptions.heartMessage)})
                                 </Label>
                                 <Input
                                   type="text"

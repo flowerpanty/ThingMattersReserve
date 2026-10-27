@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Calendar, Mail, Package, MapPin, Clock, DollarSign, Trash2, Image as ImageIcon, FileSpreadsheet } from "lucide-react";
 import { cookiePrices, isPricingPendingOrder } from "@shared/schema";
-import { storedBrookieAddonDetails } from "@shared/brookie-pricing";
+import { storedBrookieAddonDetails, storedBrookieAddonPrices } from "@shared/brookie-pricing";
 import { getQuickDeliveryFee, isQuickDeliveryFeeItem, MAX_ORDER_AMOUNT } from "@shared/quick-delivery-fee";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -392,7 +392,13 @@ export function OrderDetailModal({ order, isOpen, onClose, onDelete, onOrderUpda
                 if (topperCount > 0) detailedRows.push({ name: '└ 커스텀토퍼', quantity: '', price: '', total: '' });
                 if (bearQty > 0) detailedRows.push({ name: '└ 생일곰 추가', quantity: bearQty, price: PRICES.brownieOptions.birthdayBear, total: bearQty * PRICES.brownieOptions.birthdayBear });
                 if (stickerCount > 0) detailedRows.push({ name: '└ 하단 커스텀 스티커', quantity: stickerCount, price: PRICES.brownieOptions.customSticker, total: stickerCount * PRICES.brownieOptions.customSticker });
-                if (heartQty > 0) detailedRows.push({ name: '└ 하트안 문구 추가', quantity: heartQty, price: PRICES.brownieOptions.heartMessage, total: heartQty * PRICES.brownieOptions.heartMessage });
+                if (heartQty > 0) {
+                    const savedHearts = order.orderItems.filter(item => item.type === 'brownie' && item.options?.heartMessage);
+                    const heartTotal = savedHearts.length
+                        ? savedHearts.reduce((sum, item) => sum + item.quantity * storedBrookieAddonPrices(item.options).heart, 0)
+                        : heartQty * PRICES.brownieOptions.heartMessage;
+                    detailedRows.push({ name: '└ 하트안 문구 추가', quantity: heartQty, price: heartTotal / heartQty, total: heartTotal });
+                }
             }
 
             if (savedQuickFee > 0) detailedRows.push({ name: '퀵비', quantity: '1건', price: savedQuickFee, total: savedQuickFee });
@@ -508,7 +514,7 @@ export function OrderDetailModal({ order, isOpen, onClose, onDelete, onOrderUpda
                         }
                         if (item.options.heartMessage) {
                             summary.brownieOptions.heartMessage.count += qty;
-                            summary.brownieOptions.heartMessage.amount += qty * PRICES.brownieOptions.heartMessage;
+                            summary.brownieOptions.heartMessage.amount += qty * storedBrookieAddonPrices(item.options).heart;
                         }
                         if (item.options.customTopper) summary.brownieOptions.customTopper.count += 1;
                     }
@@ -539,7 +545,7 @@ export function OrderDetailModal({ order, isOpen, onClose, onDelete, onOrderUpda
                 if (summary.brownieOptions.customTopper.count > 0) detailedRows.push({ name: '└ 커스텀토퍼', quantity: '', price: '', total: '' });
                 if (summary.brownieOptions.birthdayBear.count > 0) detailedRows.push({ name: '└ 생일곰 추가', quantity: summary.brownieOptions.birthdayBear.count, price: PRICES.brownieOptions.birthdayBear, total: summary.brownieOptions.birthdayBear.amount });
                 if (summary.brownieOptions.customSticker.count > 0) detailedRows.push({ name: '└ 하단 커스텀 스티커', quantity: summary.brownieOptions.customSticker.count, price: PRICES.brownieOptions.customSticker, total: summary.brownieOptions.customSticker.amount });
-                if (summary.brownieOptions.heartMessage.count > 0) detailedRows.push({ name: '└ 하트안 문구 추가', quantity: summary.brownieOptions.heartMessage.count, price: PRICES.brownieOptions.heartMessage, total: summary.brownieOptions.heartMessage.amount });
+                if (summary.brownieOptions.heartMessage.count > 0) detailedRows.push({ name: '└ 하트안 문구 추가', quantity: summary.brownieOptions.heartMessage.count, price: summary.brownieOptions.heartMessage.amount / summary.brownieOptions.heartMessage.count, total: summary.brownieOptions.heartMessage.amount });
             }
 
             if (summary.scone.count > 0) {
@@ -1045,13 +1051,15 @@ export function OrderDetailModal({ order, isOpen, onClose, onDelete, onOrderUpda
                                                 );
                                             }
                                             if (item.options.heartMessage) {
-                                                const heartMessagePrice = item.quantity * cookiePrices.brownieOptions.heartMessage;
+                                                const heartUnitPrice = storedBrookieAddonPrices(item.options).heart;
+                                                const heartMessagePrice = item.quantity * heartUnitPrice;
                                                 items.push(
-                                                    <div key={`${index}-heart`} className="flex items-center justify-between text-sm">
-                                                        <span className="text-muted-foreground ml-4">
-                                                            ㄴ하트안 문구 추가 × {item.quantity}
+                                                    <div key={`${index}-heart`} className="flex items-start justify-between gap-3 text-sm">
+                                                        <span className="min-w-0 text-muted-foreground ml-4">
+                                                            ㄴ하트안 문구 추가 {formatCurrency(heartUnitPrice)} × {item.quantity}
+                                                            {item.options.landingSource === 'brookie' && ' (단가에 포함)'}
                                                         </span>
-                                                        <span>{formatCurrency(heartMessagePrice)}</span>
+                                                        <span className="shrink-0">{formatCurrency(heartMessagePrice)}</span>
                                                     </div>
                                                 );
                                             }

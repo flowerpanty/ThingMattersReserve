@@ -3,6 +3,7 @@ import { type Order, cookiePrices, isPricingPendingOrder } from '@shared/schema'
 import { buildOrderDataFromOrder } from './order-data-utils';
 import { landingItemDetails } from './landing-email-quote';
 import { isQuickDeliveryFeeItem } from '@shared/quick-delivery-fee';
+import { storedBrookieAddonPrices } from '@shared/brookie-pricing';
 
 interface GoogleSheetsConfig {
     spreadsheetId: string;
@@ -236,6 +237,13 @@ export class GoogleSheetsService {
                 height: name.length > 28 ? 60 : undefined,
             });
             totalAmount += amount;
+            if (item.type === 'brownie' && !item.options?.landingSource && item.options?.heartMessage) {
+                const heartPrice = storedBrookieAddonPrices(item.options).heart;
+                if (heartPrice > 0) {
+                    rows.push({ name: '└ 하트안 문구 추가', quantity, price: heartPrice, amount: quantity * heartPrice });
+                    totalAmount += quantity * heartPrice;
+                }
+            }
         });
 
         const orderTotal = Number(order.totalPrice);

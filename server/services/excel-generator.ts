@@ -96,7 +96,11 @@ export class ExcelGenerator {
     return Buffer.from(await workbook.xlsx.writeBuffer());
   }
 
-  async generateQuote(orderData: OrderData, savedAmounts: { quickDeliveryFee?: number; totalPrice?: number } = {}): Promise<Buffer> {
+  async generateQuote(orderData: OrderData, savedAmounts: {
+    quickDeliveryFee?: number;
+    totalPrice?: number;
+    heartMessageLines?: Array<{ quantity: number; price: number }>;
+  } = {}): Promise<Buffer> {
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet('nothingmatters 견적서');
 
@@ -363,19 +367,26 @@ export class ExcelGenerator {
 
       // 하트 메시지 옵션
       if (totalHeartMessageQuantity > 0) {
-        const heartMessageAmount = totalHeartMessageQuantity * cookiePrices.brownieOptions.heartMessage;
-        totalAmount += heartMessageAmount;
+        const lines = savedAmounts.heartMessageLines?.length
+          ? savedAmounts.heartMessageLines
+          : [{ quantity: totalHeartMessageQuantity, price: cookiePrices.brownieOptions.heartMessage }];
+        const byPrice = new Map<number, number>();
+        for (const line of lines) byPrice.set(line.price, (byPrice.get(line.price) || 0) + line.quantity);
+        for (const [price, quantity] of Array.from(byPrice)) {
+          const heartMessageAmount = quantity * price;
+          totalAmount += heartMessageAmount;
 
-        worksheet.getCell(currentRow, 1).value = '└ 하트안 문구 추가';
-        worksheet.getCell(currentRow, 1).style = cellStyle;
-        worksheet.getCell(currentRow, 2).value = totalHeartMessageQuantity;
-        worksheet.getCell(currentRow, 2).style = cellStyle;
-        worksheet.getCell(currentRow, 3).value = cookiePrices.brownieOptions.heartMessage;
-        worksheet.getCell(currentRow, 3).style = priceStyle;
-        worksheet.getCell(currentRow, 4).value = heartMessageAmount;
-        worksheet.getCell(currentRow, 4).style = priceStyle;
-        worksheet.getRow(currentRow).height = 35;
-        currentRow++;
+          worksheet.getCell(currentRow, 1).value = '└ 하트안 문구 추가';
+          worksheet.getCell(currentRow, 1).style = cellStyle;
+          worksheet.getCell(currentRow, 2).value = quantity;
+          worksheet.getCell(currentRow, 2).style = cellStyle;
+          worksheet.getCell(currentRow, 3).value = price;
+          worksheet.getCell(currentRow, 3).style = priceStyle;
+          worksheet.getCell(currentRow, 4).value = heartMessageAmount;
+          worksheet.getCell(currentRow, 4).style = priceStyle;
+          worksheet.getRow(currentRow).height = 35;
+          currentRow++;
+        }
       }
     }
 

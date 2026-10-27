@@ -12,7 +12,7 @@ import { buildOrderDataFromOrder } from "./services/order-data-utils";
 import { z } from "zod";
 import { createEmailQuoteAccess, hasEmailQuoteAccess, maskQuoteEmail, storedLandingQuote, isEmailQuoteSource } from './services/landing-email-quote';
 import { buildAnniversaryLandingItems } from './services/anniversary-cookie-order';
-import { brookieCharacterAddonPrices as characterAddonPrices } from '@shared/brookie-pricing';
+import { brookieCharacterAddonPrices as characterAddonPrices, storedBrookieAddonPrices } from '@shared/brookie-pricing';
 import { getQuickDeliveryFee, MAX_ORDER_AMOUNT, QuickDeliveryFeeError } from '@shared/quick-delivery-fee';
 
 declare module "express-session" {
@@ -317,7 +317,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const heartText = asText(combo.heartText);
       const hasHeartText = !!combo.heartTextEnabled && !!heartText;
       const characterAddon = Object.hasOwn(characterAddonPrices, character) ? characterAddonPrices[character] : 0;
-      const heartAddon = hasHeartText ? 700 : 0;
+      const heartAddon = hasHeartText ? cookiePrices.brownieOptions.heartMessage : 0;
       const customPaperAddon = paper === 'custom' ? 700 : 0;
       const unitAddons = characterAddon + heartAddon + customPaperAddon;
       const unitPrice = cookiePrices.brownie + unitAddons;
@@ -972,6 +972,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ? await excelGenerator.generateQuoteFromStoredItems(order, landingSource)
         : await excelGenerator.generateQuote(orderDataSchema.parse(buildOrderDataFromOrder(order)), {
           quickDeliveryFee: getQuickDeliveryFee(order), totalPrice: order.totalPrice,
+          heartMessageLines: (Array.isArray(order.orderItems) ? order.orderItems as any[] : [])
+            .filter(item => item?.type === 'brownie' && item.options?.heartMessage)
+            .map(item => ({ quantity: item.quantity, price: storedBrookieAddonPrices(item.options).heart })),
         });
       const fileName = `견적서_${order.customerName}_${new Date().toISOString().split('T')[0]}.xlsx`;
 
@@ -1105,6 +1108,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 shape: set.shape,
                 customSticker: set.customSticker,
                 heartMessage: set.heartMessage,
+                heartAddonPrice: set.heartMessage ? cookiePrices.brownieOptions.heartMessage : 0,
                 customTopper: set.customTopper,
               },
             });

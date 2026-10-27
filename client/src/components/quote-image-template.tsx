@@ -1,5 +1,5 @@
 import React from 'react';
-import { storedBrookieAddonDetails } from '@shared/brookie-pricing';
+import { storedBrookieAddonDetails, storedBrookieAddonPrices } from '@shared/brookie-pricing';
 import { cookiePrices, type OrderData } from '@shared/schema';
 import { isQuickDeliveryFeeItem } from '@shared/quick-delivery-fee';
 
@@ -513,6 +513,14 @@ function buildQuoteRowsFromSavedItems(order: Order) {
       amount,
     });
     totalAmount += amount;
+    // Legacy orders save the base unit price separately from heart lettering.
+    if (item.type === 'brownie' && !item.options?.landingSource && item.options?.heartMessage) {
+      const heartPrice = storedBrookieAddonPrices(item.options).heart;
+      if (heartPrice > 0) {
+        rows.push({ name: '└ 하트안 문구 추가', quantity, price: heartPrice, amount: quantity * heartPrice });
+        totalAmount += quantity * heartPrice;
+      }
+    }
   }
 
   const orderTotal = Number(order.totalPrice);

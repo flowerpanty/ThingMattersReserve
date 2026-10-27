@@ -41,6 +41,7 @@ const sent: any[] = [];
   return saved;
 };
 EmailService.prototype.sendLandingAdminNotification = async () => {};
+EmailService.prototype.sendQuote = async () => {};
 EmailService.prototype.isConfigured = () => true;
 EmailService.prototype.sendLandingQuote = async function (order) {
   sent.push({ total: order.totalPrice, html: this.generateLandingCustomerEmailHTML(order) });
@@ -96,7 +97,7 @@ function verifySheet(sheet: ExcelJS.Worksheet, total: number, fee: number) {
 
 try {
   const fixtures = [
-    { source: 'brookie', combos: [{ character: 'bear', paper: 'navy', qty: 12 }] },
+    { source: 'brookie', combos: [{ character: 'bear', paper: 'navy', qty: 12, heartTextEnabled: true, heartText: 'LOVE' }] },
     { source: 'cookie7', packageId: 'one-box', flavorQty: { 'double-choco': 12 } },
     { source: 'lucky', quantity: 2 },
     { source: 'anniversary', designType: 'A', speechBubbleName: '태근 ♥ 유진', bottomMessage: '축하합니다', quantity: 2 },
@@ -147,6 +148,53 @@ try {
     console.log(`${fixture.source}: replace/retry/remove, saved total, quantity, image, Excel, email and Sheets PASS`);
   }
 
+  const regularOrder = { ...common, customerContact: common.customerEmail, brownieCookieSets: [{ quantity: 12, shape: 'bear', customSticker: false, customTopper: false, heartMessage: 'LOVE', heartAddonPrice: 1 }] };
+  const calculate = async (heartMessage: string) => {
+    const response = await fetch(base + '/api/calculate-price', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ...regularOrder, brownieCookieSets: [{ ...regularOrder.brownieCookieSets[0], heartMessage }] }),
+    });
+    assert.equal(response.status, 200);
+    return response.json();
+  };
+  assert.equal((await calculate('LOVE')).totalPrice - (await calculate('')).totalPrice, 12 * 700);
+  const regularResponse = await fetch(base + '/api/generate-quote', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(regularOrder),
+  });
+  assert.equal(regularResponse.status, 200);
+  const regularId = (await regularResponse.json()).orderId;
+  const regular = orders.get(regularId);
+  assert.equal(regular.totalPrice, (7800 + 700) * 12);
+  assert.equal(regular.orderItems.find((item: any) => item.type === 'brownie').options.heartAddonPrice, 700, 'save the server rate, not a client fee');
+  let heartRows = 0;
+  (await workbookFor(regularId)).eachRow(row => {
+    if (row.getCell(1).value === '└ 하트안 문구 추가') {
+      heartRows++; assert.equal(row.getCell(3).value, 700); assert.equal(row.getCell(4).value, 8400);
+    }
+  });
+  assert.equal(heartRows, 1);
+  const regularSheet = (googleSheetsService as any).buildQuoteRows(regular);
+  assert.equal(regularSheet.rows.find((row: any) => row.name === '└ 하트안 문구 추가').price, 700);
+  assert.equal(regularSheet.totalAmount, 102000);
+  const historical = structuredClone(regular);
+  historical.id = 'historical-heart';
+  historical.totalPrice = (7800 + 500) * 12;
+  delete historical.orderItems.find((item: any) => item.type === 'brownie').options.heartAddonPrice;
+  orders.set(historical.id, historical);
+  heartRows = 0;
+  (await workbookFor(historical.id)).eachRow(row => {
+    if (row.getCell(1).value === '└ 하트안 문구 추가') {
+      heartRows++; assert.equal(row.getCell(3).value, 500); assert.equal(row.getCell(4).value, 6000);
+    }
+  });
+  assert.equal(heartRows, 1);
+  const historicalSheet = (googleSheetsService as any).buildQuoteRows(historical);
+  assert.equal(historicalSheet.rows.find((row: any) => row.name === '└ 하트안 문구 추가').price, 500);
+  assert.equal(historicalSheet.totalAmount, 99600);
+  const historicalImage = renderToStaticMarkup(React.createElement(QuoteImageTemplate, { order: historical }));
+  assert(historicalImage.includes('6,000원') && historicalImage.includes('99,600원'));
+  console.log(`Heart lettering: new general order ${regularId} uses 700/item; historical saved fees and quotes remain unchanged PASS`);
+
   const legacy = {
     ...common, id: 'quick-fee-legacy', customerContact: common.customerEmail, createdAt: new Date().toISOString(),
     totalPrice: cookiePrices.regular * 12 + 1200,
@@ -194,14 +242,14 @@ try {
     const { createServer } = await import('vite');
     const vite = await createServer({ server: { middlewareMode: true, hmr: { server } }, appType: 'custom' });
     app.get('/__quick-fee-check', async (req, res) => {
-      const fixture = orders.get(typeof req.query.id === 'string' ? req.query.id : id);
       const html = `<!doctype html><html><head><meta name="viewport" content="width=device-width, initial-scale=1"></head><body><div id="root"></div><script type="module">
         import React from 'react';import {createRoot} from 'react-dom/client';
         import {OrderDetailModal} from '/src/components/order-detail-modal.tsx';
         import {Toaster} from '/src/components/ui/toaster.tsx';import '/src/index.css';
         const root=createRoot(document.getElementById('root'));
         function show(order){root.render(React.createElement(React.Fragment,null,React.createElement(OrderDetailModal,{order,isOpen:true,onClose:()=>{},onOrderUpdated:show}),React.createElement(Toaster)));}
-        fetch('/api/orders').then(response=>response.json()).then(orders=>show(orders.find(order=>order.id===${JSON.stringify(fixture.id)})));
+        const requestedId=new URLSearchParams(location.search).get('id')||${JSON.stringify(id)};
+        fetch('/api/orders').then(response=>response.json()).then(orders=>show(orders.find(order=>order.id===requestedId)));
       </script></body></html>`;
       res.type('html').send(await vite.transformIndexHtml('/__quick-fee-check', html));
     });

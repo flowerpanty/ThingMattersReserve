@@ -54,7 +54,7 @@ export const cookiePrices = {
   brownieOptions: {
     birthdayBear: 500,
     customSticker: 20000,
-    heartMessage: 500,
+    heartMessage: 700,
   },
   sconeOptions: {
     strawberryJam: 500,
