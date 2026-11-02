@@ -57,6 +57,18 @@ sandbox.window.NMQuote.navigateToKakao = () => events.push('kakao');
 const html = fs.readFileSync('client/public/brookie.html', 'utf8');
 const inline = Array.from(html.matchAll(/<script>([\s\S]*?)<\/script>/g)).at(-1)[1];
 vm.runInContext(inline.replace(/    init\(\);\s*$/, ''), sandbox);
+// Large orders survive session restoration and keep their full quote quantity.
+sandbox.sessionStorage.getItem = () => JSON.stringify({ activeStep: 1, state: {
+  qty: 5000, items: [{ character: 'bear', paper: 'navy', qty: 5000 }],
+} });
+vm.runInContext("restorePageState('2026-11-03')", sandbox);
+assert.equal(vm.runInContext('state.qty', sandbox), 5000);
+assert.equal(vm.runInContext('totalQty()', sandbox), 5000);
+assert.equal(vm.runInContext('totalPrice()', sandbox), 39000000);
+assert.equal(vm.runInContext('landingOrderPayload().combos[0].qty', sandbox), 5000);
+assert.equal(vm.runInContext('normalizeCombo({ qty: 5001 }, 0).qty', sandbox), 5000);
+sandbox.sessionStorage.getItem = () => null;
+vm.runInContext('state.qty=1;state.items=[];', sandbox);
 // Unit prices exercise the actual customer page code, including the unchanged horse/custom fees.
 for (const [character, heart, paper, expected] of [
   ['bear',false,'navy',7800], ['rabbit',false,'navy',7800], ['tiger',false,'navy',7800],
