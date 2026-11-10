@@ -3,7 +3,7 @@ import type { Order, OrderItem } from '@shared/schema';
 import { storedBrookieAddonDetails } from '@shared/brookie-pricing';
 import { isQuickDeliveryFeeItem } from '@shared/quick-delivery-fee';
 
-export const emailQuoteSources = ['brookie', 'cookie7', 'lucky', 'anniversary', 'cookieFlight', 'airplaneButter', 'terminalCookie', 'cookieCrew'] as const;
+export const emailQuoteSources = ['brookie', 'cookie7', 'lucky', 'anniversary', 'cookieFlight', 'airplaneButter', 'terminalCookie', 'cookieCrew', 'christmasBrookie'] as const;
 export type EmailQuoteSource = typeof emailQuoteSources[number];
 export function isEmailQuoteSource(value: unknown): value is EmailQuoteSource {
   return emailQuoteSources.includes(value as EmailQuoteSource);
@@ -16,6 +16,7 @@ export function landingItemDetails(item: OrderItem): string[] {
     typeof flavor === 'string' ? flavor : `${flavor.name || flavor.id || ''} ${flavor.quantity ?? flavor.qty ?? ''}개`).join(', ') : '';
   return [
     ...(options.landingSource === 'brookie' ? brookieItemDetails(item) : []),
+    options.landingSource === 'christmasBrookie' && options.composition && `구성: ${options.composition}`,
     ...(options.landingSource === 'anniversary' ? [
       `디자인: ${options.designType}형`,
       options.speechBubbleName && `말풍선 이름: ${options.speechBubbleName}`,
@@ -41,6 +42,7 @@ export function storedLandingQuote(order: Order, expectedSource?: EmailQuoteSour
   const allowedTypes: Record<EmailQuoteSource, string[]> = {
     brookie: ['brownie', 'addon'], cookie7: ['regular', 'packaging', 'addon'], lucky: ['fortune'],
     anniversary: ['addon'],
+    christmasBrookie: ['addon'],
     cookieFlight: ['addon'], airplaneButter: ['addon'], terminalCookie: ['addon'], cookieCrew: ['addon'],
   };
   const items = all.filter(item => item?.type !== 'meta');
@@ -60,8 +62,7 @@ export function storedLandingQuote(order: Order, expectedSource?: EmailQuoteSour
   return { items, metadata, source, pricingPending, total, quantity };
 }
 
-export function createEmailQuoteAccess() {
-  const token = randomBytes(32).toString('hex');
+export function createEmailQuoteAccess(token = randomBytes(32).toString('hex')) {
   return {
     token,
     emailQuoteTokenHash: createHash('sha256').update(token).digest('hex'),

@@ -8,6 +8,7 @@ export interface IStorage {
   getAllOrders(): Promise<Order[]>;
   getOrder(id: string): Promise<Order | undefined>;
   createOrder(order: InsertOrder): Promise<Order>;
+  createIdempotentLandingOrder(order: InsertOrder, id: string, fingerprint: string): Promise<{ order: Order; created: boolean }>;
   updateOrderStatus(id: string, status: string): Promise<Order | undefined>;
   updatePaymentStatus(id: string, confirmed: boolean): Promise<Order | undefined>;
   updatePaymentMethod(id: string, method: string | null): Promise<Order | undefined>;
@@ -17,6 +18,16 @@ export interface IStorage {
 }
 
 export class PostgreStorage implements IStorage {
+  async createIdempotentLandingOrder(insertOrder: InsertOrder, id: string, fingerprint: string) {
+    // The existing orders primary key arbitrates concurrent requests, across processes and restarts.
+    const inserted = await db.insert(orders).values({ ...insertOrder, id })
+      .onConflictDoNothing({ target: orders.id }).returning();
+    const order = inserted[0] || await this.getOrder(id);
+    const metadata = (Array.isArray(order?.orderItems) ? order.orderItems : []).find((item: any) => item.type === 'meta')?.options;
+    if (!order || metadata?.requestFingerprint !== fingerprint) throw new Error('IDEMPOTENCY_CONFLICT');
+    return { order, created: inserted.length > 0 };
+  }
+
   async getAllOrders(): Promise<Order[]> {
     // 최신 주문이 먼저 오도록 정렬
     const result = await db.select().from(orders).orderBy(desc(orders.createdAt));

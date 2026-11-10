@@ -573,8 +573,8 @@ export class EmailService {
 
   generateLandingCustomerEmailHTML(order: Order): string {
     const { items, metadata, quantity, total, pricingPending, source } = storedLandingQuote(order);
-    const title = pricingPending ? 'nothingmatters 주문 상담 요청서' : 'nothingmatters 견적서';
-    const labels = { brookie: '브루키', cookie7: '꾸덕쿠키', lucky: 'Lucky', anniversary: '축하쿠키', cookieFlight: '쿠키 플라이트', airplaneButter: '비행기 버터쿠키', terminalCookie: '터미널쿠키', cookieCrew: '쿠키크루' };
+    const title = pricingPending ? 'nothingmatters 주문 상담 요청서' : source === 'christmasBrookie' ? 'nothingmatters 크리스마스 브루키 견적서' : 'nothingmatters 견적서';
+    const labels = { christmasBrookie: '크리스마스 브루키', brookie: '브루키', cookie7: '꾸덕쿠키', lucky: 'Lucky', anniversary: '축하쿠키', cookieFlight: '쿠키 플라이트', airplaneButter: '비행기 버터쿠키', terminalCookie: '터미널쿠키', cookieCrew: '쿠키크루' };
     const escape = (value: unknown) => this.escapeHTML(value);
     const unit = source === 'lucky' ? '세트' : items[0].options?.unitLabel ?? '개';
     const rows = items.map((item) => `<tr>
@@ -615,7 +615,7 @@ export class EmailService {
     const accepted = await this.mg.messages.create(domain, {
       from: this.sender,
       to: [email],
-      subject: `[nothingmatters] ${order.customerName.replace(/[\r\n]/g, ' ')}님의 ${source === 'brookie' ? '브루키 ' : ''}${pricingPending ? '주문 상담 요청서' : '견적서'}`,
+      subject: `[nothingmatters] ${order.customerName.replace(/[\r\n]/g, ' ')}님의 ${source === 'brookie' ? '브루키 ' : source === 'christmasBrookie' ? '크리스마스 브루키 ' : ''}${pricingPending ? '주문 상담 요청서' : '견적서'}`,
       html: this.generateLandingCustomerEmailHTML(order),
       attachment: { data: quoteBuffer, filename: `nothingmatters-${source}-${pricingPending ? 'consult' : 'quote'}-${date}.xlsx` },
     });

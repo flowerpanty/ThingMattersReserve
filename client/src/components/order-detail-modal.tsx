@@ -54,6 +54,7 @@ function getLandingSourceInfo(order: Pick<Order, 'orderItems'>) {
     const source = meta.landingSource || meta.source;
     const labels: Record<string, { label: string; tone: string }> = {
         brookie: { label: '브루키', tone: 'border-orange-200 bg-orange-50 text-orange-700' },
+        christmasBrookie: { label: '크리스마스 브루키', tone: 'border-red-200 bg-red-50 text-red-700' },
         cookie7: { label: '수제꾸덕쿠키', tone: 'border-blue-200 bg-blue-50 text-blue-700' },
         lucky: { label: '행운쿠키', tone: 'border-emerald-200 bg-emerald-50 text-emerald-700' },
         anniversary: { label: '축하쿠키', tone: 'border-rose-200 bg-rose-50 text-rose-700' },

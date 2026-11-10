@@ -14,6 +14,8 @@ import { createEmailQuoteAccess, hasEmailQuoteAccess, maskQuoteEmail, storedLand
 import { buildAnniversaryLandingItems } from './services/anniversary-cookie-order';
 import { brookieCharacterAddonPrices as characterAddonPrices, storedBrookieAddonPrices } from '@shared/brookie-pricing';
 import { getQuickDeliveryFee, MAX_ORDER_AMOUNT, QuickDeliveryFeeError } from '@shared/quick-delivery-fee';
+import { CHRISTMAS_SOURCE, christmasOrderAvailability } from '@shared/christmas-brookie';
+import { buildChristmasLandingItems, validateChristmasRequest, christmasRequestIdentity, christmasEmailToken, ChristmasOrderError } from './services/christmas-brookie-order';
 
 declare module "express-session" {
   interface SessionData {
@@ -41,11 +43,13 @@ function createAttachmentHeader(fileName: string): string {
   return `attachment; filename="${asciiFallback}"; filename*=UTF-8''${encoded}`;
 }
 
-export async function registerRoutes(app: Express): Promise<Server> {
+export async function registerRoutes(app: Express, options: { now?: () => Date } = {}): Promise<Server> {
+  const now = options.now || (() => new Date());
   const excelGenerator = new ExcelGenerator();
   const kakaoTemplateService = new KakaoTemplateService();
   const landingSourceLabels: Record<string, string> = {
     brookie: '브루키',
+    christmasBrookie: '크리스마스 브루키',
     cookie7: '수제꾸덕쿠키',
     lucky: '행운쿠키',
     anniversary: '축하쿠키',
@@ -501,6 +505,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   const landingBuilders: Record<string, (body: any) => { orderItems: any[]; totalPrice: number }> = {
     brookie: buildBrookieLandingItems,
+    christmasBrookie: buildChristmasLandingItems,
     cookie7: buildCookie7LandingItems,
     lucky: buildLuckyLandingItems,
     anniversary: buildAnniversaryLandingItems,
@@ -756,13 +761,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.status(204).end();
   });
 
+  app.get('/api/christmas-order-status', (_req, res) => {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Cache-Control', 'no-store');
+    res.json(christmasOrderAvailability(now()));
+  });
+
   // Landing pages submit here before sending users to KakaoTalk.
   app.post("/api/landing-orders", async (req, res) => {
     res.setHeader("Access-Control-Allow-Origin", "*");
 
     try {
-      const body = req.body || {};
-      const source = asText(body.source);
+      const rawBody = req.body || {};
+      const source = asText(rawBody.source);
       const sourceLabel = landingSourceLabels[source];
       const builder = landingBuilders[source];
 
@@ -770,10 +781,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "지원하지 않는 랜딩페이지 주문입니다." });
       }
 
+      const body = source === CHRISTMAS_SOURCE ? validateChristmasRequest(rawBody, now()) : rawBody;
       const customer = getLandingCustomer(body);
       const built = builder(body);
       const pricingPending = source === 'cookieCrew';
-      const emailAccess = isEmailQuoteSource(source) && customer.customerEmail ? createEmailQuoteAccess() : null;
+      const identity = source === CHRISTMAS_SOURCE ? christmasRequestIdentity(body) : null;
+      const emailAccess = isEmailQuoteSource(source) && customer.customerEmail
+        ? createEmailQuoteAccess(identity ? christmasEmailToken(body.idempotencyKey) : undefined) : null;
 
       if (!built.orderItems.length || (!pricingPending && built.totalPrice <= 0)) {
         return res.status(400).json({ message: "주문할 상품을 선택해주세요." });
@@ -787,7 +801,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           quantity: 0,
           price: 0,
           options: {
-            ...body,
+            ...(identity ? { catalogVersion: body.catalogVersion, privacyConsent: true, requestFingerprint: identity.fingerprint } : body),
             source,
             landingSource: source,
             landingSourceLabel: sourceLabel,
@@ -803,7 +817,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         },
       ];
 
-      const order = await storage.createOrder({
+      const insertOrder = {
         customerName: customer.customerName,
         customerContact: customer.customerContact,
         deliveryDate: customer.deliveryDate,
@@ -811,36 +825,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
         pickupTime: customer.pickupTime,
         orderItems,
         totalPrice: built.totalPrice,
-      });
+      };
+      const saved = identity
+        ? await storage.createIdempotentLandingOrder(insertOrder, identity.id, identity.fingerprint)
+        : { order: await storage.createOrder(insertOrder), created: true };
+      const { order } = saved;
 
-      const emailService = new EmailService();
-      emailService.sendLandingAdminNotification({
-        order,
-        sourceLabel,
-        customerPhone: customer.customerPhone,
-        customerEmail: customer.customerEmail,
-        deliveryAddress: customer.deliveryAddress,
-        request: customer.request,
-      })
-        .catch((error) => console.error('❌ 랜딩 주문 관리자 이메일 전송 실패:', error));
+      if (saved.created) {
+        const emailService = new EmailService();
+        emailService.sendLandingAdminNotification({
+          order,
+          sourceLabel,
+          customerPhone: customer.customerPhone,
+          customerEmail: customer.customerEmail,
+          deliveryAddress: customer.deliveryAddress,
+          request: customer.request,
+        })
+          .catch((error) => console.error('❌ 랜딩 주문 관리자 이메일 전송 실패:', error));
 
-      pushNotificationService.sendNewOrderNotification(customer.customerName, order.id)
-        .catch((error) => console.error('❌ 랜딩 주문 푸시 알림 전송 실패:', error));
+        pushNotificationService.sendNewOrderNotification(customer.customerName, order.id)
+          .catch((error) => console.error('❌ 랜딩 주문 푸시 알림 전송 실패:', error));
 
-      if (kakaoAlimtalkService.isEnabled()) {
-        kakaoAlimtalkService.sendAdminNotification({
-          customerName: customer.customerName,
-          customerContact: customer.customerContact,
-          deliveryDate: customer.deliveryDate,
-          deliveryMethod: customer.deliveryMethod,
-          totalPrice: built.totalPrice,
-          pricingPending,
-        }).catch((error) => console.error('❌ 랜딩 주문 관리자 알림톡 실패:', error));
-      }
+        if (kakaoAlimtalkService.isEnabled()) {
+          kakaoAlimtalkService.sendAdminNotification({
+            customerName: customer.customerName,
+            customerContact: customer.customerContact,
+            deliveryDate: customer.deliveryDate,
+            deliveryMethod: customer.deliveryMethod,
+            totalPrice: built.totalPrice,
+            pricingPending,
+          }).catch((error) => console.error('❌ 랜딩 주문 관리자 알림톡 실패:', error));
+        }
 
-      if (googleSheetsService.isEnabled()) {
-        googleSheetsService.appendOrderToSheet(order)
-          .catch((error) => console.error('❌ 랜딩 주문 Google Sheets 저장 실패:', error));
+        if (googleSheetsService.isEnabled()) {
+          googleSheetsService.appendOrderToSheet(order)
+            .catch((error) => console.error('❌ 랜딩 주문 Google Sheets 저장 실패:', error));
+        }
       }
 
       res.setHeader('Cache-Control', 'no-store');
@@ -848,12 +868,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
         success: true,
         message: "주문이 관리자 대시보드에 저장되었습니다.",
         orderId: order.id,
-        totalPrice: built.totalPrice,
+        totalPrice: order.totalPrice,
         pricingPending,
-        orderItems: built.orderItems,
+        orderItems: identity ? storedLandingQuote(order, 'christmasBrookie').items : built.orderItems,
         ...(emailAccess ? { emailQuoteToken: emailAccess.token } : {}),
       });
     } catch (error) {
+      if (req.body?.source === CHRISTMAS_SOURCE) {
+        const conflict = error instanceof Error && error.message === 'IDEMPOTENCY_CONFLICT';
+        const expected = error instanceof ChristmasOrderError;
+        if (!expected && !conflict) console.error('Christmas order save failed:', { name: error instanceof Error ? error.name : 'Error' });
+        return res.status(expected ? error.status : conflict ? 409 : 500).json({
+          success: false,
+          code: expected ? error.code : conflict ? 'IDEMPOTENCY_CONFLICT' : 'ORDER_SAVE_FAILED',
+          message: expected ? error.message : conflict ? '같은 요청 번호로 주문 내용이 변경되었습니다. 페이지를 새로고침해 주세요.' : '주문 저장에 실패했어요. 다시 시도해 주세요.',
+        });
+      }
       console.error('Landing order error:', error);
       res.status(400).json({
         success: false,
