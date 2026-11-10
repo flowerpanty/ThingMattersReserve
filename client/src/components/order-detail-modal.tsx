@@ -714,6 +714,7 @@ export function OrderDetailModal({ order, isOpen, onClose, onDelete, onOrderUpda
     };
 
     const formatDateTime = (dateString: string) => {
+        if (!dateString || !Number.isFinite(new Date(dateString).getTime())) return '접수일 미확인';
         try {
             return format(new Date(dateString), 'yyyy년 MM월 dd일 HH:mm', { locale: ko });
         } catch {
