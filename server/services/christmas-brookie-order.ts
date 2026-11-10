@@ -20,7 +20,6 @@ const requestSchema = z.object({
 });
 export function validateChristmasRequest(input: unknown, now = new Date()) {
   const availability = christmasOrderAvailability(now);
-  if (!availability.enabled) throw new ChristmasOrderError(availability.message, 403, 'CHRISTMAS_NOT_OPEN');
   const parsed = requestSchema.safeParse(input);
   if (!parsed.success) throw new ChristmasOrderError('주문 정보와 상품 수량, 수령 시간을 확인해주세요.');
   const body = parsed.data;

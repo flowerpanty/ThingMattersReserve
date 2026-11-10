@@ -21,7 +21,7 @@ const records = new Map<string, any>();
 const mail: any[] = [];
 let writes = 0, admin = 0, push = 0, sheets = 0, conflictChecks = 0;
 let failSave = false, failMail = false;
-let clock = new Date('2026-11-30T23:59:00+09:00');
+let clock = new Date('2026-11-10T12:00:00+09:00');
 (db as any).insert = (table: unknown) => {
   assert.equal(table, orderTable);
   return { values: (value: any) => {
@@ -74,15 +74,23 @@ async function email(order: any) {
   }, body: JSON.stringify({ email: 'customer@example.com' }) });
 }
 try {
-  assert.equal(christmasOrderAvailability(clock).enabled, false);
-  const closed = await post(body({ clientTime: '2026-12-02', enabled: true }));
-  assert.equal(closed.status, 403); assert.match(closed.data.message, /12월 1일/); assert.equal(writes, 0);
+  assert.equal(christmasOrderAvailability(clock).enabled, true);
+  assert.equal(christmasOrderAvailability(clock).minimumDeliveryDate, '2026-12-01');
+  const earlyReceipt = await post(body({ deliveryDate: '2026-11-30', clientTime: '2026-12-02', enabled: true }));
+  assert.equal(earlyReceipt.status, 400); assert.match(earlyReceipt.data.message, /2026-12-01/); assert.equal(writes, 0);
+  assert.equal((await post(body({ deliveryDate: '2026-12-01' }))).status, 200, 'orders can be saved now for December 1');
+  clock = new Date('2026-11-30T23:59:00+09:00');
+  assert.equal(christmasOrderAvailability(clock).enabled, true);
+  assert.equal(christmasOrderAvailability(clock).minimumDeliveryDate, '2026-12-01');
+  assert.equal((await post(body({ deliveryDate: '2026-12-01' }))).status, 200);
   clock = new Date('2026-12-01T00:00:00+09:00');
   assert.equal(christmasOrderAvailability(clock).enabled, true);
   assert.equal(christmasOrderAvailability(clock).minimumDeliveryDate, '2026-12-02');
+  assert.equal((await post(body({ deliveryDate: '2026-12-01' }))).status, 400, 'common minimum lead time remains in force');
+  clock = new Date('2026-11-10T12:00:00+09:00');
   for (const pickupTime of christmasPickupTimes) assert.equal((await post(body({ pickupTime }))).status, 200);
   for (const pickupTime of ['09:00', '17:01', '14:30', '10:00~11:00', '18:00']) assert.equal((await post(body({ pickupTime }))).status, 400);
-  for (const deliveryDate of ['2026-11-30', '2026-12-01', '2026-02-30']) assert.equal((await post(body({ deliveryDate }))).status, 400);
+  for (const deliveryDate of ['2026-11-30', '2026-02-30']) assert.equal((await post(body({ deliveryDate }))).status, 400);
   for (const quantity of [1, 2, 10, 12]) {
     const result = await post(body({ items: [{ sku: 'christmas-tree-brookie', quantity, price: 1 }], totalPrice: 1 }));
     assert.equal(result.status, 200); assert.equal(result.data.totalPrice, quantity * 9500);
@@ -123,7 +131,7 @@ try {
     const catalog = JSON.parse(await readFile(path.join(landingRoot, 'data/christmas-products.json'), 'utf8'));
     assert.deepEqual(catalog.products.map((p: any) => [p.sku, p.name, p.price]), christmasProducts.map(p => [p.sku, p.name, p.price]));
   }
-  console.log('Christmas Brookie: Seoul opening boundary, receipt minimum, 8 exact hours, server repricing 1/2/10/12, optional email, shared DB/admin/notifications/Sheets, concurrent & restart-safe deduplication, email failure/retry, stored Excel and sanitized failures PASS');
+  console.log('Christmas Brookie: orders open now, December 1 receipt minimum, common lead time, 8 exact hours, server repricing 1/2/10/12, optional email, shared DB/admin/notifications/Sheets, concurrent & restart-safe deduplication, email failure/retry, stored Excel and sanitized failures PASS');
   if (serveUI) {
     assert(landingRoot, 'CHRISTMAS_LANDING_ROOT is required for fixture UI');
     app.post('/__test/png', express.raw({ type: 'image/png', limit: '10mb' }), async (req, res) => { await writeFile('/private/tmp/christmas-brookie-quote.png', req.body); res.sendStatus(204); });
@@ -150,7 +158,7 @@ try {
     app.get('/dashboard', async (_req, res) => res.type('html').send(await vite.transformIndexHtml('/dashboard', await readFile('client/index.html', 'utf8'))));
     app.use(express.static(landingRoot)); app.use(vite.middlewares);
     await writeFile('/private/tmp/christmas-brookie-ui-url.txt', base);
-    console.log(`Fixture UI (opened clock; no production writes): ${base}/christmas/`);
+    console.log(`Fixture UI (November orders open; no production writes): ${base}/christmas/`);
     await new Promise(() => {});
   }
 } finally { await new Promise<void>(resolve => server.close(() => resolve())); }

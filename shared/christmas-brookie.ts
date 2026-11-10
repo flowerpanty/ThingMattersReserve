@@ -2,8 +2,7 @@ import { orderOperatingSettings } from './product-catalog';
 
 export const CHRISTMAS_SOURCE = 'christmasBrookie';
 export const CHRISTMAS_CATALOG_VERSION = 'christmas-2026-v1';
-export const CHRISTMAS_OPEN_AT = Date.parse('2026-12-01T00:00:00+09:00');
-export const CHRISTMAS_OPEN_MESSAGE = '크리스마스 브루키 주문은 12월 1일부터 가능합니다.';
+export const CHRISTMAS_RECEIPT_START = '2026-12-01';
 export const christmasPickupTimes = ['10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00'] as const;
 export const christmasProducts = [
   { sku: 'christmas-bear-brookie', name: '곰돌이 브루키', price: 8500, composition: '곰돌이 브루키 1개' },
@@ -19,13 +18,12 @@ export function christmasOrderAvailability(now = new Date()) {
   }).format(now);
   const minDate = new Date(`${seoulDate}T00:00:00Z`);
   minDate.setUTCDate(minDate.getUTCDate() + orderOperatingSettings.minimumLeadDays);
-  const minimumDeliveryDate = [minDate.toISOString().slice(0, 10), '2026-12-01'].sort().at(-1)!;
-  const enabled = now.getTime() >= CHRISTMAS_OPEN_AT;
+  const minimumDeliveryDate = [minDate.toISOString().slice(0, 10), CHRISTMAS_RECEIPT_START].sort().at(-1)!;
   return {
-    source: CHRISTMAS_SOURCE, enabled, catalogVersion: CHRISTMAS_CATALOG_VERSION,
-    opensAt: '2026-12-01T00:00:00+09:00', minimumDeliveryDate,
+    source: CHRISTMAS_SOURCE, enabled: true, catalogVersion: CHRISTMAS_CATALOG_VERSION,
+    minimumDeliveryDate,
     unavailableDates: orderOperatingSettings.unavailableDates,
     pickupTimes: christmasPickupTimes,
-    message: enabled ? '견적서를 받은 후 카카오톡 상담에서 최종 주문을 확정해 주세요.' : CHRISTMAS_OPEN_MESSAGE,
+    message: '지금 주문할 수 있어요. 수령 희망일은 2026년 12월 1일부터 선택 가능합니다.',
   };
 }
