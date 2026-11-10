@@ -132,6 +132,11 @@ try {
     app.get('/__test-adapter.js', (_req, res) => res.type('application/javascript').send(`
       const fixtureTrace=text=>{let n=document.getElementById('fixture-trace');if(!n){n=document.createElement('pre');n.id='fixture-trace';document.body.append(n);}n.textContent+=text+'\\n';};
       const originalProvide=window.NMQuote.provideImage;
+      const originalClipboard=navigator.clipboard?.writeText.bind(navigator.clipboard);
+      const originalExec=document.execCommand.bind(document);
+      let denyCopyOnce=new URL(location.href).searchParams.get('copy')==='deny-once';
+      Object.defineProperty(navigator,'clipboard',{configurable:true,value:{writeText:async text=>{fixtureTrace('COPY attempt');if(denyCopyOnce||!originalClipboard)throw new Error('Fixture clipboard permission denied');await originalClipboard(text);fixtureTrace('COPY success');}}});
+      document.execCommand=(command,...args)=>{if(command==='copy'&&denyCopyOnce){denyCopyOnce=false;fixtureTrace('COPY denied');return false;}const result=originalExec(command,...args);if(command==='copy')fixtureTrace('COPY fallback '+result);return result;};
       navigator.canShare=()=>false;
       window.NMQuote.provideImage=async (...args)=>{await fetch('/__test/png',{method:'POST',headers:{'Content-Type':'image/png'},body:args[0]});const result=await originalProvide(...args);fixtureTrace('PNG '+result);return result;};
       window.NMQuote.navigateToKakao=()=>fixtureTrace('KAKAO https://pf.kakao.com/_QdCaK/chat');
