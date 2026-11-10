@@ -22,7 +22,7 @@ const fixtures = [
   ], { deliveryDate: '2026-12-01', deliveryMethod: 'quick' }),
   order('fixture-completed', '테스트 완료주문', '2026-11-10T07:00:00Z', 'lucky', [item('fortune', '행운쿠키 4가지맛 세트', 3, 15000, { landingSource: 'lucky' })], { orderStatus: 'completed', paymentConfirmed: 1, paymentMethod: 'transfer', deliveryDate: '2026-11-10' }),
   order('fixture-production', '테스트 제작주문', '2026-11-10T05:00:00Z', 'cookie7', [
-    item('regular', '호두초코', 12, 4500), item('regular', '더블초코', 8, 4500),
+    item('regular', '1구박스 쿠키', 20, 4500, { packageName: '1구박스', flavorText: '호두초코 12개, 더블초코 8개', ribbon: true }),
     item('packaging', '단품 상자', 20, 600), item('addon', '리본 추가', 20, 300, { landingSource: 'cookie7', unitLabel: '개' }),
   ], { orderStatus: 'in_production', paymentConfirmed: 1, deliveryDate: '2026-11-10', pickupTime: '16:00~17:00' }),
   order('fixture-midnight', '테스트 자정접수', '2026-11-09T15:00:00Z', 'cookieCrew', [item('addon', '쿠키기장', 12, 0, { landingSource: 'cookieCrew', pricingPending: true })], { orderItems: [item('addon', '쿠키기장', 12, 0), meta('cookieCrew', { pricingPending: true })] }),
@@ -65,7 +65,10 @@ assert.equal(lines[2].amount, '12,000원');
 assert.equal(getDashboardItemLines(fixtures[5])[0].quantity, '2박스');
 assert.equal(getDashboardItemLines(fixtures[8])[0].quantity, '2박스');
 assert.equal(getDashboardItemLines(fixtures[1])[0].quantity, '3세트');
-assert.equal(getDashboardItemLines(fixtures[2])[2].prefix, '포장');
+assert.equal(getDashboardItemLines(fixtures[2])[1].prefix, '포장');
+assert.deepEqual(getDashboardItemLines(fixtures[2])[0].details, ['맛 구성 · 호두초코 12개, 더블초코 8개', '포장 · 1구박스', '리본 추가']);
+assert.deepEqual(getDashboardItemLines({ orderItems: [item('brownie', '브루키', 1, 7800, { paperName: '커스텀 종이', heartMessage: '축하', customPaperLine1: '첫째 줄', customPaperLine2: '둘째 줄' })] })[0].details,
+  ['종이 · 커스텀 종이', '하트 문구 · 축하', '커스텀 종이 · 첫째 줄 / 둘째 줄']);
 assert.equal(getDashboardItemLines(fixtures[4])[2].kind, 'extra');
 console.log('Dashboard orders: Seoul date boundary, newest-first groups, missing dates, complete-inclusive counts, combined filters, stable status updates and saved item units/fees PASS');
 

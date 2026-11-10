@@ -596,7 +596,9 @@ function OrderRow({
           <span className="sr-only">상품 및 수량</span>
           {itemLines.length ? <ul className="space-y-1" aria-label={`${order.customerName} 전체 주문 품목`}>
             {itemLines.map((line, index) => <li key={index} className={`flex min-w-0 items-start justify-between gap-2 text-sm leading-relaxed ${line.kind === 'product' ? 'font-medium text-slate-800' : 'text-xs text-slate-500'}`}>
-              <span className="min-w-0 [overflow-wrap:anywhere]">{line.prefix && <span className="mr-1 font-normal">{line.prefix} ·</span>}{line.name}</span>
+              <span className="min-w-0 [overflow-wrap:anywhere]">{line.prefix && <span className="mr-1 font-normal">{line.prefix} ·</span>}{line.name}
+                {line.details.map((detail, detailIndex) => <span key={detailIndex} className="mt-0.5 block text-xs font-normal leading-relaxed text-slate-500">{detail}</span>)}
+              </span>
               <span className="shrink-0 whitespace-nowrap font-semibold tabular-nums">{line.kind === 'fee' ? line.amount : line.quantity}</span>
             </li>)}
           </ul> : <p className="text-sm text-slate-500">주문 품목 없음</p>}

@@ -120,11 +120,28 @@ export function getDashboardItemLines(order: { orderItems: ListItem[] }) {
     else if (itemSource === 'lucky' || ['twopack', 'singledrink'].includes(item.type)) unit = '세트';
     else if (['fortune', 'airplane'].includes(item.type)) unit = '박스';
     else unit = item.type === 'addon' && extra ? '건' : '개';
+    const options = item.options || {};
+    const flavorText = options.flavorText || (Array.isArray(options.flavors)
+      ? options.flavors.map((flavor: any) => typeof flavor === 'string' ? flavor
+        : `${flavor.name || flavor.id || ''}${flavor.quantity ? ` ${flavor.quantity}개` : ''}`).join(', ') : '');
+    const details = fee ? [] : [
+      flavorText && `맛 구성 · ${flavorText}`,
+      options.characterName && !item.name.includes(options.characterName) && `캐릭터 · ${options.characterName}`,
+      options.packageName && `포장 · ${options.packageName}`,
+      options.paperName && `종이 · ${options.paperName}`,
+      options.heartMessage && `하트 문구 · ${options.heartMessage}`,
+      (options.customPaperLine1 || options.customPaperLine2) && `커스텀 종이 · ${[options.customPaperLine1, options.customPaperLine2].filter(Boolean).join(' / ')}`,
+      options.drink && `음료 · ${options.drink}`,
+      options.ribbon && '리본 추가',
+      options.customSticker && '커스텀 스티커 추가',
+      options.customTopper && '커스텀 토퍼 추가',
+    ].filter(Boolean) as string[];
     return {
       kind: fee ? 'fee' : extra ? 'extra' : 'product',
       name: item.name, quantity: `${item.quantity.toLocaleString('ko-KR')}${unit}`,
       amount: `${(item.quantity * item.price).toLocaleString('ko-KR')}원`,
       prefix: item.type === 'packaging' ? '포장' : extra ? '추가' : '',
+      details,
     };
   });
 }
